@@ -42,17 +42,44 @@ def intersect(line:QLineF, rect:QRectF)->QPointF:
     return None
 
 
+class Pin(QGraphicsLayoutItem):
+    def __init__(self):
+        super().__init__()
+        self.ellipse = QGraphicsEllipseItem(0,0,12,12)
+        self.setGraphicsItem(self.ellipse)
+
+    def sizeHint(self , which, constraint):
+        # return QSize(5,5)
+        return self.ellipse.rect().size()
+
+    def setGeometry(self, rect):
+        self.ellipse.setPos(rect.topLeft())
+
+
 class Socket(QGraphicsWidget):
     def __init__(self, text, alignment="Left"):
         super().__init__()
+        self.edge = None
+        self.setLayout(QGraphicsLinearLayout())
+
+        label = QGraphicsProxyWidget()
+        label.setWidget(QLabel(text))
+        label.widget().setAlignment(Qt.AlignLeft if alignment == "Left" else Qt.AlignRight)
+       
+        pin = Pin()
+        self.pin = pin
+
+
+        self.label = label
+        # label.widget().setAlignment(Qt.AlignRight)
+        self.layout().setContentsMargins(0,0,0,0)
+        self.layout().addItem(label)
+        self.layout().addItem(pin)
         self.setText(text)
         self.setAlignment(alignment)
-        # self.setAutoFillBackground(True)
         self.setFont(QApplication.font())
         self.diameter = 12
         self.spacing = 3
-
-        self.edge = None
 
     def setFont(self, font):
         self._font = font
@@ -61,62 +88,73 @@ class Socket(QGraphicsWidget):
         return self._font
 
     def setText(self, text):
-        self._text = text
+        self.label.widget().setText(text)
+        fm = QFontMetrics(self.label.widget().font())
+        self.label.widget().setMinimumSize(fm.width(text), 10)
+        # self.label.widget().updateGeometry()
 
     def text(self):
         return self._text
 
     def setAlignment(self, alignment):
-        self._alignment = alignment
+        if alignment == "Left":
+            self.layout().removeItem(self.pin)
+            self.layout().insertItem(0, self.pin)
+
+        if alignment == "Right":
+            self.layout().removeItem(self.pin)
+            self.layout().addItem(self.pin)
+
+        self.label.widget().setAlignment(Qt.AlignLeft if alignment == "Left" else Qt.AlignRight)
 
     def alignment(self):
         return self._alignment
 
-    def ellipseRect(self):
-        fm = QFontMetrics( self.font() )
-        frame = self.geometry()
-        if self.alignment() == "Left":
-            return QRectF(0, frame.height()/2-self.diameter/2,self.diameter,self.diameter)
+    # def ellipseRect(self):
+    #     fm = QFontMetrics( self.font() )
+    #     frame = self.geometry()
+    #     if self.alignment() == "Left":
+    #         return QRectF(0, frame.height()/2-self.diameter/2,self.diameter,self.diameter)
 
-        if self.alignment() == "Right":
-            return QRectF(fm.width(self.text())+self.spacing, frame.height()/2-self.diameter/2,self.diameter,self.diameter)
+    #     if self.alignment() == "Right":
+    #         return QRectF(fm.width(self.text())+self.spacing, frame.height()/2-self.diameter/2,self.diameter,self.diameter)
 
-    def paint(self, painter, option, widget):
-        fm = QFontMetrics( painter.font() )
-        frame = self.geometry()
+    # def paint(self, painter, option, widget):
+    #     fm = QFontMetrics( painter.font() )
+    #     frame = self.geometry()
         
-        ellipseRect = self.ellipseRect()
-        if self.alignment() == "Left":
-            painter.setPen(QPen(Qt.black))
-            painter.drawText(self.diameter+self.spacing,frame.height()/2+fm.capHeight()/2,self._text)
+    #     ellipseRect = self.ellipseRect()
+    #     if self.alignment() == "Left":
+    #         painter.setPen(QPen(Qt.black))
+    #         painter.drawText(self.diameter+self.spacing,frame.height()/2+fm.capHeight()/2,self._text)
 
-            painter.setPen(QPen(Qt.black, 2))
-            painter.drawEllipse(ellipseRect)
+    #         painter.setPen(QPen(Qt.black, 2))
+    #         painter.drawEllipse(ellipseRect)
 
-        if self.alignment() == "Right":
-            painter.setPen(QPen(Qt.black))
-            painter.drawText(0,frame.height()/2+fm.capHeight()/2,self._text)
+    #     if self.alignment() == "Right":
+    #         painter.setPen(QPen(Qt.black))
+    #         painter.drawText(0,frame.height()/2+fm.capHeight()/2,self._text)
 
-            painter.setPen(QPen(Qt.black, 2))
-            painter.drawEllipse(ellipseRect)
+    #         painter.setPen(QPen(Qt.black, 2))
+    #         painter.drawEllipse(ellipseRect)
 
-    def sizeHint(self, which, constraint):
-        fm = QFontMetrics(self.font())
-        textSize = fm.size(Qt.TextSingleLine, self.text())
-        w = self.diameter + textSize.width() + self.spacing
-        h = max([self.diameter, textSize.height()])
-        return QSize(w, h)
+    # def sizeHint(self, which, constraint):
+    #     fm = QFontMetrics(self.font())
+    #     textSize = fm.size(Qt.TextSingleLine, self.text())
+    #     w = self.diameter + textSize.width() + self.spacing
+    #     h = max([self.diameter, textSize.height()])
+    #     return QSize(w, h)
         return constraint
 
     def pinPos(self):
-        return self.scenePos()+self.ellipseRect().center()
+        return self.pin.graphicsItem().mapToScene( self.pin.graphicsItem().boundingRect().center() )
 
 class Node(QGraphicsWidget):
     def __init__(self, name):
         super().__init__()
         self.graph = None
-        self.inputs = []
-        self.outputs = []
+        self._inputs = []
+        self._outputs = []
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
@@ -151,7 +189,7 @@ class Node(QGraphicsWidget):
         inputArea.layout().addStretch()
         
         outputArea = QGraphicsWidget()
-        outputArea.setAutoFillBackground(True)
+        # outputArea.setAutoFillBackground(True)
         palette = outputArea.palette()
         palette.setBrush(QPalette.Window, QColor(0,0,0,10))
         outputArea.setPalette(palette)
@@ -182,28 +220,25 @@ class Node(QGraphicsWidget):
         # self.layout().addItem(footer)
 
     def collapse(self):
-        print("collapse")
         body = self.layout().itemAt(1)
         self.layout().removeAt(1)
         self.scene().removeItem(body)
+        self.layout().activate()
         self._collapsed = True
-        self.layout().invalidate()
-        self.update()
 
-        for socket in self.inputs+self.outputs:
+        for socket in self._inputs+self._outputs:
             if socket.edge is not None:
                 socket.edge.updatePosition()
 
     def expand(self):
         print("expand")
         self.layout().insertItem(1,self.body)
-        self.layout().invalidate()
+        self.layout().activate()
         self._collapsed = False
 
-        for socket in self.inputs+self.outputs:
+        for socket in self._inputs+self._outputs:
             if socket.edge is not None:
                 socket.edge.updatePosition()
-
 
     def isCollapsed(self):
         return self._collapsed
@@ -223,19 +258,19 @@ class Node(QGraphicsWidget):
         socket.setAlignment("Left")
         socket.node = self
         self.inputArea.layout().insertItem(self.inputArea.layout().count(), socket)
-        self.inputs.append(socket)
+        self._inputs.append(socket)
 
     def addOutput(self, socket):
         socket.setAlignment("Right")
         socket.node = self
         self.outputArea.layout().insertItem(self.outputArea.layout().count(), socket)
-        self.outputs.append(socket)
+        self._outputs.append(socket)
 
     def itemChange(self, change, value):
-        if change is QGraphicsItem.ItemPositionChange:
+        if change is QGraphicsItem.ItemPositionHasChanged:
             if self.graph is not None:
                 self.graph.prepareGeometryChange()
-            for socket in self.inputs+self.outputs:
+            for socket in self._inputs+self._outputs:
                 if socket.edge is not None:
                     socket.edge.updatePosition()
 
@@ -246,6 +281,9 @@ class Node(QGraphicsWidget):
             self.expand()
         else:
             self.collapse()
+
+    def __repr__(self):
+        return "Node({})".format(self.layout().itemAt(0).childItems()[0].toPlainText())
 
 import math
 class Edge(QGraphicsItemGroup):
@@ -317,14 +355,60 @@ class Graph(QGraphicsItem):
     def boundingRect(self):
         return self.childrenBoundingRect().adjusted(-10,-10,10,10)
 
+    def adjacentNodes(self, node):
+        return [socket.edge.outputPin.node for socket in node._inputs if socket.edge]
+
+    def bfs(self, roots):
+        visited = set()
+        stack = [roots]
+        i=0
+        while stack[-1]:
+            layer = []
+            for node in stack[-1]:
+                if node not in visited:
+                    visited.add(node)
+                    for child in self.adjacentNodes(node):
+                        layer.append(child)
+
+            stack.append(layer)
+            # i+=1
+
+        return stack[:-1]
+
+    def rootNodes(self):
+        def isRootNode(node):
+            for socket in node._outputs:
+                if socket.edge is not None:
+                    return False
+            return True
+
+        return [node for node in self.nodes if isRootNode(node)]
+
+    def layout(self):
+        rootNodes = self.rootNodes()
+        stack = self.bfs(rootNodes)
+        height = max([len(layer)-1 for layer in stack])
+        width = len(stack)
+
+        # position layers
+        for x, layer in enumerate(reversed(stack)):
+            for y, node in enumerate(layer):
+                layerHeight = (len(layer)-1)/2*200
+                boundingBoxHeight=+height*200
+                node.setPos(x*200, y*200-layerHeight+boundingBoxHeight/2)
+
+        # align layers
+
+
 
 class NodeEditor(Viewer2D):
     def __init__(self):
         super().__init__()
         self.graph = Graph()
         self.scene.addItem(self.graph)
-        self.drawGrid = False
+        # self.drawGrid = False
         self.setWindowTitle("NodeEditor")
+        # self.setViewport(QOpenGLWidget() )
 
     def addNode(self, node):
         self.graph.addNode(node)
@@ -364,17 +448,18 @@ if __name__ == "__main__":
     editor.addNode(tgtPathNode)
 
     # create edges
-    edge = Edge(readNode.outputs[0], tpsNode.inputs[0])
+    edge = Edge(readNode._outputs[0], tpsNode._inputs[0])
     edge.setZValue(-1)
     editor.addEdge(edge)
-    edge = Edge(srcPathNode.outputs[0], tpsNode.inputs[1])
+    edge = Edge(srcPathNode._outputs[0], tpsNode._inputs[1])
     edge.setZValue(-1)
     editor.addEdge(edge)
-    edge = Edge(tgtPathNode.outputs[0], tpsNode.inputs[2])
+    edge = Edge(tgtPathNode._outputs[0], tpsNode._inputs[2])
     edge.setZValue(-1)
     editor.addEdge(edge)
 
-    
-    
     editor.show()
+
+    editor.graph.layout()
+    editor.centerOn(editor.graph)
     app.exec_()
