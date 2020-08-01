@@ -2,6 +2,7 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
 from editor.widgets.viewer2D import Viewer2D
+from editor import daglib
 
 def findIntersection(A:QLineF, B:QLineF)->QPointF:
     x1 = A.p1().x()
@@ -56,10 +57,16 @@ class Pin(QGraphicsLayoutItem):
         self.ellipse.setPos(rect.topLeft())
 
 
-class Socket(QGraphicsWidget):
-    def __init__(self, text, alignment="Left"):
+class SocketBase(QGraphicsWidget):
+    def __init__(self):
         super().__init__()
         self.edge = None
+        self.node = None
+
+
+class GraphWidgetSocketItem(SocketBase):
+    def __init__(self, text, alignment="Left"):
+        super().__init__()
         self.setLayout(QGraphicsLinearLayout())
 
         label = QGraphicsProxyWidget()
@@ -107,54 +114,21 @@ class Socket(QGraphicsWidget):
 
         self.label.widget().setAlignment(Qt.AlignLeft if alignment == "Left" else Qt.AlignRight)
 
-    def alignment(self):
-        return self._alignment
-
-    # def ellipseRect(self):
-    #     fm = QFontMetrics( self.font() )
-    #     frame = self.geometry()
-    #     if self.alignment() == "Left":
-    #         return QRectF(0, frame.height()/2-self.diameter/2,self.diameter,self.diameter)
-
-    #     if self.alignment() == "Right":
-    #         return QRectF(fm.width(self.text())+self.spacing, frame.height()/2-self.diameter/2,self.diameter,self.diameter)
-
-    # def paint(self, painter, option, widget):
-    #     fm = QFontMetrics( painter.font() )
-    #     frame = self.geometry()
-        
-    #     ellipseRect = self.ellipseRect()
-    #     if self.alignment() == "Left":
-    #         painter.setPen(QPen(Qt.black))
-    #         painter.drawText(self.diameter+self.spacing,frame.height()/2+fm.capHeight()/2,self._text)
-
-    #         painter.setPen(QPen(Qt.black, 2))
-    #         painter.drawEllipse(ellipseRect)
-
-    #     if self.alignment() == "Right":
-    #         painter.setPen(QPen(Qt.black))
-    #         painter.drawText(0,frame.height()/2+fm.capHeight()/2,self._text)
-
-    #         painter.setPen(QPen(Qt.black, 2))
-    #         painter.drawEllipse(ellipseRect)
-
-    # def sizeHint(self, which, constraint):
-    #     fm = QFontMetrics(self.font())
-    #     textSize = fm.size(Qt.TextSingleLine, self.text())
-    #     w = self.diameter + textSize.width() + self.spacing
-    #     h = max([self.diameter, textSize.height()])
-    #     return QSize(w, h)
-        return constraint
 
     def pinPos(self):
         return self.pin.graphicsItem().mapToScene( self.pin.graphicsItem().boundingRect().center() )
 
-class Node(QGraphicsWidget):
-    def __init__(self, name):
-        super().__init__()
+class NodeBase():
+    def __init__(self):
         self.graph = None
         self._inputs = []
         self._outputs = []
+
+class GraphWidgetNodeItem(NodeBase, QGraphicsWidget):
+    def __init__(self, name):
+        NodeBase.__init__(self)
+        QGraphicsWidget.__init__(self)
+
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
@@ -286,14 +260,24 @@ class Node(QGraphicsWidget):
         return "Node({})".format(self.layout().itemAt(0).childItems()[0].toPlainText())
 
 import math
-class Edge(QGraphicsItemGroup):
+class EdgeBase:
     def __init__(self, outputPin, inputPin):
-        super().__init__()
-        self.graph = None
         self.outputPin = outputPin
         self.inputPin = inputPin
-        outputPin.edge = self
         inputPin.edge = self
+        outputPin.edge = self
+        self.graph = None
+
+class GraphWidgetEdgeItem(EdgeBase, QGraphicsItemGroup):
+    def __init__(self, outputPin, inputPin):
+        EdgeBase.__init__(self, outputPin, inputPin)
+        QGraphicsItemGroup.__init__(self)
+        # super().__init__()
+        # self.graph = None
+        # self.outputPin = outputPin
+        # self.inputPin = inputPin
+        # outputPin.edge = self
+        # inputPin.edge = self
 
         self.body = QGraphicsLineItem()
         self.body.setParentItem(self)
@@ -355,59 +339,24 @@ class Graph(QGraphicsItem):
     def boundingRect(self):
         return self.childrenBoundingRect().adjusted(-10,-10,10,10)
 
-    def adjacentNodes(self, node):
-        return [socket.edge.outputPin.node for socket in node._inputs if socket.edge]
-
-    def bfs(self, roots):
-        visited = set()
-        stack = [roots]
-        i=0
-        while stack[-1]:
-            layer = []
-            for node in stack[-1]:
-                if node not in visited:
-                    visited.add(node)
-                    for child in self.adjacentNodes(node):
-                        layer.append(child)
-
-            stack.append(layer)
-            # i+=1
-
-        return stack[:-1]
-
-    def rootNodes(self):
-        def isRootNode(node):
-            for socket in node._outputs:
-                if socket.edge is not None:
-                    return False
-            return True
-
-        return [node for node in self.nodes if isRootNode(node)]
-
     def layout(self):
-        rootNodes = self.rootNodes()
-        stack = self.bfs(rootNodes)
-        height = max([len(layer)-1 for layer in stack])
-        width = len(stack)
+        nodes = [node for node in self.nodes]
+        adj = dict([(node, [socket.edge.outputPin.node for socket in node._inputs if socket.edge]) for node in nodes])
 
-        # position layers
-        for x, layer in enumerate(reversed(stack)):
-            for y, node in enumerate(layer):
-                layerHeight = (len(layer)-1)/2*200
-                boundingBoxHeight=+height*200
-                node.setPos(x*200, y*200-layerHeight+boundingBoxHeight/2)
+        
+        positions = daglib.layout(adj)
 
-        # align layers
+        for node, (x,y) in positions:
+            node.setPos(-y*200, x*200)
 
 
-
-class NodeEditor(Viewer2D):
+class GraphWidget(Viewer2D):
     def __init__(self):
         super().__init__()
         self.graph = Graph()
         self.scene.addItem(self.graph)
         # self.drawGrid = False
-        self.setWindowTitle("NodeEditor")
+        self.setWindowTitle("GraphWidget")
         # self.setViewport(QOpenGLWidget() )
 
     def addNode(self, node):
@@ -419,47 +368,47 @@ class NodeEditor(Viewer2D):
 
 if __name__ == "__main__":
     app = QApplication()
-    editor = NodeEditor()
+    graphWidget = GraphWidget()
 
     # create nodes
-    tpsNode = Node("ThinPlateSpline")
+    tpsNode = GraphWidgetNodeItem("ThinPlateSpline")
     tpsNode.setPos(600, 250)
-    tpsNode.addInput(Socket("image"))
-    tpsNode.addInput(Socket("sourcePath"))
-    tpsNode.addInput(Socket("targetPath"))
-    tpsNode.addOutput(Socket("deformed"))
-    editor.addNode(tpsNode)
+    tpsNode.addInput(GraphWidgetSocketItem("image"))
+    tpsNode.addInput(GraphWidgetSocketItem("sourcePath"))
+    tpsNode.addInput(GraphWidgetSocketItem("targetPath"))
+    tpsNode.addOutput(GraphWidgetSocketItem("deformed"))
+    graphWidget.addNode(tpsNode)
 
-    readNode = Node("Read")
+    readNode = GraphWidgetNodeItem("Read")
     readNode.setPos(300,100)
-    readNode.addInput(Socket("file"))
-    readNode.addInput(Socket("frame"))
-    readNode.addOutput(Socket("image"))
-    editor.addNode(readNode)
+    readNode.addInput(GraphWidgetSocketItem("file"))
+    readNode.addInput(GraphWidgetSocketItem("frame"))
+    readNode.addOutput(GraphWidgetSocketItem("image"))
+    graphWidget.addNode(readNode)
 
-    srcPathNode = Node("SourcePath")
+    srcPathNode = GraphWidgetNodeItem("SourcePath")
     srcPathNode.setPos(300,300)
-    srcPathNode.addOutput(Socket("path"))
-    editor.addNode(srcPathNode)
+    srcPathNode.addOutput(GraphWidgetSocketItem("path"))
+    graphWidget.addNode(srcPathNode)
 
-    tgtPathNode = Node("TargetPath")
+    tgtPathNode = GraphWidgetNodeItem("TargetPath")
     tgtPathNode.setPos(300,500)
-    tgtPathNode.addOutput(Socket("path"))
-    editor.addNode(tgtPathNode)
+    tgtPathNode.addOutput(GraphWidgetSocketItem("path"))
+    graphWidget.addNode(tgtPathNode)
 
     # create edges
-    edge = Edge(readNode._outputs[0], tpsNode._inputs[0])
+    edge = GraphWidgetEdgeItem(readNode._outputs[0], tpsNode._inputs[0])
     edge.setZValue(-1)
-    editor.addEdge(edge)
-    edge = Edge(srcPathNode._outputs[0], tpsNode._inputs[1])
+    graphWidget.addEdge(edge)
+    edge = GraphWidgetEdgeItem(srcPathNode._outputs[0], tpsNode._inputs[1])
     edge.setZValue(-1)
-    editor.addEdge(edge)
-    edge = Edge(tgtPathNode._outputs[0], tpsNode._inputs[2])
+    graphWidget.addEdge(edge)
+    edge = GraphWidgetEdgeItem(tgtPathNode._outputs[0], tpsNode._inputs[2])
     edge.setZValue(-1)
-    editor.addEdge(edge)
+    graphWidget.addEdge(edge)
 
-    editor.show()
+    graphWidget.show()
 
-    editor.graph.layout()
-    editor.centerOn(editor.graph)
+    graphWidget.graph.layout()
+    graphWidget.centerOn(graphWidget.graph)
     app.exec_()
