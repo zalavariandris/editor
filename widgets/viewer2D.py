@@ -3,6 +3,10 @@ from PySide2.QtWidgets import *
 from PySide2.QtGui import *
 import sys
 
+class PanAndZoom:
+    def __init__(self):
+        pass
+
 class Viewer2D(QGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,7 +30,7 @@ class Viewer2D(QGraphicsView):
         self.drawAxis = True
         self.drawGrid = True
 
-        self.setMouseTracking(True)
+        # self.setMouseTracking(True)
 
     def panView(self, dx, dy):
         sceneDelta = self.mapToScene(QPoint(dx, dy)) - self.mapToScene(0,0)
@@ -55,10 +59,12 @@ class Viewer2D(QGraphicsView):
             if event.modifiers() == Qt.AltModifier:
                 delta = event.pos() - self.lastMousePos
                 self.panView(delta.x(), delta.y())
-        if event.buttons() == Qt.MiddleButton:
+
+        elif event.buttons() == Qt.MiddleButton:
             if event.modifiers() == Qt.NoModifier:
                 delta = event.pos() - self.lastMousePos
                 self.panView(delta.x(), delta.y())
+                
         self.lastMousePos = event.pos()
         return super().mouseMoveEvent(event)
 
@@ -137,7 +143,6 @@ class Viewer2D(QGraphicsView):
             gridSize = 300 * math.pow(10, math.floor(math.log(1/zoomfactor, 10)))
             gridSize = gridSize
 
-
             left = rect.left() - rect.left() % gridSize
             top = rect.top() - rect.top() % gridSize
      
@@ -153,7 +158,6 @@ class Viewer2D(QGraphicsView):
                 y+=gridSize
                 lines.append(QLineF(rect.left(), y, rect.right(), y))
      
-
             painter.setPen(QPen(QBrush(QColor(128,128,128, 56)), 0))
             painter.drawLines(lines)
 

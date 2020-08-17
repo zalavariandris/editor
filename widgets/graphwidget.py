@@ -15,8 +15,11 @@ def findIntersection(A:QLineF, B:QLineF)->QPointF:
     x4 = B.p2().x()
     y4 = B.p2().y()
 
-    px=( (x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) ) 
-    py=( (x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) )
+    D =  ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) )
+    if D==0:
+        return None
+    px=( (x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4) ) / D
+    py=( (x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4) ) / D
     point = QPointF(px, py)
 
     bbox1 = QRectF(A.p1(), A.p2()).normalized()
@@ -28,6 +31,7 @@ def findIntersection(A:QLineF, B:QLineF)->QPointF:
         return point
     else:
         return None
+
 
 def intersect(line:QLineF, rect:QRectF)->QPointF:
     top =  QLineF(rect.topLeft(), rect.topRight())
@@ -43,19 +47,11 @@ def intersect(line:QLineF, rect:QRectF)->QPointF:
     return None
 
 
-class Pin(QGraphicsLayoutItem):
-    def __init__(self):
-        super().__init__()
-        self.ellipse = QGraphicsEllipseItem(0,0,12,12)
-        self.setGraphicsItem(self.ellipse)
-
-    def sizeHint(self , which, constraint):
-        # return QSize(5,5)
-        return self.ellipse.rect().size()
-
-    def setGeometry(self, rect):
-        self.ellipse.setPos(rect.topLeft())
-
+class MyGraphicsLinearLayout(QGraphicsLinearLayout):
+    def __init__(self, orientation=Qt.Horizontal):
+        super().__init__(orientation)
+        self.setContentsMargins(3,3,3,3)
+        self.setSpacing(3)
 
 class SocketBase(QGraphicsWidget):
     def __init__(self):
@@ -67,21 +63,27 @@ class SocketBase(QGraphicsWidget):
 class GraphWidgetSocketItem(SocketBase):
     def __init__(self, text, alignment="Left"):
         super().__init__()
-        self.setLayout(QGraphicsLinearLayout())
-
+        # create layout
+        layout = MyGraphicsLinearLayout()
+        # layout.setContentsMargins(0,0,0,0)
+        
+        # populate layout
         label = QGraphicsProxyWidget()
         label.setWidget(QLabel(text))
         label.widget().setAlignment(Qt.AlignLeft if alignment == "Left" else Qt.AlignRight)
        
-        pin = Pin()
+        pin = QGraphicsProxyWidget()
+
+        pin.setWidget(QLabel("o"))
         self.pin = pin
 
 
         self.label = label
         # label.widget().setAlignment(Qt.AlignRight)
-        self.layout().setContentsMargins(0,0,0,0)
-        self.layout().addItem(label)
-        self.layout().addItem(pin)
+        
+        layout.addItem(label)
+        layout.addItem(pin)
+        self.setLayout(layout)
         self.setText(text)
         self.setAlignment(alignment)
         self.setFont(QApplication.font())
@@ -97,8 +99,8 @@ class GraphWidgetSocketItem(SocketBase):
     def setText(self, text):
         self.label.widget().setText(text)
         fm = QFontMetrics(self.label.widget().font())
-        self.label.widget().setMinimumSize(fm.width(text), 10)
-        # self.label.widget().updateGeometry()
+        self.label.widget().setMinimumSize(min(fm.width(text), 200), fm.height())
+        self.label.widget().updateGeometry()
 
     def text(self):
         return self._text
@@ -118,86 +120,97 @@ class GraphWidgetSocketItem(SocketBase):
     def pinPos(self):
         return self.pin.graphicsItem().mapToScene( self.pin.graphicsItem().boundingRect().center() )
 
+
 class NodeBase():
     def __init__(self):
         self.graph = None
         self._inputs = []
         self._outputs = []
 
+
 class GraphWidgetNodeItem(NodeBase, QGraphicsWidget):
-    def __init__(self, name):
+    def __init__(self, title, collapsed=False):
         NodeBase.__init__(self)
         QGraphicsWidget.__init__(self)
 
+        # set flags for interaction
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
+        self.setFlag(QGraphicsItem.ItemClipsChildrenToShape, True)
 
-        self.setLayout(QGraphicsLinearLayout(Qt.Vertical))
-        self.layout().setSpacing(5)
-        self.layout().setContentsMargins(11,11,11,11)
+        # Create layout
+        headerArea = MyGraphicsLinearLayout(Qt.Vertical)
+        contentArea = QGraphicsWidget()
+        contentArea.setLayout( MyGraphicsLinearLayout(Qt.Horizontal))
+        footerArea = MyGraphicsLinearLayout(Qt.Horizontal)
 
+        layout = MyGraphicsLinearLayout(Qt.Vertical)
+        layout.addItem(headerArea)
+        layout.addItem(contentArea)
+        # layout.addItem(footerArea)
+        # layout.setContentsMargins(11,11,11,11)
+
+        # contentArea.layout().setSpacing(11)
+        # contentArea.layout().setContentsMargins(0,0,0,0)
+
+        inputArea = MyGraphicsLinearLayout(Qt.Vertical)
+        # inputArea.setContentsMargins(0,0,0,0)
+        inputArea.addStretch()
+
+        outputArea = MyGraphicsLinearLayout(Qt.Vertical)
+        # outputArea.setContentsMargins(0,0,0,0)
+        outputArea.addStretch()
+
+        contentArea.layout().addItem(inputArea)
+        contentArea.layout().addItem(outputArea)
+        contentArea.setFlag(QGraphicsItem.ItemClipsChildrenToShape, True)
+
+        headerArea.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        footerArea.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+
+        # Populate layout with items
         # header
-        header = QGraphicsWidget()
-        # header.setAutoFillBackground(True)
-        title = QGraphicsTextItem(name)
-        header.setMinimumSize(QFontMetrics(title.font()).size(Qt.TextSingleLine, title.toPlainText()))
-        header.setPreferredSize(QFontMetrics(title.font()).size(Qt.TextSingleLine, title.toPlainText()))
+        titleLabel = QGraphicsProxyWidget()
+        titleLabel.setWidget(QLabel(title))
+        headerArea.addItem(titleLabel)
+        # headerArea.setAlignment(title, Qt.AlignRight)
 
-        header.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        title.setParentItem(header)
-        title.setPos(-4,-5)
-        
-        # body
-        body = QGraphicsWidget()
-        body.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        body.setLayout(QGraphicsLinearLayout(Qt.Horizontal))
-        body.layout().setSpacing(11)
-        body.layout().setContentsMargins(0,0,0,0)
+        #footer
+        statusLabel = QGraphicsProxyWidget()
+        statusLabel.setWidget( QLabel("-status-") )
+        footerArea.addItem(statusLabel)
 
-        inputArea = QGraphicsWidget()
-        # inputArea.setAutoFillBackground(True)
-        inputArea.setLayout(QGraphicsLinearLayout(Qt.Vertical))
-        inputArea.layout().setContentsMargins(0,0,0,0)
-        inputArea.layout().setSpacing(3)
-        inputArea.layout().addStretch()
-        
-        outputArea = QGraphicsWidget()
-        # outputArea.setAutoFillBackground(True)
-        palette = outputArea.palette()
-        palette.setBrush(QPalette.Window, QColor(0,0,0,10))
-        outputArea.setPalette(palette)
-        outputArea.setLayout(QGraphicsLinearLayout(Qt.Vertical))
-        outputArea.layout().setContentsMargins(0,0,0,0)
-        outputArea.layout().setSpacing(3)
-        outputArea.layout().addStretch()
-        
-        body.layout().addItem(inputArea)
-        body.layout().addItem(outputArea)
-
+        self.title = title
+        self.contentArea = contentArea
         self.inputArea = inputArea
         self.outputArea = outputArea
         self._collapsed = False
 
-        # footer
-        footer = QGraphicsWidget()
-        footer.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        # footer.setAutoFillBackground(True)
-        status = QGraphicsTextItem("-status-")
-        footer.setMinimumSize(QFontMetrics(status.font()).size(Qt.TextSingleLine, status.toPlainText()))
-        status.setParentItem(footer)
+        self.setLayout(layout)
 
-        self.body = body
-        self.header = header
-        self.layout().addItem(self.header)
-        self.layout().addItem(self.body)
-        # self.layout().addItem(footer)
+        if collapsed:
+            self.collapse()
+
+    def addInput(self, socket):
+        socket.setAlignment("Left")
+        socket.setOwnedByLayout(True)
+        socket.node = self
+        position = self.inputArea.count()
+        self.inputArea.insertItem(self.inputArea.count(), socket)
+        self._inputs.append(socket)
+
+    def addOutput(self, socket):
+        socket.setAlignment("Right")
+        socket.setOwnedByLayout(True)
+        socket.node = self
+        self.outputArea.insertItem(self.outputArea.count(), socket)
+        self._outputs.append(socket)
 
     def collapse(self):
-        body = self.layout().itemAt(1)
-        self.layout().removeAt(1)
-        self.scene().removeItem(body)
+        self.contentArea.setMaximumSize(0,0)
         self.layout().activate()
+        self.prepareGeometryChange()
         self._collapsed = True
 
         for socket in self._inputs+self._outputs:
@@ -205,9 +218,9 @@ class GraphWidgetNodeItem(NodeBase, QGraphicsWidget):
                 socket.edge.updatePosition()
 
     def expand(self):
-        print("expand")
-        self.layout().insertItem(1,self.body)
+        self.contentArea.setMaximumSize(-1,-1)
         self.layout().activate()
+        self.prepareGeometryChange()
         self._collapsed = False
 
         for socket in self._inputs+self._outputs:
@@ -221,29 +234,21 @@ class GraphWidgetNodeItem(NodeBase, QGraphicsWidget):
         frame = QRectF( QPointF(0,0), self.geometry().size() )
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(255,255,255,200))
-        painter.drawRoundedRect(frame.adjusted(5,5,-5,-5), 3, 3)
+        painter.drawRoundedRect(frame, 3, 3)
 
         if option.state & QStyle.State_Selected:
             painter.setPen(QPen(Qt.black, 1))
             painter.setBrush(Qt.NoBrush)
-            painter.drawRoundedRect(frame, 3, 3)
+            painter.drawRoundedRect(frame.adjusted(-5,-5,5,5), 3, 3)
 
-    def addInput(self, socket):
-        socket.setAlignment("Left")
-        socket.node = self
-        self.inputArea.layout().insertItem(self.inputArea.layout().count(), socket)
-        self._inputs.append(socket)
-
-    def addOutput(self, socket):
-        socket.setAlignment("Right")
-        socket.node = self
-        self.outputArea.layout().insertItem(self.outputArea.layout().count(), socket)
-        self._outputs.append(socket)
+    def boundingRect(self):
+        return QRectF( QPointF(0,0), self.geometry().size() ).adjusted(-7,-7,7,7)
 
     def itemChange(self, change, value):
-        if change is QGraphicsItem.ItemPositionHasChanged:
+        if change is QGraphicsItem.ItemPositionHasChanged or change is QGraphicsItem.ItemVisibleHasChanged or change is QGraphicsItem.ItemSceneHasChanged:
             if self.graph is not None:
                 self.graph.prepareGeometryChange()
+
             for socket in self._inputs+self._outputs:
                 if socket.edge is not None:
                     socket.edge.updatePosition()
@@ -272,12 +277,6 @@ class GraphWidgetEdgeItem(EdgeBase, QGraphicsItemGroup):
     def __init__(self, outputPin, inputPin):
         EdgeBase.__init__(self, outputPin, inputPin)
         QGraphicsItemGroup.__init__(self)
-        # super().__init__()
-        # self.graph = None
-        # self.outputPin = outputPin
-        # self.inputPin = inputPin
-        # outputPin.edge = self
-        # inputPin.edge = self
 
         self.body = QGraphicsLineItem()
         self.body.setParentItem(self)
@@ -287,8 +286,21 @@ class GraphWidgetEdgeItem(EdgeBase, QGraphicsItemGroup):
         self.head.setBrush(Qt.black)
         self.head.setPen(QPen(Qt.black, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         self.head.setPolygon(QPolygonF([QPointF(0,0), QPointF(10,-6), QPointF(10, 6)]))
+        self.label = QGraphicsTextItem()
+        self.label.setPlainText("-label-")
+        self.label.setParentItem(self)
+
+        self.setZValue(-1)
 
         self.updatePosition()
+
+    def setText(self, text):
+        self.label.setPlainText(text)
+
+    def itemChange(self, change, value):
+        if change is QGraphicsItem.ItemSceneHasChanged or change is QGraphicsItem.ItemVisibleHasChanged:
+            self.updatePosition()
+        return super().itemChange(change, value)
 
     def updatePosition(self):
         if self.outputPin.node.isCollapsed():
@@ -302,18 +314,20 @@ class GraphWidgetEdgeItem(EdgeBase, QGraphicsItemGroup):
             targetPos = self.inputPin.pinPos()
 
         if self.outputPin.node.isCollapsed():
-            intersection = intersect(QLineF(sourcePos, targetPos), self.outputPin.node.geometry().adjusted(-3,-3,3,3))
-            sourcePos = intersection
+            intersection = intersect(QLineF(sourcePos, targetPos), self.outputPin.node.geometry().adjusted(-7,-7,7,7))
+            sourcePos = intersection or sourcePos
 
         if self.inputPin.node.isCollapsed():
-            intersection = intersect(QLineF(sourcePos, targetPos), self.inputPin.node.geometry().adjusted(-3,-3,3,3))
-            targetPos = intersection
+            intersection = intersect(QLineF(sourcePos, targetPos), self.inputPin.node.geometry().adjusted(-7,-7,7,7))
+            targetPos = intersection or targetPos
 
         self.body.setLine(QLineF(sourcePos, targetPos))
 
         angle = math.atan2(sourcePos.y()- targetPos.y(), sourcePos.x()-targetPos.x())
         self.head.setPos(targetPos)
         self.head.setRotation(angle/math.pi*180)
+
+        self.label.setPos(sourcePos.x()/2+targetPos.x()/2-self.label.boundingRect().width()/2, sourcePos.y()/2+targetPos.y()/2-self.label.boundingRect().height()/2)
 
 
 class Graph(QGraphicsItem):
@@ -347,7 +361,7 @@ class Graph(QGraphicsItem):
         positions = daglib.layout(adj)
 
         for node, (x,y) in positions:
-            node.setPos(-y*200, x*200)
+            node.setPos(-y*500, x*200)
 
 
 class GraphWidget(Viewer2D):
@@ -355,9 +369,10 @@ class GraphWidget(Viewer2D):
         super().__init__()
         self.graph = Graph()
         self.scene.addItem(self.graph)
-        # self.drawGrid = False
         self.setWindowTitle("GraphWidget")
-        # self.setViewport(QOpenGLWidget() )
+        # self.setViewport( QOpenGLWidget() )
+        self.drawAxis = False
+        self.drawGrid = True
 
     def addNode(self, node):
         self.graph.addNode(node)
@@ -365,19 +380,27 @@ class GraphWidget(Viewer2D):
     def addEdge(self, edge):
         self.graph.addEdge(edge)
 
-
+import uuid
 if __name__ == "__main__":
     app = QApplication()
+    app.setStyleSheet("""
+            QLabel{color: black; background: transparent}
+            QGraphicsWidget{background: orange}
+        """);
     graphWidget = GraphWidget()
 
     # create nodes
-    tpsNode = GraphWidgetNodeItem("ThinPlateSpline")
+    tpsNode = GraphWidgetNodeItem("""<p><b>ThinPlateSpline</b></p><p><i>subtitle</i></p>""")
     tpsNode.setPos(600, 250)
     tpsNode.addInput(GraphWidgetSocketItem("image"))
     tpsNode.addInput(GraphWidgetSocketItem("sourcePath"))
     tpsNode.addInput(GraphWidgetSocketItem("targetPath"))
     tpsNode.addOutput(GraphWidgetSocketItem("deformed"))
     graphWidget.addNode(tpsNode)
+
+    fileNode = GraphWidgetNodeItem("filepath (placeholder)")
+    fileNode.addOutput(GraphWidgetSocketItem("filename"+"(c:/Users/Desktop/hello.jpg)"))
+    graphWidget.addNode(fileNode)
 
     readNode = GraphWidgetNodeItem("Read")
     readNode.setPos(300,100)
@@ -397,6 +420,9 @@ if __name__ == "__main__":
     graphWidget.addNode(tgtPathNode)
 
     # create edges
+    edge = GraphWidgetEdgeItem(fileNode._outputs[0], readNode._inputs[0])
+    graphWidget.addEdge(edge)
+
     edge = GraphWidgetEdgeItem(readNode._outputs[0], tpsNode._inputs[0])
     edge.setZValue(-1)
     graphWidget.addEdge(edge)
@@ -406,9 +432,9 @@ if __name__ == "__main__":
     edge = GraphWidgetEdgeItem(tgtPathNode._outputs[0], tpsNode._inputs[2])
     edge.setZValue(-1)
     graphWidget.addEdge(edge)
-
+    graphWidget.graph.layout()
     graphWidget.show()
 
-    graphWidget.graph.layout()
+    
     graphWidget.centerOn(graphWidget.graph)
     app.exec_()

@@ -26,12 +26,12 @@ def edges(dag):
         for dst in adj:
             yield (src, dst)
 
-def roots(dag):
+def startNodes(dag):
     return set( nodes(dag) ) - {n for adj in dag.values() for n in adj}
 
 def layout(dag):
     normalize(dag)
-    rootNodes = roots(dag)
+    rootNodes = startNodes(dag)
 
     if not len(rootNodes):
         raise Exception("not acyclic graph")
@@ -57,12 +57,19 @@ def layout(dag):
             ypos = y
             yield (node, (xpos, ypos))
 
+def longestPath(dag):
+    pass
+
+def niceLookingLayout(dag):
+    pass
+
+
 def plot(dag, size=(0.3,0.3), spacing=0.0):
     """ plot graph """
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle
 
-    positions = dict( layout(dag) )
+    positions = dict( layouts(dag) )
     x = [x for x, y in positions.values()]
     y = [y for x, y in positions.values()]
 
@@ -94,9 +101,16 @@ def plot(dag, size=(0.3,0.3), spacing=0.0):
 
 if __name__ == "__main__":
     dag = {
-        "a": ["b", "c"],
-        "b": ["c"],
-        "c": ["d"]
+        "a": [],
+        "b": ['a'],
+        "c": [],
+        'd': ['b', 'c'],
+        'e': ['d'],
+        'f': ['d'],
+        'g': ['d'],
+        'h': ['e', 'f'],
+        'i': ['e', 'h'],
+        'j': ['f', 'g']
     }
     import matplotlib.pyplot as plt
     ax = plot(dag)
