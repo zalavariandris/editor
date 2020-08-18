@@ -12,6 +12,16 @@ import sys
 import ctypes
 import numpy as np
 
+import time
+@contextlib.contextmanager
+def profile(name, disabled=False):
+    starttime = time.time()
+    yield
+    endtime = time.time()
+    deltatime = endtime-starttime
+    if not disabled:
+        print("{} {:4.0f} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
+
 # help(glfw)
 
 # helpers
@@ -24,21 +34,13 @@ def orbit(inputMatrix, dx, dy):
 
     return inputMatrix
 
-import time
-@contextlib.contextmanager
-def profile(name, disabled=False):
-    starttime = time.time()
-    yield
-    endtime = time.time()
-    deltatime = endtime-starttime
-    if not disabled:
-        print("{} {:4.0f} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
-
 import functools
 class Window:
     def __init__(self, width, height, clear_color=(0,0,0,1)):
+        # attributes
         self._clear_color = clear_color
-        self._callbacks = {"mousemove": [], "mousebutton": []}
+        
+        # gl context and window
         if not glfw.init():
             sys.exit(1)
 
@@ -55,33 +57,33 @@ class Window:
             if not self._handle:
                 sys.exit(2)
 
-
-
-            # Setup event emitters
-            prev_mouse_pos = (0,0)
-            @functools.partial(glfw.set_cursor_pos_callback, self._handle)
-            def mousemove(handle, x, y):
-                nonlocal prev_mouse_pos
-                for callback in self._callbacks["mousemove"]:
-                    callback(x,y,x-prev_mouse_pos[0],y-prev_mouse_pos[1])
-                prev_mouse_pos = x,y
-
-            @functools.partial(glfw.set_mouse_button_callback, self._handle)
-            def mousebutton(handle, button, action, modifiers):
-                nonlocal prev_mouse_pos
-                for callback in self._callbacks["mousebutton"]:
-                    callback(button, action, modifiers)
-
-                prev_mouse_pos = glfw.get_cursor_pos(self._handle)
-
-            
         except GLError as err:
             raise err
+
+        # Events
+        glfw.set_input_mode(self._handle, glfw.STICKY_KEYS, True) #FIXE: this migth be ueful later, when implementing keyboard events
+        self._callbacks = {"mousemove": [], "mousebutton": []}
+
+        # mouse
+        prev_mouse_pos = (0,0)
+        @functools.partial(glfw.set_cursor_pos_callback, self._handle)
+        def mousemove(handle, x, y):
+            nonlocal prev_mouse_pos
+            for callback in self._callbacks["mousemove"]:
+                callback(x,y,x-prev_mouse_pos[0],y-prev_mouse_pos[1])
+            prev_mouse_pos = x,y
+
+        @functools.partial(glfw.set_mouse_button_callback, self._handle)
+        def mousebutton(handle, button, action, modifiers):
+            nonlocal prev_mouse_pos
+            for callback in self._callbacks["mousebutton"]:
+                callback(button, action, modifiers)
+            prev_mouse_pos = glfw.get_cursor_pos(self._handle)
 
     def __enter__(self):
         glfw.make_context_current(self._handle)
         gl.glClearColor(*self._clear_color)
-        glfw.set_input_mode(self._handle, glfw.STICKY_KEYS, True)
+        
         return self
 
     def __exit__(self, type, value, traceback):
@@ -126,9 +128,7 @@ class Window:
 
 class VBO:
     def __init__(self, data, usage=gl.GL_STATIC_DRAW):
-        # create buffer
         self._handle = gl.glGenBuffers(1)
-
 
         #upload data
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
@@ -155,11 +155,11 @@ class VAO:
     [https://www.khronos.org/opengl/wiki/Vertex_Specification#Vertex_Array_Object]
 
     """
-    def __init__(self, program_id, position_data, color_data):
-        self.program_id = program_id
+    def __init__(self):
 
         # create VAO
         self._handle = gl.glGenVertexArrays(1)
+        self._enabled_vertex_attribute_locations = set()
 
     def set_vertex_attribute(self, location, vbo_handle, size, gtype, normalize=False, stride=0, offset=None):
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo_handle)
@@ -175,7 +175,13 @@ class VAO:
 
     def enable_vertex_attribute(self, location):
         assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
+        self._enabled_vertex_attribute_locations.add(location)
         gl.glEnableVertexAttribArray(location)
+
+    def disable_vertex_attribute(self, location):
+        assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
+        gl.glDisableVertexAttribArray(location)
+
 
     def __enter__(self):
         # bind VAO
@@ -183,11 +189,8 @@ class VAO:
         return self
 
     def __exit__(self, type, value, traceback):
-        # disable attribute for current vertex array in shader
-        for attribute_name in ['position', 'color']:
-            attr_id = gl.glGetAttribLocation(self.program_id, attribute_name)
-            gl.glDisableVertexAttribArray(attr_id)
-
+        for location in self._enabled_vertex_attribute_locations:
+            self.disable_vertex_attribute(location)
         # unbind VAO
         assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
         gl.glBindVertexArray(0)
@@ -198,8 +201,6 @@ class VAO:
 
         # delete VAO
         gl.glDeleteVertexArrays(1, np.array([self._handle], dtype=np.uint))
-
-
 
 
 class Shader:
@@ -336,12 +337,13 @@ if __name__ == '__main__':
         position_vbo = VBO(position_data)
         color_vbo = VBO(color_data)
         with Shader() as shader: # use shader program
-            with VAO(shader.program_id, position_data, color_data) as vao: # ise VAO with shader
+            vao = VAO()
+            with vao: # ise VAO with shader
                 for attribute_name, vbo, size in [("position", position_vbo, 3),("color", color_vbo, 4)]:
                     """Enable attributes for current vertex array in shader"""
                     location = shader.get_attribute_location(attribute_name)
-                    vao.set_vertex_attribute(location, vbo._handle, size, gl.GL_FLOAT)
                     vao.enable_vertex_attribute(location)
+                    vao.set_vertex_attribute(location, vbo._handle, size, gl.GL_FLOAT)
 
                 # start main loop
                 while not window.should_close():

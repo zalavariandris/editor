@@ -20,3 +20,4 @@ class memoize:
         if args not in self.memo:
             self.memo[args] = self.fn(*args)
         return self.memo[args]
+
