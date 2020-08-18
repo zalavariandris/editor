@@ -4,7 +4,7 @@ used references:
 """
 
 from OpenGL import GL as gl
-from OpenGL.error import GLError
+from OpenGL.error import GLError, NullFunctionError
 import glm
 import glfw
 import contextlib
@@ -88,6 +88,7 @@ class Window:
         pass
 
     def __del__(self):
+        glfw.destroy_window(self._handle)
         glfw.terminate()
 
     def should_close(self):
@@ -114,11 +115,20 @@ class Window:
             # used as a decorator
             return functools.partial(self.addEventListener, event)
 
+    def swap_buffers(self):
+        glfw.swap_buffers(self._handle)
+
+
+    @staticmethod
+    def poll_events():
+        glfw.poll_events()
+
 
 class VBO:
     def __init__(self, data, usage=gl.GL_STATIC_DRAW):
         # create buffer
         self._handle = gl.glGenBuffers(1)
+
 
         #upload data
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
@@ -148,10 +158,6 @@ class VAO:
     def __init__(self, program_id, position_data, color_data):
         self.program_id = program_id
 
-        # Create VBOs
-        self.position_vbo = VBO(position_data)
-        self.color_vbo = VBO(color_data)
-
         # create VAO
         self._handle = gl.glGenVertexArrays(1)
 
@@ -167,16 +173,13 @@ class VAO:
         )
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
 
+    def enable_vertex_attribute(self, location):
+        assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
+        gl.glEnableVertexAttribArray(location)
+
     def __enter__(self):
         # bind VAO
-        gl.glBindVertexArray(self._handle)
-
-        for attribute_name, vbo, size in [("position", self.position_vbo, 3),("color", self.color_vbo, 4)]:
-            """Enable attributes for current vertex array in shader"""
-            location = gl.glGetAttribLocation(self.program_id, attribute_name)
-            self.set_vertex_attribute(location, vbo._handle, size, gl.GL_FLOAT)
-            gl.glEnableVertexAttribArray(location)
-            
+        gl.glBindVertexArray(self._handle)            
         return self
 
     def __exit__(self, type, value, traceback):
@@ -286,33 +289,23 @@ class Shader:
     def get_attribute_location(self, attribute_name):
         return gl.glGetAttribLocation(self.program_id, attribute_name)
 
-# variables
-width, height = 640, 480
-# A triangle
-position_data = np.array(
-    [-1, -1, 0,
-      1, -1, 0,
-      0,  1, 0], 
-      dtype=np.float32
-)
-color_data = np.array(
-    [ 1, 0, 0,0,
-      0, 1, 0,0,
-      0,  0, 1,0], 
-      dtype=np.float32
-)
-model_matrix = np.identity(4)
-view_matrix = glm.lookAt( glm.vec3(2,2,-2), glm.vec3(0,0,0), glm.vec3(0,1,0) )
-projection_matrix = glm.perspective(45, width/height, 1, 100)
 
 
 
 if __name__ == '__main__':
+    # variables
+    width, height = 640, 480
+
+    # matrices
+    model_matrix = np.identity(4)
+    view_matrix = glm.lookAt( glm.vec3(2,2,-2), glm.vec3(0,0,0), glm.vec3(0,1,0) )
+    projection_matrix = glm.perspective(45, width/height, 1, 100)
+
+    # Create window
     window = Window(width, height, (0, 0, 0.4, 1.0))
 
     @window.addEventListener("mousemove")
     def mousemove(x, y, dx, dy):
-        print("mousemove", x, y, dx, dy)
         global view_matrix
 
         if window.get_mouse_button(0):
@@ -322,9 +315,34 @@ if __name__ == '__main__':
     def mousebutton(button, action, modifiers):
         print("mousebutton", button, action, modifiers)
 
-    with window:
-        with Shader() as shader:
-            with VAO(shader.program_id, position_data, color_data):
+    # Create geometrye
+    position_data = np.array(
+        [-1, -1, 0,
+          1, -1, 0,
+          0,  1, 0], 
+          dtype=np.float32
+    )
+    color_data = np.array(
+        [ 1, 0, 0,0,
+          0, 1, 0,0,
+          0,  0, 1,0], 
+          dtype=np.float32
+    )
+
+
+    with window: # set gl contex to window
+        ctx = glfw.get_current_context()
+        print("current context:", ctx)
+        position_vbo = VBO(position_data)
+        color_vbo = VBO(color_data)
+        with Shader() as shader: # use shader program
+            with VAO(shader.program_id, position_data, color_data) as vao: # ise VAO with shader
+                for attribute_name, vbo, size in [("position", position_vbo, 3),("color", color_vbo, 4)]:
+                    """Enable attributes for current vertex array in shader"""
+                    location = shader.get_attribute_location(attribute_name)
+                    vao.set_vertex_attribute(location, vbo._handle, size, gl.GL_FLOAT)
+                    vao.enable_vertex_attribute(location)
+
                 # start main loop
                 while not window.should_close():
                     with profile("draw", disabled=True):
@@ -336,8 +354,8 @@ if __name__ == '__main__':
                         shader.set_uniform("projectionMatrix", np.array(projection_matrix))
 
                         # draw
-
                         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
-                        glfw.swap_buffers(window._handle)
-                        glfw.poll_events()
+
+                        window.swap_buffers()
+                        Window.poll_events()
 
