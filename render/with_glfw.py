@@ -6,7 +6,7 @@ import sys
 import ctypes
 import numpy as np
 
-help(glfw)
+# help(glfw)
 
 # helpers
 def orbit(inputMatrix, dx, dy):
@@ -26,6 +26,22 @@ def profile(name):
     endtime = time.time()
     deltatime = endtime-starttime
     print("{} {:4.0f} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
+
+class Window:
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def __del__(self):
+        pass
+
+    def ondraw(self):
+        pass
 
 @contextlib.contextmanager
 def create_main_window(width, height):
@@ -52,55 +68,83 @@ def create_main_window(width, height):
     finally:
         glfw.terminate()
 
-class VAO:
-    def __init__(self, position_data, color_data):
-        self.position_data = position_data
-        self.color_data = color_data
-        # create VAO
-        self.vertex_array_id = gl.glGenVertexArrays(1)
 
-        # create VBOs
+class VBO:
+    def __init__(self, data):
+        self._handle = gl.glGenBuffers(1)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, data.nbytes, data, self._usage)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+
+    def __enter__(Self):
+        self.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
+
+    def __exit__(self, type, value, traceback):
+        self.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
+
+    def __del__(Self):
+        gl.glDeleteBuffers(1, np.array([self._handle]))
+
+
+class VAO:
+    def __init__(self, program_id, position_data, color_data):
+        self.program_id = program_id
+
+        # Create VBOs
         self.position_vertex_buffer = gl.glGenBuffers(1)
         self.color_vertex_buffer = gl.glGenBuffers(1)
 
+        # upload data to VBOs
+        for data, vertex_buffer_id in [(position_data, self.position_vertex_buffer), (color_data, self.color_vertex_buffer)]:
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vertex_buffer_id)
+            gl.glBufferData(
+                gl.GL_ARRAY_BUFFER,
+                data.nbytes,
+                data,
+                gl.GL_STATIC_DRAW
+            )
+
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+
+        # create VAO
+        self.vertex_array_id = gl.glGenVertexArrays(1)
+        gl.glBindVertexArray(self.vertex_array_id) # bind vao
 
     def __enter__(self):
         # bind VAO
         gl.glBindVertexArray(self.vertex_array_id)
 
-        # VBOs
-        # position
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.position_vertex_buffer)
+        for loc, attribute_name, vbo_id, size in [(1, "position", self.position_vertex_buffer, 3),(0, "color", self.color_vertex_buffer, 4)]:
+            """Enable attributes for current vertex array in shader"""
 
-        array_type = gl.GLfloat * len(position_data)
-        gl.glBufferData(
-            gl.GL_ARRAY_BUFFER,
-            len(position_data) * ctypes.sizeof(ctypes.c_float),
-            array_type(*position_data),
-            gl.GL_STATIC_DRAW
-        )
+            # get the attribute location in the shader
+            attr_id = gl.glGetAttribLocation(self.program_id, attribute_name)
 
-        # upload data
-        current_program_id = gl.glGetIntegerv(gl.GL_CURRENT_PROGRAM)
-        attr_id = gl.glGetAttribLocation(current_program_id, "position")
-        gl.glVertexAttribPointer(
-           attr_id,            # attribute .
-           3,                  # components per vertex attribute
-           gl.GL_FLOAT,        # type
-           False,              # to be normalized?
-           0,                  # stride
-           None                # array buffer offset
-        )
+            # describe the way data is layed out in the vertex buffer
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo_id)
+            gl.glVertexAttribPointer(
+               attr_id,            # attribute .
+               size,               # components per vertex attribute 
+               gl.GL_FLOAT,        # type
+               False,              # to be normalized?
+               0,                  # stride
+               None                # array buffer offset
+            )
+            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
 
-        # enable position attribute in VAO
-        gl.glEnableVertexAttribArray(attr_id)  # use currently bound VAO
+            # finally enable atribute at location
+            gl.glEnableVertexAttribArray(attr_id)  # use currently bound VAO
+
         return self
 
     def __exit__(self, type, value, traceback):
         # unbind VBOs
-        current_program_id = gl.glGetIntegerv(gl.GL_CURRENT_PROGRAM);
-        attr_id = gl.glGetAttribLocation(current_program_id, "position")
-        gl.glDisableVertexAttribArray(attr_id)
+        # gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+
+        # disable attribute for current vertex array in shader
+        for attribute_name in ['position', 'color']:
+            attr_id = gl.glGetAttribLocation(self.program_id, attribute_name)
+            gl.glDisableVertexAttribArray(attr_id)
 
         # unbind VAO
         gl.glBindVertexArray(0)
@@ -165,7 +209,7 @@ class Shader:
                 uniform mat4 projectionMatrix;
                 out vec4 vColor;
                 void main(){
-                  vColor = vec4(0,1,0,1);
+                  vColor = vec4(color.rgb, 1);
                   gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);
                 }
                 ''',
@@ -237,6 +281,9 @@ class Shader:
         location = self.get_uniform_location(name)
         gl.glUniformMatrix4fv(location, 1, False, value)
 
+    def get_attribute_location(self, attribute_name):
+        return gl.glGetAttribLocation(self.program_id, attribute_name)
+
 # variables
 width, height = 640, 480
 # A triangle
@@ -291,7 +338,7 @@ if __name__ == '__main__':
         glfw.set_cursor_pos_callback(window, on_mousemove);
         glfw.set_mouse_button_callback(window, on_mousebutton)
         with Shader() as shader:
-            with VAO(position_data, color_data):
+            with VAO(shader.program_id, position_data, color_data):
                 # start main loop
                 while glfw.get_key(window, glfw.KEY_ESCAPE) != glfw.PRESS and not glfw.window_should_close(window):
                     with profile("draw"):
