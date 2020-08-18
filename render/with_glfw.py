@@ -1,4 +1,10 @@
+"""
+used references:
+- https://metamost.com/opengl-with-python/
+"""
+
 from OpenGL import GL as gl
+from OpenGL.error import GLError
 import glm
 import glfw
 import contextlib
@@ -20,181 +26,177 @@ def orbit(inputMatrix, dx, dy):
 
 import time
 @contextlib.contextmanager
-def profile(name):
+def profile(name, disabled=False):
     starttime = time.time()
     yield
     endtime = time.time()
     deltatime = endtime-starttime
-    print("{} {:4.0f} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
+    if not disabled:
+        print("{} {:4.0f} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
 
+import functools
 class Window:
-    def __init__(self):
-        pass
+    def __init__(self, width, height, clear_color=(0,0,0,1)):
+        self._clear_color = clear_color
+        self._callbacks = {"mousemove": [], "mousebutton": []}
+        if not glfw.init():
+            sys.exit(1)
+
+        try:
+            glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+            glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+            glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, True)
+            glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+
+            title = "Window"
+
+            # create window
+            self._handle = glfw.create_window(width, height, title, None, None)
+            if not self._handle:
+                sys.exit(2)
+
+
+
+            # Setup event emitters
+            prev_mouse_pos = (0,0)
+            @functools.partial(glfw.set_cursor_pos_callback, self._handle)
+            def mousemove(handle, x, y):
+                nonlocal prev_mouse_pos
+                for callback in self._callbacks["mousemove"]:
+                    callback(x,y,x-prev_mouse_pos[0],y-prev_mouse_pos[1])
+                prev_mouse_pos = x,y
+
+            @functools.partial(glfw.set_mouse_button_callback, self._handle)
+            def mousebutton(handle, button, action, modifiers):
+                nonlocal prev_mouse_pos
+                for callback in self._callbacks["mousebutton"]:
+                    callback(button, action, modifiers)
+
+                prev_mouse_pos = glfw.get_cursor_pos(self._handle)
+
+            
+        except GLError as err:
+            raise err
 
     def __enter__(self):
-        pass
+        glfw.make_context_current(self._handle)
+        gl.glClearColor(*self._clear_color)
+        glfw.set_input_mode(self._handle, glfw.STICKY_KEYS, True)
+        return self
 
     def __exit__(self, type, value, traceback):
         pass
 
     def __del__(self):
-        pass
-
-    def ondraw(self):
-        pass
-
-@contextlib.contextmanager
-def create_main_window(width, height):
-    if not glfw.init():
-        sys.exit(1)
-    try:
-        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
-        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
-        glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, True)
-        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-
-        title = 'Tutorial 2: First Triangle'
-        window = glfw.create_window(width, height, title, None, None)
-        if not window:
-            sys.exit(2)
-        glfw.make_context_current(window)
-
-        glfw.set_input_mode(window, glfw.STICKY_KEYS, True)
-        gl.glClearColor(0, 0, 0.4, 0)
-        # glfw.swap_interval( 0 )
-
-        yield window
-
-    finally:
         glfw.terminate()
+
+    def should_close(self):
+        return glfw.window_should_close(self._handle)
+
+    def get_mouse_button(self, button):
+        return glfw.get_mouse_button(self._handle, button)
+
+    """ attach event handlers """
+    def addEventListener(self, event, function=None):
+        """
+        Attach an event handlers to events.
+
+        can also be used as a decorator
+        example:
+        @addEventListener("mousemove")
+        def myMousemoveCallback(x, y)
+        """
+
+        if function is not None:
+            # used directly
+            self._callbacks[event].append(function)
+        else:
+            # used as a decorator
+            return functools.partial(self.addEventListener, event)
 
 
 class VBO:
-    def __init__(self, data):
+    def __init__(self, data, usage=gl.GL_STATIC_DRAW):
+        # create buffer
         self._handle = gl.glGenBuffers(1)
+
+        #upload data
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, data.nbytes, data, self._usage)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, data.nbytes, data, usage)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
 
-    def __enter__(Self):
+    def __enter__(self):
         self.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
 
     def __exit__(self, type, value, traceback):
         self.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
 
-    def __del__(Self):
+    def __del__(self):
         gl.glDeleteBuffers(1, np.array([self._handle]))
 
 
 class VAO:
+    """
+    Vertex Array Object
+
+    Vertex array object stores al of the state needed to supply vertex data.
+    It stores the format of the vertex data as well as the Buffer Objects.
+
+    [https://www.khronos.org/opengl/wiki/Vertex_Specification#Vertex_Array_Object]
+
+    """
     def __init__(self, program_id, position_data, color_data):
         self.program_id = program_id
 
         # Create VBOs
-        self.position_vertex_buffer = gl.glGenBuffers(1)
-        self.color_vertex_buffer = gl.glGenBuffers(1)
-
-        # upload data to VBOs
-        for data, vertex_buffer_id in [(position_data, self.position_vertex_buffer), (color_data, self.color_vertex_buffer)]:
-            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vertex_buffer_id)
-            gl.glBufferData(
-                gl.GL_ARRAY_BUFFER,
-                data.nbytes,
-                data,
-                gl.GL_STATIC_DRAW
-            )
-
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+        self.position_vbo = VBO(position_data)
+        self.color_vbo = VBO(color_data)
 
         # create VAO
-        self.vertex_array_id = gl.glGenVertexArrays(1)
-        gl.glBindVertexArray(self.vertex_array_id) # bind vao
+        self._handle = gl.glGenVertexArrays(1)
+
+    def set_vertex_attribute(self, location, vbo_handle, size, gtype, normalize=False, stride=0, offset=None):
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo_handle)
+        gl.glVertexAttribPointer(
+            location,
+            size,
+            gtype,
+            normalize,
+            stride,
+            offset
+        )
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
 
     def __enter__(self):
         # bind VAO
-        gl.glBindVertexArray(self.vertex_array_id)
+        gl.glBindVertexArray(self._handle)
 
-        for loc, attribute_name, vbo_id, size in [(1, "position", self.position_vertex_buffer, 3),(0, "color", self.color_vertex_buffer, 4)]:
+        for attribute_name, vbo, size in [("position", self.position_vbo, 3),("color", self.color_vbo, 4)]:
             """Enable attributes for current vertex array in shader"""
-
-            # get the attribute location in the shader
-            attr_id = gl.glGetAttribLocation(self.program_id, attribute_name)
-
-            # describe the way data is layed out in the vertex buffer
-            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo_id)
-            gl.glVertexAttribPointer(
-               attr_id,            # attribute .
-               size,               # components per vertex attribute 
-               gl.GL_FLOAT,        # type
-               False,              # to be normalized?
-               0,                  # stride
-               None                # array buffer offset
-            )
-            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
-
-            # finally enable atribute at location
-            gl.glEnableVertexAttribArray(attr_id)  # use currently bound VAO
-
+            location = gl.glGetAttribLocation(self.program_id, attribute_name)
+            self.set_vertex_attribute(location, vbo._handle, size, gl.GL_FLOAT)
+            gl.glEnableVertexAttribArray(location)
+            
         return self
 
     def __exit__(self, type, value, traceback):
-        # unbind VBOs
-        # gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
-
         # disable attribute for current vertex array in shader
         for attribute_name in ['position', 'color']:
             attr_id = gl.glGetAttribLocation(self.program_id, attribute_name)
             gl.glDisableVertexAttribArray(attr_id)
 
         # unbind VAO
+        assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
         gl.glBindVertexArray(0)
 
     def __del__(self):
         # delete VBOs
-        gl.glDeleteBuffers(1, np.array([self.position_vertex_buffer], dtype=np.uint))
+        # gl.glDeleteBuffers(1, np.array([self.position_vertex_buffer], dtype=np.uint))
+
         # delete VAO
-        gl.glDeleteVertexArrays(1, np.array([self.vertex_array_id], dtype=np.uint))
+        gl.glDeleteVertexArrays(1, np.array([self._handle], dtype=np.uint))
 
 
-@contextlib.contextmanager
-def create_vertex_array_object():
-    vertex_array_id = gl.glGenVertexArrays(1)
-    try:
-        gl.glBindVertexArray(vertex_array_id)
-        yield
-    finally:
-        gl.glDeleteVertexArrays(1, [vertex_array_id])
-
-
-@contextlib.contextmanager
-def create_vertex_buffer(position_data):
-    with create_vertex_array_object():
-        vertex_buffer = gl.glGenBuffers(1)
-        try:
-            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vertex_buffer)
-
-            array_type = (gl.GLfloat * len(position_data))
-            gl.glBufferData(gl.GL_ARRAY_BUFFER,
-                            len(position_data) * ctypes.sizeof(ctypes.c_float),
-                            array_type(*position_data),
-                            gl.GL_STATIC_DRAW)
-
-            current_program_id = gl.glGetIntegerv(gl.GL_CURRENT_PROGRAM);
-            attr_id = gl.glGetAttribLocation(current_program_id, "position")
-            gl.glVertexAttribPointer(
-               attr_id,            # attribute .
-               3,                  # components per vertex attribute
-               gl.GL_FLOAT,        # type
-               False,              # to be normalized?
-               0,                  # stride
-               None                # array buffer offset
-            )
-            gl.glEnableVertexAttribArray(attr_id)  # use currently bound VAO
-            gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
-            yield
-        finally:
-            gl.glDisableVertexAttribArray(attr_id)
-            gl.glDeleteBuffers(1, [vertex_buffer])
 
 
 class Shader:
@@ -302,46 +304,30 @@ color_data = np.array(
 model_matrix = np.identity(4)
 view_matrix = glm.lookAt( glm.vec3(2,2,-2), glm.vec3(0,0,0), glm.vec3(0,1,0) )
 projection_matrix = glm.perspective(45, width/height, 1, 100)
-prev_mouse_pos = None
+
 
 
 if __name__ == '__main__':
-    def on_mousemove(window, x, y):
-        global view_matrix, projection_matrix, model_matrix
-        global prev_mouse_pos
-        if prev_mouse_pos is not None:
-            dx, dy = x-prev_mouse_pos[0], y-prev_mouse_pos[1]
-        else:
-            dx, dy = 0,0
+    window = Window(width, height, (0, 0, 0.4, 1.0))
 
-        if glfw.get_mouse_button(window, 0):
+    @window.addEventListener("mousemove")
+    def mousemove(x, y, dx, dy):
+        print("mousemove", x, y, dx, dy)
+        global view_matrix
+
+        if window.get_mouse_button(0):
             view_matrix = orbit(view_matrix,dx*2,dy*2)
-        prev_mouse_pos = glfw.get_cursor_pos(window)
 
-    def on_mousebutton(window, button, action, modifiers):
-        LEFT_BUTTON = 0
-        RIGHT_BUTTON = 1
-        MIDDLE_BUTTON = 2
+    @window.addEventListener("mousebutton")
+    def mousebutton(button, action, modifiers):
+        print("mousebutton", button, action, modifiers)
 
-        IS_PRESS = action is 1
-        IS_RELEASE = action is 0
-
-        NO_MODIFIER = 0
-        SHIFT_MODIFIER = 1
-        CTRL_MODIFIER = 2
-        ALT_MODIFIER = 4
-
-        # print(button, action, modifiers)
-        prev_mouse_pos = glfw.get_cursor_pos(window)
-
-    with create_main_window(width, height) as window:
-        glfw.set_cursor_pos_callback(window, on_mousemove);
-        glfw.set_mouse_button_callback(window, on_mousebutton)
+    with window:
         with Shader() as shader:
             with VAO(shader.program_id, position_data, color_data):
                 # start main loop
-                while glfw.get_key(window, glfw.KEY_ESCAPE) != glfw.PRESS and not glfw.window_should_close(window):
-                    with profile("draw"):
+                while not window.should_close():
+                    with profile("draw", disabled=True):
                         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
                         # update uniforms
@@ -350,7 +336,8 @@ if __name__ == '__main__':
                         shader.set_uniform("projectionMatrix", np.array(projection_matrix))
 
                         # draw
+
                         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
-                        glfw.swap_buffers(window)
+                        glfw.swap_buffers(window._handle)
                         glfw.poll_events()
 
