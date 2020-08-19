@@ -67,7 +67,18 @@ class Window:
         @functools.partial(glfw.set_window_size_callback, self._handle)
         def resize(handle, width, height):
             for callback in self._callbacks['resize']:
+                self._width, self._height = width, height
                 callback(width, height)
+
+        self._width, self._height = width, height
+
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
 
     def __enter__(self):
         glfw.make_context_current(self._handle)
@@ -283,8 +294,11 @@ if __name__ == '__main__':
                                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
 
                 with fbo:
+                    glViewport(0, 0, fbo.width, fbo.height)
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                     draw_scene()
+                    
+                glViewport(0, 0, window.width, window.height)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                 draw_scene()
 

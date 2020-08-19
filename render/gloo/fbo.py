@@ -29,6 +29,16 @@ class FBO:
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
+        self._width, self._height = width, height
+
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
+
     def __enter__(self):
         glBindFramebuffer(GL_FRAMEBUFFER, self._handle)
 
