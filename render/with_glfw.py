@@ -20,7 +20,7 @@ def profile(name, disabled=False):
     endtime = time.time()
     deltatime = endtime-starttime
     if not disabled:
-        print("{} {:4.0f} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
+        print("{} {:4.0} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
 
 # helpers
 def orbit(inputMatrix, dx, dy):
@@ -60,7 +60,7 @@ class Window:
 
         # Events
         glfw.set_input_mode(self._handle, glfw.STICKY_KEYS, True) #FIXE: this migth be ueful later, when implementing keyboard events
-        self._callbacks = {"mousemove": [], "mousebutton": []}
+        self._callbacks = {"mousemove": [], "mousebutton": [], 'scroll':[]}
 
         # mouse
         prev_mouse_pos = (0,0)
@@ -77,6 +77,11 @@ class Window:
             for callback in self._callbacks["mousebutton"]:
                 callback(button, action, modifiers)
             prev_mouse_pos = glfw.get_cursor_pos(self._handle)
+
+        @functools.partial(glfw.set_scroll_callback, self._handle)
+        def scroll(handle, dx, dy):
+            for callback in self._callbacks['scroll']:
+                callback(dx, dy)
 
     def __enter__(self):
         glfw.make_context_current(self._handle)
@@ -123,229 +128,167 @@ class Window:
     def poll_events():
         glfw.poll_events()
 
+from vbo import VertexBuffer, IndexBuffer
+from vao import VAO
+from fbo import FBO
+from shader import Shader
+from texture import Texture
 
-class VBO:
-    def __init__(self, data, usage=GL_STATIC_DRAW):
-        self._handle = glGenBuffers(1)
-
-        #upload data
-        glBindBuffer(GL_ARRAY_BUFFER, self._handle)
-        glBufferData(GL_ARRAY_BUFFER, data.nbytes, data, usage)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-    def __enter__(self):
-        self.glBindBuffer(GL_ARRAY_BUFFER, self._handle)
-
-    def __exit__(self, type, value, traceback):
-        self.glBindBuffer(GL_ARRAY_BUFFER, self._handle)
-
-    def __del__(self):
-        glDeleteBuffers(1, np.array([self._handle]))
-
-
-class FBO:
-    def __init__(self, width, height):
-        self._handle = glGenFramebuffers(1)
-
-        glBindFramebuffer(GL_FRAMEBUFFER, self._handle);
-        # color buffer
-        rendered_texture = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, rendered_texture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-
-        # depth buffer
-        depthrenderbuffer = glGenRenderbuffers(1)
-        glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer)
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height)
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer)
-
-        # Set "renderedTexture" as our colour attachement #0
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, rendered_texture, 0);
-
-        # Set the list of draw buffers.
-        glDrawBuffers(1, [GL_COLOR_ATTACHMENT0])
-
-        # Always check that our framebuffer is ok
-        if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
-            raise Exception("bad framebuffer")
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-
-    def __enter__(self):
-        glBindFramebuffer(GL_FRAMEBUFFER, self._handle)
-
-    def __exit__(self, type, value, traceback):
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-
-    def __del__(self):
-        pass
-        # glDeleteFrameBuffers(1, [self._handle])
-
-
-class VAO:
+def box(width=1, height=1, length=1, origin=(0,0)):
+    """ create flat cube
+    [https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Creating_3D_objects_using_WebGL]
     """
-    Vertex Array Object
+    # Create geometry
+    positions = np.array([
+        # Front face
+        -1.0, -1.0,  1.0,
+        1.0, -1.0,  1.0,
+        1.0,  1.0,  1.0,
+        -1.0,  1.0,  1.0,
 
-    Vertex array object stores al of the state needed to supply vertex data.
-    It stores the format of the vertex data as well as the Buffer Objects.
+        # Back face
+        -1.0, -1.0, -1.0,
+        -1.0,  1.0, -1.0,
+        1.0,  1.0, -1.0,
+        1.0, -1.0, -1.0,
 
-    [https://www.khronos.org/opengl/wiki/Vertex_Specification#Vertex_Array_Object]
+        # Top face
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0,  1.0,
+        1.0,  1.0,  1.0,
+        1.0,  1.0, -1.0,
 
-    """
-    def __init__(self):
+        # Bottom face
+        -1.0, -1.0, -1.0,
+        1.0, -1.0, -1.0,
+        1.0, -1.0,  1.0,
+        -1.0, -1.0,  1.0,
 
-        # create VAO
-        self._handle = glGenVertexArrays(1)
-        self._enabled_vertex_attribute_locations = set()
+        # Right face
+        1.0, -1.0, -1.0,
+        1.0,  1.0, -1.0,
+        1.0,  1.0,  1.0,
+        1.0, -1.0,  1.0,
 
-    def set_vertex_attribute(self, location, vbo_handle, size, gtype, normalize=False, stride=0, offset=None):
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_handle)
-        glVertexAttribPointer(
-            location,
-            size,
-            gtype,
-            normalize,
-            stride,
-            offset
-        )
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        # Left face
+        -1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+        -1.0,  1.0,  1.0,
+        -1.0,  1.0, -1.0,
+    ], dtype=np.float32).reshape((-1,3))
 
-    def enable_vertex_attribute(self, location):
-        assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
-        self._enabled_vertex_attribute_locations.add(location)
-        glEnableVertexAttribArray(location)
-
-    def disable_vertex_attribute(self, location):
-        assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
-        glDisableVertexAttribArray(location)
-
-    def __enter__(self):
-        # bind VAO
-        glBindVertexArray(self._handle)            
-        return self
-
-    def __exit__(self, type, value, traceback):
-        for location in self._enabled_vertex_attribute_locations:
-            self.disable_vertex_attribute(location)
-        # unbind VAO
-        assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
-        glBindVertexArray(0)
-
-    def __del__(self):
-        # delete VBOs
-        # glDeleteBuffers(1, np.array([self.position_vertex_buffer], dtype=np.uint))
-
-        # delete VAO
-        glDeleteVertexArrays(1, np.array([self._handle], dtype=np.uint))
+    positions/=2, 2, 2
+    positions*=width, height, length
+    positions[:,0:2]-=origin
 
 
-class Shader:
-    def __enter__(self):
-        shaders = {
-            GL_VERTEX_SHADER: """
-                #version 330 core
-                in vec3 position;
-                in vec4 color;
-                in vec2 uv;
+    indices = np.array([
+        0,  1,  2,      0,  2,  3,    # front
+        4,  5,  6,      4,  6,  7,    # back
+        8,  9,  10,     8,  10, 11,   # top
+        12, 13, 14,     12, 14, 15,   # bottom
+        16, 17, 18,     16, 18, 19,   # right
+        20, 21, 22,     20, 22, 23,   # left
+    ], dtype=np.uint).reshape((-1,3))
 
-                uniform mat4 modelMatrix;
-                uniform mat4 viewMatrix;
-                uniform mat4 projectionMatrix;
+    uvs = np.array([
+       # Front
+        0.0,  0.0,
+        1.0,  0.0,
+        1.0,  1.0,
+        0.0,  1.0,
+        # Back
+        0.0,  0.0,
+        1.0,  0.0,
+        1.0,  1.0,
+        0.0,  1.0,
+        # Top
+        0.0,  0.0,
+        1.0,  0.0,
+        1.0,  1.0,
+        0.0,  1.0,
+        # Bottom
+        0.0,  0.0,
+        1.0,  0.0,
+        1.0,  1.0,
+        0.0,  1.0,
+        # Right
+        0.0,  0.0,
+        1.0,  0.0,
+        1.0,  1.0,
+        0.0,  1.0,
+        # Left
+        0.0,  0.0,
+        1.0,  0.0,
+        1.0,  1.0,
+        0.0,  1.0,
+    ], dtype=np.float32)
 
-                uniform sampler2D diffuseMap;
+    colors = np.repeat(np.array([
+        [1.0,  1.0,  1.0,  1.0],    # Front face: white
+        [1.0,  0.0,  0.0,  1.0],    # Back face: red
+        [0.0,  1.0,  0.0,  1.0],    # Top face: green
+        [0.0,  0.0,  1.0,  1.0],    # Bottom face: blue
+        [1.0,  1.0,  0.0,  1.0],    # Right face: yellow
+        [1.0,  0.0,  1.0,  1.0],    # Left face: purple
+    ]), 4, axis=0).astype(np.float32)
+    # FIXME: Repeat each color four times for the four vertices of the face
 
-                out vec4 vColor;
-                out vec2 vUv;
-                void main(){
-                  vColor = vec4(color.rgb, 1);
-                  vUv = uv;
-                  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position+vec3(uv,0), 1);
-                }""",
+    return {
+        'positions': positions,
+        'indices':   indices,
+        'uvs':       uvs,
+        'colors':    colors
+        }
 
-            GL_FRAGMENT_SHADER: """
-                #version 330 core
-                out vec4 color;
-                in vec4 vColor;
-                in vec2 vUv;
-                uniform sampler2D diffuseMap;
-                void main(){
-                  vec4 tex = texture(diffuseMap, vUv);
-                  color = vColor*tex;
-                }
-                """
-            }
-        self.program_id = glCreateProgram()
-        try:
-            self.shader_ids = []
-            for shader_type, shader_src in shaders.items():
-                shader_id = glCreateShader(shader_type)
-                glShaderSource(shader_id, shader_src)
+def plane(width=1, length=1, origin=(0,0)):
+    # Create geometry
+    positions = np.array([
+        -1, 0, -1,
+         1, 0, -1,
+         1, 0,  1,
+        -1, 0,  1
+    ], dtype=np.float32).reshape((-1,3))
+    positions/=2, 2, 2
+    positions*=width, height, length
+    positions[:,0:2]-=origin
 
-                glCompileShader(shader_id)
+    indices = np.array([
+        0,1,2,
+        0,2,3
+    ], dtype=np.uint).reshape((-1,3))
 
-                # check if compilation was successful
-                result = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
-                info_log_len = glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH)
-                if info_log_len:
-                    logmsg = glGetShaderInfoLog(shader_id)
-                    print(logmsg)
-                    sys.exit(10)
+    uvs = np.array([
+         0,  0,
+         1,  0,
+         1,  1,
+         0,  1
+    ],dtype=np.float32).reshape((-1,2))
 
-                glAttachShader(self.program_id, shader_id)
-                self.shader_ids.append(shader_id)
+    colors = np.array([
+         1, 1, 1, 1,
+         1, 1, 1, 1,
+         1, 1, 1, 1,
+         1, 1, 1, 1
+    ],dtype=np.float32).reshape((-1,4))
 
-            glLinkProgram(self.program_id)
-
-            # check if linking was successful
-            result = glGetProgramiv(self.program_id, GL_LINK_STATUS)
-            info_log_len = glGetProgramiv(self.program_id, GL_INFO_LOG_LENGTH)
-            if info_log_len:
-                logmsg = glGetProgramInfoLog(self.program_id)
-                log.error(logmsg)
-                sys.exit(11)
-
-            glUseProgram(self.program_id)
-        except Exception as err:
-            raise err
-
-
-        return self
-
-    def __exit__(self, type, value, traceback):
-        shader_ids = self.shader_ids
-        for shader_id in self.shader_ids:
-            glDetachShader(self.program_id, shader_id)
-        glUseProgram(0)
-
-    def __del__(self):
-        for shader_id in self.shader_ids:
-            glDeleteShader(shader_id)
-        glDeleteProgram(self.program_id)
-        print("delete shader program")
-
-    def get_uniform_location(self, name):
-        location = glGetUniformLocation(self.program_id, name)
-        assert location>=0
-        return location
-
-    def set_uniform(self, name, value):
-        location = self.get_uniform_location(name)
-        glUniformMatrix4fv(location, 1, False, value)
-
-    def get_attribute_location(self, attribute_name):
-        return glGetAttribLocation(self.program_id, attribute_name)
+    return {
+        'positions': positions,
+        'indices':   indices,
+        'uvs':       uvs,
+        'colors':    colors
+        }
 
 
 if __name__ == '__main__':
+    import math
     # variables
-    width, height = 640*2, 480*2
+    width, height = 640, 480
 
     # matrices
     model_matrix = np.identity(4)
-    view_matrix = glm.lookAt( glm.vec3(2,2,-2), glm.vec3(0,0,0), glm.vec3(0,1,0) )
-    projection_matrix = glm.perspective(45, width/height, 1, 100)
+    view_matrix = glm.lookAt( glm.vec3(0, 1,-4), glm.vec3(0,0,0), glm.vec3(0,1,0) )
+    projection_matrix = glm.perspective(math.radians(60), width/height, 1, 100)
 
     # Create window
     window = Window(width, height, (0, 0, 0.4, 1.0))
@@ -353,85 +296,106 @@ if __name__ == '__main__':
     @window.addEventListener("mousemove")
     def mousemove(x, y, dx, dy):
         global view_matrix
-
         if window.get_mouse_button(0):
-            view_matrix = orbit(view_matrix,dx*2,dy*2)
+            view_matrix = orbit(view_matrix, dx*2,dy*2)
 
     @window.addEventListener("mousebutton")
     def mousebutton(button, action, modifiers):
-        print("mousebutton", button, action, modifiers)
+        pass
 
-    # Create geometrye
-    position_data = np.array([
-        -1, -1, 0,
-         1, -1, 0,
-        0,  1, 0
-    ], dtype=np.float32)
+    @window.addEventListener("scroll")
+    def scroll(dx, dy):
+        global view_matrix
+        s = 1+dy/10
+        view_matrix = glm.scale(view_matrix, (s,s,s))
 
-    uv_data = np.array([
-        0,0,
-        1,0,
-        1,1
-    ],dtype=np.float32)
+    # create geometry
+    plane_geometry = plane(width=3, length=3)
+    box_geometry = box(origin=(0,-0.5))
+    cctv_geometry = plane(1,1)
 
-    color_data = np.array([
-         1, 0, 0,0,
-         0, 1, 0,0,
-         0, 0, 1,0
-    ],dtype=np.float32)
+    # transform vertices to model position
+    model = glm.mat4(1)
+    model = glm.translate(model, glm.vec3(0.2, 1.8, 0))
+    model = glm.rotate(model, math.radians(90), glm.vec3(0, 0, 1))
+    model = glm.scale(model, glm.vec3(0.5, 0.5, 1))
+    cctv_modelmatrix = model
 
     with window: # set gl contex to window
         ctx = glfw.get_current_context()
-        position_vbo = VBO(position_data)
-        color_vbo = VBO(color_data)
-        uv_vbo = VBO(uv_data)
-        
-        # create a texture
-        texture_handle = glGenTextures(1)
-        texture_unit = 0
-        glActiveTexture(GL_TEXTURE0+texture_unit);
-        glBindTexture(GL_TEXTURE_2D, texture_handle)
-        data = np.random.uniform( 0,256, (64*64*3)).astype(np.uint)
-        print(data)
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_BGR, GL_UNSIGNED_BYTE, data)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glBindTexture(GL_TEXTURE_2D, 0)
+        glEnable(GL_DEPTH_TEST)
 
-        # configure texture
+        box_bufferattributes = {
+            'position': (VertexBuffer(box_geometry['positions']), 3),
+            'color':    (VertexBuffer(box_geometry['colors']),    4),
+            'uv':       (VertexBuffer(box_geometry['uvs']),       2),
+            'indices':  (IndexBuffer(box_geometry['indices']),    1)
+        }
+
+        plane_bufferattributes = {
+            'position': (VertexBuffer(plane_geometry['positions']), 3),
+            'color':    (VertexBuffer(plane_geometry['colors']),    4),
+            'uv':       (VertexBuffer(plane_geometry['uvs']),       2),
+            'indices':  (IndexBuffer(plane_geometry['indices']),    1)
+        }
+
+        cctv_bufferattributes = {
+            'position': (VertexBuffer(cctv_geometry['positions']), 3),
+            'color':    (VertexBuffer(cctv_geometry['colors']),    4),
+            'uv':       (VertexBuffer(cctv_geometry['uvs']),       2),
+            'indices':  (IndexBuffer(cctv_geometry['indices']),    1)
+        }
+
+        # Create gradient texture
+        gradient_data = np.ones( (64,64,3) ).astype(np.float32)
+        xv, yv = np.meshgrid(np.linspace(0,1,64),np.linspace(0,1,64))
+        gradient_data[:,:,0] = 1
+        gradient_data[:,:,1] = xv.astype(np.float32)
+        gradient_data[:,:,2] = yv.astype(np.float32)
+        gradient_texture = Texture(gradient_data, 0)
+
+        # Create noise texture
+        noise_data = np.random.uniform( 0,1, (64*64*3)).astype(np.float32)
+        noise_texture = Texture(noise_data, 0)
+
+        vao = VAO()
         with Shader() as shader: # use shader program
-            vao = VAO()
-            with vao: # ise VAO with shader
-                for attribute_name, vbo, size in [("position", position_vbo, 3),("color", color_vbo, 4), ('uv', uv_vbo, 2)]:
-                    """Enable attributes for current vertex array in shader"""
-                    location = shader.get_attribute_location(attribute_name)
-                    vao.enable_vertex_attribute(location)
-                    vao.set_vertex_attribute(location, vbo._handle, size, GL_FLOAT)
+            # start main loop
+            while not window.should_close():
+                with profile("draw", disabled=True):
+                    # clear background
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-                # start main loop
-                while not window.should_close():
-                    with profile("draw", disabled=True):
-                        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+                    # update uniforms
+                    shader.set_uniform("modelMatrix", np.array(model_matrix))
+                    shader.set_uniform("viewMatrix", np.array(view_matrix))
+                    shader.set_uniform("projectionMatrix", np.array(projection_matrix))
+                    shader.set_uniform("diffuseMap", gradient_texture.texture_unit)
 
-                        # update uniforms
-                        shader.set_uniform("modelMatrix", np.array(model_matrix))
-                        shader.set_uniform("viewMatrix", np.array(view_matrix))
-                        shader.set_uniform("projectionMatrix", np.array(projection_matrix))
+                    # update attributes
+                    with vao:
+                        # set vao to geometry vbos
+                        for attributes, texture in [(box_bufferattributes, noise_texture), (plane_bufferattributes, gradient_texture), (cctv_bufferattributes, None)]:
+                            for name, attribute in attributes.items():
+                                if name!='indices':
+                                    vbo, size = attribute
+                                    """Enable attributes for current vertex array in shader"""
+                                    location = shader.get_attribute_location(name)
+                                    vao.enable_vertex_attribute(location)
 
-                        # glActiveTexture(GL_TEXTURE0+0)
-                        # glBindTexture(GL_TEXTURE_2D, texture_handle)
-                        location = glGetUniformLocation(shader.program_id, "diffuseMap")
-                        glUniform1i(location, texture_unit);
-
-                        # TODO: bind texture0??
-
-                        # draw
-                        glActiveTexture(GL_TEXTURE0+texture_unit)
-                        glBindTexture(GL_TEXTURE_2D, texture_handle)
-                        glDrawArrays(GL_TRIANGLES, 0, 3)
-                        glBindTexture(GL_TEXTURE_2D, 0)
-
+                                    # set attribute pointer in shader
+                                    vao.set_vertex_attribute(location, vbo._handle, size, GL_FLOAT)
+                            
+                            # draw object
+                            indexBuffer = attributes['indices'][0]
+                            with indexBuffer:
+                                count = indexBuffer.count
+                                if texture:
+                                    with texture(0):
+                                        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+                                else:
+                                    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
 
                         window.swap_buffers()
                         Window.poll_events()
