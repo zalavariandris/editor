@@ -1,8 +1,9 @@
 from OpenGL.GL import *
 import numpy as np
+import glm
 
 class Shader:
-    def __enter__(self):
+    def __init__(self):
         shaders = {
             GL_VERTEX_SHADER: """
                 #version 330 core
@@ -32,11 +33,18 @@ class Shader:
                 uniform sampler2D diffuseMap;
                 void main(){
                   vec4 tex = texture(diffuseMap, vUv);
-                  color = vColor*tex;
+                  if(gl_FrontFacing){
+                    color = vColor*tex;
+                  }else{
+                    float backFade = 0.3;
+                    color = vColor*tex*0.9*vec4(backFade,backFade,backFade,1.0);
+                  }
                 }
                 """
             }
+            
         self.program_id = glCreateProgram()
+
         try:
             self.shader_ids = []
             for shader_type, shader_src in shaders.items():
@@ -66,21 +74,21 @@ class Shader:
                 log.error(logmsg)
                 sys.exit(11)
 
-            glUseProgram(self.program_id)
+            
         except Exception as err:
             raise err
 
+    def __enter__(self):
+        glUseProgram(self.program_id)
 
         return self
 
     def __exit__(self, type, value, traceback):
-        shader_ids = self.shader_ids
-        for shader_id in self.shader_ids:
-            glDetachShader(self.program_id, shader_id)
         glUseProgram(0)
 
     def __del__(self):
         for shader_id in self.shader_ids:
+            glDetachShader(self.program_id, shader_id)
             glDeleteShader(shader_id)
         glDeleteProgram(self.program_id)
         print("delete shader program")
@@ -90,7 +98,7 @@ class Shader:
         assert location>=0
         return location
 
-    def set_uniform(self, name, value):
+    def set_uniform(self, name, value: [np.ndarray, int, glm.mat4x4]):
         location = self.get_uniform_location(name)
 
         if isinstance(value, np.ndarray):
@@ -98,11 +106,13 @@ class Shader:
                 glUniformMatrix4fv(location, 1, False, value)
             else:
                 raise NotImplementedError
+        elif isinstance(value, glm.mat4x4):
+            glUniformMatrix4fv(location, 1, False, np.array(value))
         elif isinstance(value, int):
             glUniform1i(location, value)
         else:
-            raise NotImplementedError
+            raise NotImplementedError(type(value))
 
     def get_attribute_location(self, attribute_name):
-        assert self.program_id == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
+        assert self.program_id == glGetIntegerv(GL_CURRENT_PROGRAM)
         return glGetAttribLocation(self.program_id, attribute_name)

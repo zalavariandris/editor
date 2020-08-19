@@ -7,6 +7,20 @@
  - wrapping opengl api to oo objects.
  - Shader, VAO, VertexBuffer, IndexBuffer, Texture
 
+# imdraw
+- drawLine
+- drawSegment
+- drawEllipse
+- drawRectangle
+- drawBox
+- ...
+- drawLightCone
+- drawCameraGizmo
+- drawAxis
+- drawGrid
+- drawArrow
+...
+
 # graphics
  - higl level renderer
  - Mesh(Transform, Material)
@@ -18,3 +32,10 @@
    render(scene, camera)
 
 """
+names:
+- glazy
+- glaze
+- veneer
+- silk
+- glint
+- gleam
