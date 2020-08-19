@@ -3,7 +3,7 @@ used references:
 - https://metamost.com/opengl-with-python/
 """
 
-from OpenGL import GL as gl
+from OpenGL.GL import *
 from OpenGL.error import GLError, NullFunctionError
 import glm
 import glfw
@@ -21,8 +21,6 @@ def profile(name, disabled=False):
     deltatime = endtime-starttime
     if not disabled:
         print("{} {:4.0f} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
-
-# help(glfw)
 
 # helpers
 def orbit(inputMatrix, dx, dy):
@@ -82,7 +80,7 @@ class Window:
 
     def __enter__(self):
         glfw.make_context_current(self._handle)
-        gl.glClearColor(*self._clear_color)
+        glClearColor(*self._clear_color)
         
         return self
 
@@ -127,22 +125,63 @@ class Window:
 
 
 class VBO:
-    def __init__(self, data, usage=gl.GL_STATIC_DRAW):
-        self._handle = gl.glGenBuffers(1)
+    def __init__(self, data, usage=GL_STATIC_DRAW):
+        self._handle = glGenBuffers(1)
 
         #upload data
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, data.nbytes, data, usage)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+        glBindBuffer(GL_ARRAY_BUFFER, self._handle)
+        glBufferData(GL_ARRAY_BUFFER, data.nbytes, data, usage)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def __enter__(self):
-        self.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
+        self.glBindBuffer(GL_ARRAY_BUFFER, self._handle)
 
     def __exit__(self, type, value, traceback):
-        self.glBindBuffer(gl.GL_ARRAY_BUFFER, self._handle)
+        self.glBindBuffer(GL_ARRAY_BUFFER, self._handle)
 
     def __del__(self):
-        gl.glDeleteBuffers(1, np.array([self._handle]))
+        glDeleteBuffers(1, np.array([self._handle]))
+
+
+class FBO:
+    def __init__(self, width, height):
+        self._handle = glGenFramebuffers(1)
+
+        glBindFramebuffer(GL_FRAMEBUFFER, self._handle);
+        # color buffer
+        rendered_texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, rendered_texture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+
+        # depth buffer
+        depthrenderbuffer = glGenRenderbuffers(1)
+        glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer)
+
+        # Set "renderedTexture" as our colour attachement #0
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, rendered_texture, 0);
+
+        # Set the list of draw buffers.
+        glDrawBuffers(1, [GL_COLOR_ATTACHMENT0])
+
+        # Always check that our framebuffer is ok
+        if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+            raise Exception("bad framebuffer")
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    def __enter__(self):
+        glBindFramebuffer(GL_FRAMEBUFFER, self._handle)
+
+    def __exit__(self, type, value, traceback):
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    def __del__(self):
+        pass
+        # glDeleteFrameBuffers(1, [self._handle])
 
 
 class VAO:
@@ -158,12 +197,12 @@ class VAO:
     def __init__(self):
 
         # create VAO
-        self._handle = gl.glGenVertexArrays(1)
+        self._handle = glGenVertexArrays(1)
         self._enabled_vertex_attribute_locations = set()
 
     def set_vertex_attribute(self, location, vbo_handle, size, gtype, normalize=False, stride=0, offset=None):
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vbo_handle)
-        gl.glVertexAttribPointer(
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_handle)
+        glVertexAttribPointer(
             location,
             size,
             gtype,
@@ -171,131 +210,137 @@ class VAO:
             stride,
             offset
         )
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def enable_vertex_attribute(self, location):
-        assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
+        assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
         self._enabled_vertex_attribute_locations.add(location)
-        gl.glEnableVertexAttribArray(location)
+        glEnableVertexAttribArray(location)
 
     def disable_vertex_attribute(self, location):
-        assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
-        gl.glDisableVertexAttribArray(location)
-
+        assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
+        glDisableVertexAttribArray(location)
 
     def __enter__(self):
         # bind VAO
-        gl.glBindVertexArray(self._handle)            
+        glBindVertexArray(self._handle)            
         return self
 
     def __exit__(self, type, value, traceback):
         for location in self._enabled_vertex_attribute_locations:
             self.disable_vertex_attribute(location)
         # unbind VAO
-        assert self._handle == gl.glGetIntegerv(gl.GL_VERTEX_ARRAY_BINDING)
-        gl.glBindVertexArray(0)
+        assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
+        glBindVertexArray(0)
 
     def __del__(self):
         # delete VBOs
-        # gl.glDeleteBuffers(1, np.array([self.position_vertex_buffer], dtype=np.uint))
+        # glDeleteBuffers(1, np.array([self.position_vertex_buffer], dtype=np.uint))
 
         # delete VAO
-        gl.glDeleteVertexArrays(1, np.array([self._handle], dtype=np.uint))
+        glDeleteVertexArrays(1, np.array([self._handle], dtype=np.uint))
 
 
 class Shader:
     def __enter__(self):
         shaders = {
-            gl.GL_VERTEX_SHADER: '''\
+            GL_VERTEX_SHADER: """
                 #version 330 core
                 in vec3 position;
                 in vec4 color;
+                in vec2 uv;
+
                 uniform mat4 modelMatrix;
                 uniform mat4 viewMatrix;
                 uniform mat4 projectionMatrix;
+
+                uniform sampler2D diffuseMap;
+
                 out vec4 vColor;
+                out vec2 vUv;
                 void main(){
                   vColor = vec4(color.rgb, 1);
-                  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);
-                }
-                ''',
-            gl.GL_FRAGMENT_SHADER: '''\
+                  vUv = uv;
+                  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position+vec3(uv,0), 1);
+                }""",
+
+            GL_FRAGMENT_SHADER: """
                 #version 330 core
                 out vec4 color;
                 in vec4 vColor;
+                in vec2 vUv;
+                uniform sampler2D diffuseMap;
                 void main(){
-                  color = vColor;
+                  vec4 tex = texture(diffuseMap, vUv);
+                  color = vColor*tex;
                 }
-                '''
+                """
             }
-        program_id = gl.glCreateProgram()
+        self.program_id = glCreateProgram()
         try:
-            shader_ids = []
+            self.shader_ids = []
             for shader_type, shader_src in shaders.items():
-                shader_id = gl.glCreateShader(shader_type)
-                gl.glShaderSource(shader_id, shader_src)
+                shader_id = glCreateShader(shader_type)
+                glShaderSource(shader_id, shader_src)
 
-                gl.glCompileShader(shader_id)
+                glCompileShader(shader_id)
 
                 # check if compilation was successful
-                result = gl.glGetShaderiv(shader_id, gl.GL_COMPILE_STATUS)
-                info_log_len = gl.glGetShaderiv(shader_id, gl.GL_INFO_LOG_LENGTH)
+                result = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
+                info_log_len = glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH)
                 if info_log_len:
-                    logmsg = gl.glGetShaderInfoLog(shader_id)
+                    logmsg = glGetShaderInfoLog(shader_id)
                     print(logmsg)
                     sys.exit(10)
 
-                gl.glAttachShader(program_id, shader_id)
-                shader_ids.append(shader_id)
+                glAttachShader(self.program_id, shader_id)
+                self.shader_ids.append(shader_id)
 
-            gl.glLinkProgram(program_id)
+            glLinkProgram(self.program_id)
 
             # check if linking was successful
-            result = gl.glGetProgramiv(program_id, gl.GL_LINK_STATUS)
-            info_log_len = gl.glGetProgramiv(program_id, gl.GL_INFO_LOG_LENGTH)
+            result = glGetProgramiv(self.program_id, GL_LINK_STATUS)
+            info_log_len = glGetProgramiv(self.program_id, GL_INFO_LOG_LENGTH)
             if info_log_len:
-                logmsg = gl.glGetProgramInfoLog(program_id)
+                logmsg = glGetProgramInfoLog(self.program_id)
                 log.error(logmsg)
                 sys.exit(11)
 
-            gl.glUseProgram(program_id)
+            glUseProgram(self.program_id)
         except Exception as err:
             raise err
-        self.program_id = program_id
-        self.shader_ids = shader_ids
+
+
         return self
 
     def __exit__(self, type, value, traceback):
         shader_ids = self.shader_ids
         for shader_id in self.shader_ids:
-            gl.glDetachShader(self.program_id, shader_id)
-        gl.glUseProgram(0)
+            glDetachShader(self.program_id, shader_id)
+        glUseProgram(0)
 
     def __del__(self):
         for shader_id in self.shader_ids:
-            gl.glDeleteShader(shader_id)
-        gl.glDeleteProgram(self.program_id)
+            glDeleteShader(shader_id)
+        glDeleteProgram(self.program_id)
         print("delete shader program")
 
-
     def get_uniform_location(self, name):
-        location = gl.glGetUniformLocation(self.program_id, name)
+        location = glGetUniformLocation(self.program_id, name)
         assert location>=0
         return location
 
     def set_uniform(self, name, value):
         location = self.get_uniform_location(name)
-        gl.glUniformMatrix4fv(location, 1, False, value)
+        glUniformMatrix4fv(location, 1, False, value)
 
     def get_attribute_location(self, attribute_name):
-        return gl.glGetAttribLocation(self.program_id, attribute_name)
-
-
+        return glGetAttribLocation(self.program_id, attribute_name)
 
 
 if __name__ == '__main__':
     # variables
-    width, height = 640, 480
+    width, height = 640*2, 480*2
 
     # matrices
     model_matrix = np.identity(4)
@@ -317,46 +362,76 @@ if __name__ == '__main__':
         print("mousebutton", button, action, modifiers)
 
     # Create geometrye
-    position_data = np.array(
-        [-1, -1, 0,
-          1, -1, 0,
-          0,  1, 0], 
-          dtype=np.float32
-    )
-    color_data = np.array(
-        [ 1, 0, 0,0,
-          0, 1, 0,0,
-          0,  0, 1,0], 
-          dtype=np.float32
-    )
+    position_data = np.array([
+        -1, -1, 0,
+         1, -1, 0,
+        0,  1, 0
+    ], dtype=np.float32)
 
+    uv_data = np.array([
+        0,0,
+        1,0,
+        1,1
+    ],dtype=np.float32)
+
+    color_data = np.array([
+         1, 0, 0,0,
+         0, 1, 0,0,
+         0, 0, 1,0
+    ],dtype=np.float32)
 
     with window: # set gl contex to window
         ctx = glfw.get_current_context()
-        print("current context:", ctx)
         position_vbo = VBO(position_data)
         color_vbo = VBO(color_data)
+        uv_vbo = VBO(uv_data)
+        
+        # create a texture
+        texture_handle = glGenTextures(1)
+        texture_unit = 0
+        glActiveTexture(GL_TEXTURE0+texture_unit);
+        glBindTexture(GL_TEXTURE_2D, texture_handle)
+        data = np.random.uniform( 0,256, (64*64*3)).astype(np.uint)
+        print(data)
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_BGR, GL_UNSIGNED_BYTE, data)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glBindTexture(GL_TEXTURE_2D, 0)
+
+        # configure texture
         with Shader() as shader: # use shader program
             vao = VAO()
             with vao: # ise VAO with shader
-                for attribute_name, vbo, size in [("position", position_vbo, 3),("color", color_vbo, 4)]:
+                for attribute_name, vbo, size in [("position", position_vbo, 3),("color", color_vbo, 4), ('uv', uv_vbo, 2)]:
                     """Enable attributes for current vertex array in shader"""
                     location = shader.get_attribute_location(attribute_name)
                     vao.enable_vertex_attribute(location)
-                    vao.set_vertex_attribute(location, vbo._handle, size, gl.GL_FLOAT)
+                    vao.set_vertex_attribute(location, vbo._handle, size, GL_FLOAT)
 
                 # start main loop
                 while not window.should_close():
                     with profile("draw", disabled=True):
-                        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+                        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
                         # update uniforms
                         shader.set_uniform("modelMatrix", np.array(model_matrix))
                         shader.set_uniform("viewMatrix", np.array(view_matrix))
                         shader.set_uniform("projectionMatrix", np.array(projection_matrix))
 
+                        # glActiveTexture(GL_TEXTURE0+0)
+                        # glBindTexture(GL_TEXTURE_2D, texture_handle)
+                        location = glGetUniformLocation(shader.program_id, "diffuseMap")
+                        glUniform1i(location, texture_unit);
+
+                        # TODO: bind texture0??
+
                         # draw
-                        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
+                        glActiveTexture(GL_TEXTURE0+texture_unit)
+                        glBindTexture(GL_TEXTURE_2D, texture_handle)
+                        glDrawArrays(GL_TRIANGLES, 0, 3)
+                        glBindTexture(GL_TEXTURE_2D, 0)
+
 
                         window.swap_buffers()
                         Window.poll_events()
