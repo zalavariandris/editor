@@ -10,7 +10,7 @@ def profile(name, disabled=False):
     endtime = time.time()
     deltatime = endtime-starttime
     if not disabled:
-        print("{} {:4.0} fps".format(name, 1.0/deltatime if deltatime>0 else float('inf')))
+        print("{} {:.0f} fps".format(name, 1/deltatime if deltatime>0 else float('inf')))
 
 # helpers
 def orbit(inputMatrix, dx, dy):
@@ -67,7 +67,7 @@ def box(width=1, height=1, length=1, origin=(0,0)):
 
     positions/=2, 2, 2
     positions*=width, height, length
-    positions[:,0:2]-=origin
+    positions-=origin
 
 
     indices = np.array([
@@ -135,25 +135,28 @@ def box(width=1, height=1, length=1, origin=(0,0)):
 def plane(width=1, length=1, origin=(0,0)):
     # Create geometry
     positions = np.array([
+        -1, 0,  1,
+        1, 0,  1,
+        1, 0, -1,
         -1, 0, -1,
-         1, 0, -1,
-         1, 0,  1,
-        -1, 0,  1
+         
+         
+        
     ], dtype=np.float32).reshape((-1,3))
     positions/=2, 2, 2
     positions*=width, 1.0, length
     positions[:,0:2]-=origin
 
     indices = np.array([
-        0,2,1,
-        0,3,2
+        0,1,2,
+        0,2,3
     ], dtype=np.uint).reshape((-1,3))
 
     uvs = np.array([
-         0,  0,
-         0,  1,
-         1,  1,
-         1,  0,
+        0,  0, 
+        1,  0,
+        1,  1,
+        0,  1,
     ],dtype=np.float32).reshape((-1,2))
 
     colors = np.array([
@@ -169,3 +172,84 @@ def plane(width=1, length=1, origin=(0,0)):
         'uvs':       uvs,
         'colors':    colors
         }
+
+import math
+def sphere(radius=0.5, origin=(0,0.5,0)):
+    """
+    reference: [http://www.songho.ca/opengl/gl_sphere.html]
+    """
+    vertices = []
+    normals = []
+    texCoords = []
+
+    sectorCount = 8
+    stackCount = 8
+
+    sectorStep = 2 * math.pi / sectorCount
+    stackStep = math.pi / stackCount
+
+    lengthInv = 1/radius
+
+    for i in range(0, stackCount+1):
+        stackAngle = math.pi / 2 - i * stackStep;        # starting from pi/2 to -pi/2
+        xy = radius * math.cos(stackAngle);             # r * cos(u)
+        y = radius * math.sin(stackAngle);              # r * sin(u)
+
+        # add (sectorCount+1) vertices per stack
+        # the first and last vertices have same position and normal, but different tex coords
+        for j in range(0, sectorCount+1):
+            sectorAngle = j * sectorStep;           # starting from 0 to 2pi
+
+            # vertex position (x, y, z)
+            x = xy * math.cos(sectorAngle)             # r * cos(u) * cos(v)
+            z = xy * math.sin(sectorAngle)             # r * cos(u) * sin(v)
+            vertices.append(x)
+            vertices.append(y)
+            vertices.append(z)
+
+            # normalized vertex normal (nx, ny, nz)
+            nx = x * lengthInv
+            ny = y * lengthInv
+            nz = z * lengthInv
+            normals.append(nx)
+            normals.append(ny)
+            normals.append(nz)
+
+            # vertex tex coord (s, t) range between [0, 1]
+            s = j / sectorCount
+            t = i / stackCount
+            texCoords.append(s)
+            texCoords.append(t)
+
+    indices = []
+    for i in range(0, stackCount):
+        k1 = i * (sectorCount + 1)     # beginning of current stack
+        k2 = k1 + sectorCount + 1      # beginning of next stack
+
+        for j in range(0, sectorCount):
+            # 2 triangles per sector excluding first and last stacks
+            # k1 => k2 => k1+1
+            if i != 0:
+                indices.append(k1 + 1)
+                indices.append(k2)
+                indices.append(k1)
+                
+            # k1+1 => k2 => k2+1
+            if i != (stackCount-1):
+                indices.append(k2 + 1)
+                indices.append(k2)
+                indices.append(k1 + 1)
+                
+            k1+=1
+            k2+=1
+
+    # colors = np.zeros( (len(vertices)/3*4) )
+    positions = np.array(vertices, dtype=np.float32).reshape( (-1, 3))
+    print(positions)
+    positions-=origin
+    return {
+        'positions': positions ,
+        'indices': np.array(indices, dtype=np.uint),
+        'uvs': np.array(texCoords, dtype=np.float32).reshape((-1,2)),
+        'colors': np.random.uniform(0,1, (len(vertices)//3, 4) ).astype(np.float32)
+    }

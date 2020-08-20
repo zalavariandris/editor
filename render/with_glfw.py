@@ -11,7 +11,7 @@ import contextlib
 import sys
 import ctypes
 import numpy as np
-from helpers import orbit, plane, box, profile
+from helpers import orbit, plane, box, sphere, profile
 
 import functools
 class Window:
@@ -120,7 +120,6 @@ class Window:
     def swap_buffers(self):
         glfw.swap_buffers(self._handle)
 
-
     @staticmethod
     def poll_events():
         glfw.poll_events()
@@ -135,7 +134,7 @@ if __name__ == '__main__':
 
     # matrices
     model_matrix = np.identity(4)
-    view_matrix = glm.lookAt( glm.vec3(0, 1,-4), glm.vec3(0,0.7,0), glm.vec3(0,1,0) )
+    view_matrix = glm.lookAt( glm.vec3(0, 1,4), glm.vec3(0,0.7,0), glm.vec3(0,1,0) )
     projection_matrix = glm.perspective(math.radians(60), width/height, 0.1, 100)
 
     #
@@ -169,20 +168,20 @@ if __name__ == '__main__':
     # Create Geometry
     #
     plane_geometry = plane(width=3, length=3)
-    box_geometry = box(origin=(0,-0.5))
+    box_geometry = box(origin=(0,-0.5, 0))
+    sphere_geometry = sphere(radius=0.5, origin=(0,-0.5,0))
     cctv_geometry = plane(1,1)
 
     # transform vertices to model position
     model = glm.mat4(1)
-    model = glm.translate(model, glm.vec3(0.7, 1.8, 0.5))
-    model = glm.rotate(model, math.radians(-50), glm.vec3(0, 1, 0))
-    model = glm.rotate(model, math.radians(120), glm.vec3(0, 0, 1))
-
+    model = glm.translate(model, glm.vec3(-0.7, 1.8, -0.5))
+    model = glm.rotate(model, math.radians(60), glm.vec3(0, 1, 0))
+    model = glm.rotate(model, math.radians(120), glm.vec3(1, 0, 0))
     model = glm.scale(model, glm.vec3(1, 1, 1))
     cctv_modelmatrix = model
 
     with window: # set gl contex to window
-                #
+        #
         # Create GPU Geometry
         #
         box_bufferattributes = {
@@ -206,6 +205,13 @@ if __name__ == '__main__':
             'indices':  (IndexBuffer(cctv_geometry['indices']),    1)
         }
 
+        sphere_bufferattributes = {
+            'position': (VertexBuffer(sphere_geometry['positions']), 3),
+            'color':    (VertexBuffer(sphere_geometry['colors']),    4),
+            'uv':       (VertexBuffer(sphere_geometry['uvs']),       2),
+            'indices':  (IndexBuffer(sphere_geometry['indices']),    1)
+        }
+
         # 
         # Create Textures
         #
@@ -223,7 +229,7 @@ if __name__ == '__main__':
         noise_data = np.random.uniform( 0,1, (64,64,3)).astype(np.float32)
         noise_texture = Texture.from_data(noise_data, slot=0)
         
-
+        # render to texture fbo
         fbo = FBO(640, 480, slot=3)
 
         #
@@ -231,9 +237,13 @@ if __name__ == '__main__':
         #
         box_entity = {
             'attributes': box_bufferattributes,
-            'transform': np.eye(4),
+            'transform': glm.translate(glm.mat4(1), glm.vec3(0.5, 0.0, 0)),
             'material':{
-                'diffuseMap': noise_texture
+                'shader': Shader(),
+                'vao': VAO(),
+                'uniforms':{
+                    'diffuseMap': noise_texture
+                }
             }
         }
 
@@ -241,7 +251,11 @@ if __name__ == '__main__':
             'attributes': plane_bufferattributes,
             'transform': np.eye(4),
             'material':{
-                'diffuseMap': gradient_texture
+                'shader': Shader(),
+                'vao': VAO(),
+                'uniforms':{
+                    'diffuseMap': gradient_texture
+                }
             }
         }
 
@@ -249,26 +263,46 @@ if __name__ == '__main__':
             'attributes': cctv_bufferattributes,
             'transform': cctv_modelmatrix,
             'material':{
-                'diffuseMap': fbo.texture
+                'shader': Shader(),
+                'vao': VAO(),
+                'uniforms':{
+                    'diffuseMap': fbo.texture
+                }
+                
             }
         }
 
+        sphere_entity = {
+            'attributes': sphere_bufferattributes,
+            'transform': glm.translate(glm.mat4(1), glm.vec3(-0.5, 0.0, 0)),
+            'material':{
+                'shader': Shader(),
+                'vao': VAO(),
+                'uniforms':{
+                    'diffuseMap': noise_texture
+                }
+            }
+        }
+
+        scene = [plane_entity, box_entity, cctv_entity, sphere_entity]
+
         # START
-        glEnable(GL_DEPTH_TEST)
-        shader = Shader()
-        vao = VAO()
-        
-        while not window.should_close():           
-            with profile("draw", disabled=True):
+        import time
+        glEnable(GL_DEPTH_TEST)        
+        while not window.should_close():
+            with profile("draw"):
+                Window.poll_events()
                 def draw_scene():
                     # draw each entity
-                    for entity in [plane_entity, box_entity, cctv_entity]:
-                        with shader, vao:
+                    for entity in scene:
+                        with entity['material']['shader'] as shader, entity['material']['vao'] as vao:
                             # update uniforms
-                            shader.set_uniform("viewMatrix", np.array(view_matrix))
+                            shader.set_uniform("viewMatrix", view_matrix)
                             shader.set_uniform("projectionMatrix", np.array(projection_matrix))
                             shader.set_uniform("modelMatrix", entity['transform'])
-                    
+                            shader.set_uniform("useDiffuseMap", True)
+
+
                             # set vao to geometry vbos
                             for name, attribute in entity['attributes'].items():
                                 if name!='indices':
@@ -282,27 +316,40 @@ if __name__ == '__main__':
                             
                             # draw object
                             indexBuffer = entity['attributes']['indices'][0]
-                            texture = entity['material']['diffuseMap']
+                            texture = entity['material']['uniforms']['diffuseMap']
                             with indexBuffer:
                                 count = indexBuffer.count
                                 
                                 shader.set_uniform("diffuseMap", texture.texture_unit)
                                 if texture:
                                     with texture:
+                                        shader.set_uniform("useDiffuseMap", True)
+                                        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                                         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+                                        shader.set_uniform("useDiffuseMap", False)
+                                        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+                                        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+                                        glDrawElements(GL_POINTS, count, GL_UNSIGNED_INT, None)
                                 else:
+                                    shader.set_uniform("useDiffuseMap", True)
+                                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+                                    shader.set_uniform("useDiffuseMap", False)
+                                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+                                    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+                                    glDrawElements(GL_POINTS, count, GL_UNSIGNED_INT, None)
 
+                glEnable( GL_PROGRAM_POINT_SIZE )
                 with fbo:
                     glViewport(0, 0, fbo.width, fbo.height)
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                     draw_scene()
-                    
+
                 glViewport(0, 0, window.width, window.height)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                 draw_scene()
 
-
                 window.swap_buffers()
-                Window.poll_events()
+
+                
 

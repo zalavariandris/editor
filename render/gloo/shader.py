@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 import numpy as np
 import glm
+import sys;
 
 class Shader:
     def __init__(self):
@@ -20,6 +21,7 @@ class Shader:
                 out vec4 vColor;
                 out vec2 vUv;
                 void main(){
+                  gl_PointSize=5.0;
                   vColor = vec4(color.rgb, 1);
                   vUv = uv;
                   gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);
@@ -30,14 +32,16 @@ class Shader:
                 out vec4 color;
                 in vec4 vColor;
                 in vec2 vUv;
+                uniform bool useDiffuseMap;
                 uniform sampler2D diffuseMap;
                 void main(){
-                  vec4 tex = texture(diffuseMap, vUv);
+
+                  vec4 tex = useDiffuseMap ? texture(diffuseMap, vUv) : vec4(1,1,1,1);
                   if(gl_FrontFacing){
                     color = vColor*tex;
                   }else{
                     float backFade = 0.3;
-                    color = vColor*tex*0.9*vec4(backFade,backFade,backFade,1.0);
+                    color = vColor*vec4(backFade,backFade,backFade,1.0);
                   }
                 }
                 """
@@ -108,6 +112,8 @@ class Shader:
                 raise NotImplementedError
         elif isinstance(value, glm.mat4x4):
             glUniformMatrix4fv(location, 1, False, np.array(value))
+        elif isinstance(value, bool):
+            glUniform1i(location, value)
         elif isinstance(value, int):
             glUniform1i(location, value)
         else:
