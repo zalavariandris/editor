@@ -11,6 +11,8 @@ class Texture:
 
     @classmethod
     def from_data(cls, data, slot):
+        assert isinstance(data, np.ndarray)
+        assert data.shape[2] is 3, "got: {}".format(data.shape[2])
         obj = cls(slot)
         height, width, channels = data.shape
         glActiveTexture(GL_TEXTURE0+obj.texture_unit)
@@ -33,17 +35,18 @@ class Texture:
         glBindTexture(GL_TEXTURE_2D, 0)
         return obj
 
-    def bind(self, texture_unit):
+    def bind(self, slot=None):
         """slot: bind tio texture unit"""
-        self.texture_unit = texture_unit
+        if slot:
+            self.texture_unit = slot
         glActiveTexture(GL_TEXTURE0+self.texture_unit)
         glBindTexture(GL_TEXTURE_2D, self._handle)
 
     def unbind(self):
         glBindTexture(GL_TEXTURE_2D, 0)
 
-    def __call__(self, texture_unit):
-        self.texture_unit = texture_unit
+    def __call__(self, slot):
+        self.texture_unit = slot
         return self
 
     def __enter__(self):

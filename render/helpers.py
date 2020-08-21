@@ -69,8 +69,15 @@ def box(width=1, height=1, length=1, origin=(0,0, 0)):
     positions*=width, height, length
     positions-=origin
 
-    magnitudes = np.sqrt((positions ** 2).sum(-1))[..., np.newaxis]
-    normals = positions/magnitudes
+    normals = np.array([
+         0.0,  0.0,  1.0, # Front face
+         0.0,  0.0, -1.0, # Back face
+         0.0,  1.0,  0.0, # Top face
+         0.0, -1.0,  0.0, # Bottom face
+         1.0,  0.0,  0.0, # Right face
+        -1.0,  0.0,  0.0, # Left face
+    ], dtype=np.float32).reshape((-1,3)).repeat(4, axis=0)
+
 
 
     indices = np.array([

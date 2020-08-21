@@ -6,6 +6,7 @@ from OpenGL.GL import *
 import glm
 import math
 from editor.render.helpers import orbit
+from PIL import Image
 
 class Scene:
 	def __init__(self):
@@ -14,18 +15,10 @@ class Scene:
 	def add(self, obj):
 		self.children.append(obj)
 
-
-class Material:
-	pass
-
-
-class Texture:
-	pass
-
-
-class Transform:
-	pass
-
+	def find_all(self, klass):
+		for child in self.children:
+			if isinstance(child, klass):
+				yield child
 
 class Geometry:
 	def __init__(self):
@@ -61,8 +54,18 @@ class Geometry:
 		return geo
 
 
-class RenderItem():
-	pass
+class RenderItem:
+	def setup(self):
+		raise NotImplementedError("subclasses needs to reimplement setup method")
+		self.shader = None
+		self.uniforms = {}
+		self.attributes = {}
+
+	def draw(self, projection_matrix, view_matrix, scene):
+		raise NotImplementedError("subclasses needs to reimplement setup method")
+		with shader:
+			pass
+
 
 class Mesh(RenderItem):
 	def __init__(self, geometry, transform, material):
@@ -70,11 +73,135 @@ class Mesh(RenderItem):
 		self.transform = transform
 		self.material = material
 
-	def draw(self):
-		pass
+	def setup(self):
+		self.shader=gloo.Shader()
+		self.uniforms={
+			'ambient': self.material['ambient'],
+			'diffuse': self.material['diffuse'],
+			'specular': self.material['specular'],
+			'shiness': self.material['shiness'],
+			'diffuseMap': gloo.Texture.from_data(self.material['diffuseMap'], slot=0),
+			'specularMap': gloo.Texture.from_data(self.material['specularMap'], slot=1)
+		}
+		self.attributes={
+			'vertices': gloo.VertexBuffer(self.geometry.vertices),
+			'indices': gloo.IndexBuffer(self.geometry.indices),
+			'normals': gloo.VertexBuffer(self.geometry.normals),
+			'uvs': gloo.VertexBuffer(self.geometry.uvs),
+		}
 
-class Camera(RenderItem):
-	pass
+	def draw(self, projection_matrix, view_matrix, scene):
+		with self.shader as shader, gloo.VAO() as vao:
+			# bind attributes
+			indexBuffer = self.attributes['indices']
+
+			positionBuffer = self.attributes['vertices']
+			location = shader.get_attribute_location('position')
+			vao.enable_vertex_attribute(location)
+			vao.set_vertex_attribute(location, positionBuffer, 3, GL_FLOAT)
+
+			normalBuffer = self.attributes['normals']
+			location = shader.get_attribute_location('normal')
+			vao.enable_vertex_attribute(location)
+			vao.set_vertex_attribute(location, normalBuffer, 3, GL_FLOAT)
+
+			uvBuffer = self.attributes['uvs']
+			location = shader.get_attribute_location('uv')
+			vao.enable_vertex_attribute(location)
+			vao.set_vertex_attribute(location, uvBuffer, 2, GL_FLOAT)
+
+			# 
+			# Uniforms
+			#
+			# Camera
+			shader.set_uniform('projectionMatrix', projection_matrix)
+			shader.set_uniform('viewMatrix', view_matrix)
+			shader.set_uniform('viewPos', np.linalg.inv(view_matrix)[3][:3])
+
+			# Lights
+			# point lights
+			for i, light in enumerate(scene.find_all(PointLight)):
+				pos = glm.vec3(0,math.sin(time.time()*3)*10+10.5,0);
+				shader.set_uniform('pointLights[{}].position'.format(i), light.position)
+				shader.set_uniform('pointLights[{}].ambient'.format(i), light.ambient)
+				shader.set_uniform('pointLights[{}].diffuse'.format(i), light.diffuse)
+				shader.set_uniform('pointLights[{}].specular'.format(i), light.specular)
+				shader.set_uniform('pointLights[{}].constant'.format(i), light.constant)
+				shader.set_uniform('pointLights[{}].linear'.format(i), light.linear)
+				shader.set_uniform('pointLights[{}].quadratic'.format(i), light.quadratic)
+
+			# directional lights
+			for light in scene.find_all(DirectionalLight):
+				shader.set_uniform('sun.direction', light.direction)
+				shader.set_uniform('sun.ambient', light.ambient)
+				shader.set_uniform('sun.diffuse', light.diffuse)
+				shader.set_uniform('sun.specular', light.specular)
+
+			# spotlights
+
+
+			# transform
+			shader.set_uniform('modelMatrix', np.eye(4))
+
+			# material
+			shader.set_uniform('material.useVertexColor', False)
+			if self.uniforms['diffuseMap'] is not None:
+				shader.set_uniform('material.useDiffuseMap', True)
+				shader.set_uniform('material.diffuseMap', self.uniforms['diffuseMap'].texture_unit)
+			if self.uniforms['specularMap'] is not None:
+				shader.set_uniform('material.useSpecularMap', True)
+				shader.set_uniform('material.specularMap', self.uniforms['specularMap'].texture_unit)
+
+			shader.set_uniform('material.ambient', self.uniforms['ambient'])
+			shader.set_uniform('material.diffuse', self.uniforms['diffuse'])
+			shader.set_uniform('material.specular', self.uniforms['specular'])
+			shader.set_uniform('material.shiness', self.uniforms['shiness'])
+			
+
+			with indexBuffer:
+				count = indexBuffer.count
+				if self.uniforms['diffuseMap']:
+					self.uniforms['diffuseMap'].bind()
+				if self.uniforms['specularMap']:
+					self.uniforms['specularMap'].bind()
+				glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+
+
+class Light:
+	def __init__(self, ambient=glm.vec3(1.0), diffuse=glm.vec3(1.0), specular=glm.vec3(1.0)):
+		self.ambient=ambient
+		self.diffuse=diffuse
+		self.specular=specular
+
+class DirectionalLight(Light):
+	def __init__(self, ambient=glm.vec3(1.0), diffuse=glm.vec3(1.0), specular=glm.vec3(1.0), 
+		direction=glm.vec3(0, -1, 0)):
+		super().__init__(ambient, diffuse, specular)
+		self.direction = direction
+
+class PointLight(Light):
+	def __init__(self, ambient=glm.vec3(1.0), diffuse=glm.vec3(1.0), specular=glm.vec3(1.0), 
+		position=glm.vec3(0),
+		constant=1.0, linear=0.09, quadratic=0.032):
+		super().__init__(ambient, diffuse, specular)
+		self.position=position
+
+		self.constant=1.0
+		self.linear=0.09
+		self.quadratic=0.032
+
+class SpotLight(Light):
+	def __init__(self, ambient=1.0, diffuse=1.0, specular=1.0, 
+		position=glm.vec3(0), direction=glm.vec3(0,-1,0),
+		constant=1.0, linear=0.09, quadratic=0.032):
+		super().__init__(ambient, diffuse, specular)
+		self.position = glm.vec3(0)
+		self.direction = glm.vec3(0,-1,0)
+
+		self.constant=constant
+		self.linear=linear
+		self.quadratic=quadratic
+
 
 import time
 class Viewer:
@@ -122,84 +249,44 @@ class Viewer:
 			Window.poll_events()
 
 	def setup(self):
-		for mesh in self.scene.children:
-			renderitem = {
-				'shader': gloo.Shader(),
-				'material':{
-					'ambient': (0.1, 0.1, 0.1),#glm.vec3(0.1),
-					'diffuse': glm.vec3(0.6, 0.5, 0.1),
-					'specular': glm.vec3(1.0, 1.0, 0.0),
-					'shiness': 100.0
-				},
-				'attributes':{
-					'vertices': gloo.VertexBuffer(mesh.geometry.vertices),
-					'indices': gloo.IndexBuffer(mesh.geometry.indices),
-					'normals': gloo.VertexBuffer(mesh.geometry.normals)
-				}
-			}
-			self.items[mesh] = renderitem
+		# trasnfer mesh attributes to render item
+		for mesh in self.scene.find_all(Mesh):
+			mesh.setup()
+			# renderitem = RenderItem()
+			# renderitem.setup(mesh)
+			# self.items[mesh] = renderitem
 
-		self.shader = gloo.Shader()
 		self.view_matrix = glm.lookAt( glm.vec3(0, 1,4), glm.vec3(0,0,0), glm.vec3(0,1,0) )
 		self.projection_matrix = glm.perspective(math.radians(60), self.width/self.height, 0.1, 100)
 
 	def draw(self):
+		glEnable(GL_CULL_FACE)
+		glCullFace(GL_BACK)
 		glEnable(GL_DEPTH_TEST)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		for renderitem in self.items.values():
-			self.draw_item(renderitem)
-
-	def draw_item(self, renderitem):
-		with renderitem['shader'] as shader, gloo.VAO() as vao:
-			# bind attributes
-			indexBuffer = renderitem['attributes']['indices']
-
-			positionBuffer = renderitem['attributes']['vertices']
-			location = shader.get_attribute_location('position')
-			vao.enable_vertex_attribute(location)
-			vao.set_vertex_attribute(location, positionBuffer, 3, GL_FLOAT)
-
-			positionBuffer = renderitem['attributes']['normals']
-			location = shader.get_attribute_location('normal')
-			vao.enable_vertex_attribute(location)
-			vao.set_vertex_attribute(location, positionBuffer, 3, GL_FLOAT)
-
-			# Uniforms
-			# camera
-			shader.set_uniform('projectionMatrix', self.projection_matrix)
-			shader.set_uniform('viewMatrix', self.view_matrix)
-			shader.set_uniform('viewPos', np.linalg.inv(self.view_matrix)[3][:3])
-
-			# lights
-			lightPos = glm.vec3(math.sin(time.time()*5)*10, 2,0)
-			shader.set_uniform('light.position', lightPos)
-			shader.set_uniform('light.ambient', glm.vec3(1.0))
-			shader.set_uniform('light.diffuse', glm.vec3(1.0))
-			shader.set_uniform('light.specular', glm.vec3(1.0))
-
-			# transform
-			shader.set_uniform('modelMatrix', np.eye(4))
-
-			# material
-			shader.set_uniform('material.useVertexColor', False)
-			shader.set_uniform('material.useDiffuseMap', False)
-			shader.set_uniform('material.ambient', renderitem['material']['ambient'])
-			shader.set_uniform('material.diffuse', renderitem['material']['diffuse'])
-			shader.set_uniform('material.specular', renderitem['material']['specular'])
-			shader.set_uniform('material.shiness', renderitem['material']['shiness'])
-			
-
-			with indexBuffer:
-				count = indexBuffer.count
-				glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+		for renderitem in self.scene.find_all(RenderItem):
+			renderitem.draw(self.projection_matrix, self.view_matrix, self.scene)
+		
 
 if __name__ == "__main__":
-	mesh = Mesh(
-		geometry=Geometry.sphere(), 
-		transform=np.eye(4), 
-		material=Material()
-	)
-
 	scene = Scene()
+	diff_texture_data = np.array(Image.open("../../assets/container2.png"))[:,:,:3].astype(np.float32)/255.0
+	diff_texture_data=diff_texture_data[:,:,::-1] #RGB->BGR
+	spec_texture_data = np.array(Image.open("../../assets/container2_specular.png"))[:,:,:3].astype(np.float32)/255.0
+	spec_texture_data=spec_texture_data[:,:,::-1] #RGB->BGR
+	mesh = Mesh(
+		geometry=Geometry.box(), 
+		transform=np.eye(4), 
+		material={
+			'ambient': (0.1, 0.1, 0.1),#glm.vec3(0.1),
+			'diffuse': (0.6, 0.5, 0.1),
+			'specular': (0.3, 0.3, 0.3),
+			'shiness': 1.0,
+			'diffuseMap': diff_texture_data,
+			'specularMap': spec_texture_data
+		}
+	)
 	scene.add(mesh)
+	scene.add(DirectionalLight(direction=glm.vec3(1,-1,-1)))
+	scene.add(PointLight(position=glm.vec3(-1,0,0)))
 	viewer = Viewer(scene)
