@@ -16,8 +16,8 @@ class VAO:
         self._handle = glGenVertexArrays(1)
         self._enabled_vertex_attribute_locations = set()
 
-    def set_vertex_attribute(self, location, vbo_handle, size, gtype, normalize=False, stride=0, offset=None):
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_handle)
+    def set_vertex_attribute(self, location, vbo, size, gtype, normalize=False, stride=0, offset=None):
+        glBindBuffer(GL_ARRAY_BUFFER, vbo._handle)
         glVertexAttribPointer(
             location,
             size,

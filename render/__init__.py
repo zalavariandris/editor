@@ -32,10 +32,10 @@
    render(scene, camera)
 
 """
-names:
-- glazy
-- glaze
-- veneer
-- silk
-- glint
-- gleam
+# names:
+# - glazy
+# - glaze
+# - veneer
+# - silk
+# - glint
+# - gleam

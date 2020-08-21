@@ -22,7 +22,7 @@ def orbit(inputMatrix, dx, dy):
 
     return inputMatrix
 
-def box(width=1, height=1, length=1, origin=(0,0)):
+def box(width=1, height=1, length=1, origin=(0,0, 0)):
     """ create flat cube
     [https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Creating_3D_objects_using_WebGL]
     """
@@ -68,6 +68,9 @@ def box(width=1, height=1, length=1, origin=(0,0)):
     positions/=2, 2, 2
     positions*=width, height, length
     positions-=origin
+
+    magnitudes = np.sqrt((positions ** 2).sum(-1))[..., np.newaxis]
+    normals = positions/magnitudes
 
 
     indices = np.array([
@@ -127,6 +130,7 @@ def box(width=1, height=1, length=1, origin=(0,0)):
 
     return {
         'positions': positions,
+        'normals': normals,
         'indices':   indices,
         'uvs':       uvs,
         'colors':    colors
@@ -139,13 +143,12 @@ def plane(width=1, length=1, origin=(0,0)):
         1, 0,  1,
         1, 0, -1,
         -1, 0, -1,
-         
-         
-        
     ], dtype=np.float32).reshape((-1,3))
     positions/=2, 2, 2
     positions*=width, 1.0, length
     positions[:,0:2]-=origin
+
+    normals = np.repeat((0,1,0), 4).astype(np.float32)
 
     indices = np.array([
         0,1,2,
@@ -168,6 +171,7 @@ def plane(width=1, length=1, origin=(0,0)):
 
     return {
         'positions': positions,
+        'normals': normals,
         'indices':   indices,
         'uvs':       uvs,
         'colors':    colors
@@ -245,10 +249,12 @@ def sphere(radius=0.5, origin=(0,0.5,0)):
 
     # colors = np.zeros( (len(vertices)/3*4) )
     positions = np.array(vertices, dtype=np.float32).reshape( (-1, 3))
-    print(positions)
+    magnitudes = np.sqrt((positions ** 2).sum(-1))[..., np.newaxis]
+    normals = positions/magnitudes
     positions-=origin
     return {
-        'positions': positions ,
+        'positions': positions,
+        'normals': normals,
         'indices': np.array(indices, dtype=np.uint),
         'uvs': np.array(texCoords, dtype=np.float32).reshape((-1,2)),
         'colors': np.random.uniform(0,1, (len(vertices)//3, 4) ).astype(np.float32)

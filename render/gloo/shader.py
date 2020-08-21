@@ -2,123 +2,187 @@ from OpenGL.GL import *
 import numpy as np
 import glm
 import sys;
+import glfw
 
 class Shader:
-    def __init__(self):
-        shaders = {
-            GL_VERTEX_SHADER: """
-                #version 330 core
-                in vec3 position;
-                in vec4 color;
-                in vec2 uv;
+		def __init__(self):
+				shaders = {
+						GL_VERTEX_SHADER: """
+								#version 330 core
+								in vec3 position;
+								in vec3 normal;
+								in vec4 color;
+								in vec2 uv;
 
-                uniform mat4 modelMatrix;
-                uniform mat4 viewMatrix;
-                uniform mat4 projectionMatrix;
+								uniform mat4 modelMatrix;
+								uniform mat4 viewMatrix;
+								uniform mat4 projectionMatrix;
 
-                uniform sampler2D diffuseMap;
+								out vec4 vColor;
+								out vec2 vUv;
+								out vec3 vNormal;
+								out vec3 fragPos;
+								void main(){
+									gl_PointSize=5.0;
+									vColor = vec4(color.rgb, 1);
+									vNormal = normalize(normal);
+									vUv = uv;
+									mat4 normalMatrix = transpose(inverse(modelMatrix)); //FIXME: calc on CPU and send as uniform
+									fragPos = vec3(normalMatrix * vec4(position, 1.0));
+									gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);
+								}""",
 
-                out vec4 vColor;
-                out vec2 vUv;
-                void main(){
-                  gl_PointSize=5.0;
-                  vColor = vec4(color.rgb, 1);
-                  vUv = uv;
-                  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);
-                }""",
+						GL_FRAGMENT_SHADER: """
+								#version 330 core
+								struct Material {
+										vec3 ambient;
+										vec3 diffuse;
+										vec3 specular;
+										float shiness;
 
-            GL_FRAGMENT_SHADER: """
-                #version 330 core
-                out vec4 color;
-                in vec4 vColor;
-                in vec2 vUv;
-                uniform bool useDiffuseMap;
-                uniform sampler2D diffuseMap;
-                void main(){
+										bool useDiffuseMap;
+										sampler2D diffuseMap;
+										bool useVertexColor;
+								};
 
-                  vec4 tex = useDiffuseMap ? texture(diffuseMap, vUv) : vec4(1,1,1,1);
-                  if(gl_FrontFacing){
-                    color = vColor*tex;
-                  }else{
-                    float backFade = 0.3;
-                    color = vColor*vec4(backFade,backFade,backFade,1.0);
-                  }
-                }
-                """
-            }
-            
-        self.program_id = glCreateProgram()
+								struct Light{
+									vec3 position;
 
-        try:
-            self.shader_ids = []
-            for shader_type, shader_src in shaders.items():
-                shader_id = glCreateShader(shader_type)
-                glShaderSource(shader_id, shader_src)
+									vec3 ambient;
+									vec3 diffuse;
+									vec3 specular;
+								};
 
-                glCompileShader(shader_id)
+								
+								
+								in vec4 vColor;
+								in vec2 vUv;
+								in vec3 vNormal;
+								in vec3 fragPos;
+								uniform vec3 viewPos;
 
-                # check if compilation was successful
-                result = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
-                info_log_len = glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH)
-                if info_log_len:
-                    logmsg = glGetShaderInfoLog(shader_id)
-                    print(logmsg)
-                    sys.exit(10)
 
-                glAttachShader(self.program_id, shader_id)
-                self.shader_ids.append(shader_id)
+								uniform Material material;
+								uniform Light light;
 
-            glLinkProgram(self.program_id)
+								out vec4 color;
+								void main(){
+									/* Object Color */
+									vec3 tex = material.useDiffuseMap ? texture(material.diffuseMap, vUv).rgb : vec3(1);
+									vec3 vertexColor = material.useVertexColor ? vColor.rgb : vec3(0.5);
+									vec3 objectColor = vertexColor.rgb * tex * (gl_FrontFacing ? 1.0 : 0.3);
 
-            # check if linking was successful
-            result = glGetProgramiv(self.program_id, GL_LINK_STATUS)
-            info_log_len = glGetProgramiv(self.program_id, GL_INFO_LOG_LENGTH)
-            if info_log_len:
-                logmsg = glGetProgramInfoLog(self.program_id)
-                log.error(logmsg)
-                sys.exit(11)
+									/* Lighting */
 
-            
-        except Exception as err:
-            raise err
+									// ambient
+									vec3 ambient = light.ambient * material.ambient;
+									
+									// diffuse
+									vec3 norm = normalize(vNormal);
+									vec3 lightDir = normalize(light.position-fragPos);
+									float diffuseStrength = 1.0;
+									float diff = max(dot(vNormal, lightDir), 0.0);
+									vec3 diffuse = light.diffuse * (diff * material.diffuse);
 
-    def __enter__(self):
-        glUseProgram(self.program_id)
+									// specular
+									vec3 viewDir = normalize(viewPos - fragPos);
+									vec3 reflectDir = reflect(-lightDir, norm); 
+									float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shiness);
+									vec3 specular = light.specular * (spec * material.specular);  
 
-        return self
+									vec3 result = ambient+diffuse+specular;
 
-    def __exit__(self, type, value, traceback):
-        glUseProgram(0)
+									// send result
+									color = vec4(result, 1);
+								}
+								"""
+						}
+				
+				# FIXME: check for a valid contex
+				# and throw an error before using gl commands
+				self.program_id = glCreateProgram()
 
-    def __del__(self):
-        for shader_id in self.shader_ids:
-            glDetachShader(self.program_id, shader_id)
-            glDeleteShader(shader_id)
-        glDeleteProgram(self.program_id)
-        print("delete shader program")
+				try:
+						self.shader_ids = []
+						for shader_type, shader_src in shaders.items():
+								shader_id = glCreateShader(shader_type)
+								glShaderSource(shader_id, shader_src)
 
-    def get_uniform_location(self, name):
-        location = glGetUniformLocation(self.program_id, name)
-        assert location>=0
-        return location
+								glCompileShader(shader_id)
 
-    def set_uniform(self, name, value: [np.ndarray, int, glm.mat4x4]):
-        location = self.get_uniform_location(name)
+								# check if compilation was successful
+								result = glGetShaderiv(shader_id, GL_COMPILE_STATUS)
+								info_log_len = glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH)
+								if info_log_len:
+										logmsg = glGetShaderInfoLog(shader_id)
+										print(logmsg)
+										sys.exit(10)
 
-        if isinstance(value, np.ndarray):
-            if value.shape == (4, 4): # matrix
-                glUniformMatrix4fv(location, 1, False, value)
-            else:
-                raise NotImplementedError
-        elif isinstance(value, glm.mat4x4):
-            glUniformMatrix4fv(location, 1, False, np.array(value))
-        elif isinstance(value, bool):
-            glUniform1i(location, value)
-        elif isinstance(value, int):
-            glUniform1i(location, value)
-        else:
-            raise NotImplementedError(type(value))
+								glAttachShader(self.program_id, shader_id)
+								self.shader_ids.append(shader_id)
 
-    def get_attribute_location(self, attribute_name):
-        assert self.program_id == glGetIntegerv(GL_CURRENT_PROGRAM)
-        return glGetAttribLocation(self.program_id, attribute_name)
+						glLinkProgram(self.program_id)
+
+						# check if linking was successful
+						result = glGetProgramiv(self.program_id, GL_LINK_STATUS)
+						info_log_len = glGetProgramiv(self.program_id, GL_INFO_LOG_LENGTH)
+						if info_log_len:
+								logmsg = glGetProgramInfoLog(self.program_id)
+								print(logmsg)
+								sys.exit(11)
+
+						
+				except Exception as err:
+						raise err
+
+		def __enter__(self):
+				glUseProgram(self.program_id)
+				return self
+
+		def __exit__(self, type, value, traceback):
+				glUseProgram(0)
+
+		def __del__(self):
+				for shader_id in self.shader_ids:
+						glDetachShader(self.program_id, shader_id)
+						glDeleteShader(shader_id)
+				glDeleteProgram(self.program_id)
+				print("delete shader program")
+
+		def get_uniform_location(self, name):
+				location = glGetUniformLocation(self.program_id, name)
+				assert location>=0
+				return location
+
+		def set_uniform(self, name, value: [np.ndarray, int, glm.mat4x4]):
+				location = self.get_uniform_location(name)
+
+				if isinstance(value, np.ndarray):
+						if value.shape == (4, 4): # matrix
+								glUniformMatrix4fv(location, 1, False, value)
+						elif value.shape == (3,):
+								glUniform3f(location, value[0], value[1], value[2])
+						else:
+								raise NotImplementedError('uniform {} {}'.format(type(value), value.shape))
+				
+				elif isinstance(value, glm.mat4x4):
+						glUniformMatrix4fv(location, 1, False, np.array(value))
+				elif isinstance(value, glm.vec3):
+						glUniform3f(location, value.x, value.y, value.z)
+
+				elif isinstance(value, tuple):
+					if len(value)==3:
+						glUniform3f(location, value[0], value[1], value[2])
+
+				elif isinstance(value, bool):
+						glUniform1i(location, value)
+				elif isinstance(value, int):
+						glUniform1i(location, value)
+				elif isinstance(value, float):
+						glUniform1f(location, value)
+				else:
+						raise NotImplementedError(type(value))
+
+		def get_attribute_location(self, attribute_name):
+				assert self.program_id == glGetIntegerv(GL_CURRENT_PROGRAM)
+				return glGetAttribLocation(self.program_id, attribute_name)

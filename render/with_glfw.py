@@ -11,7 +11,7 @@ import contextlib
 import sys
 import ctypes
 import numpy as np
-from helpers import orbit, plane, box, sphere, profile
+from editor.render.helpers import orbit, plane, box, sphere, profile
 
 import functools
 class Window:
@@ -88,9 +88,13 @@ class Window:
 
     def __exit__(self, type, value, traceback):
         pass
+        # glfw.destroy_window(self._handle)
+
+    def destroy(self):
+        glfw.destroy_window(self._handle)
 
     def __del__(self):
-        glfw.destroy_window(self._handle)
+         #FIXME: delete occurs after window handle is not valid
         glfw.terminate()
 
     def should_close(self):
@@ -124,7 +128,7 @@ class Window:
     def poll_events():
         glfw.poll_events()
 
-from gloo import Shader, VAO, VertexBuffer, IndexBuffer, Texture, FBO
+from editor.render.gloo import Shader, VAO, VertexBuffer, IndexBuffer, Texture, FBO
 
 
 if __name__ == '__main__':
@@ -186,6 +190,7 @@ if __name__ == '__main__':
         #
         box_bufferattributes = {
             'position': (VertexBuffer(box_geometry['positions']), 3),
+            'normal':   (VertexBuffer(box_geometry['normals']),   3),
             'color':    (VertexBuffer(box_geometry['colors']),    4),
             'uv':       (VertexBuffer(box_geometry['uvs']),       2),
             'indices':  (IndexBuffer(box_geometry['indices']),    1)
@@ -193,6 +198,7 @@ if __name__ == '__main__':
 
         plane_bufferattributes = {
             'position': (VertexBuffer(plane_geometry['positions']), 3),
+            'normal':   (VertexBuffer(plane_geometry['normals']),   3),
             'color':    (VertexBuffer(plane_geometry['colors']),    4),
             'uv':       (VertexBuffer(plane_geometry['uvs']),       2),
             'indices':  (IndexBuffer(plane_geometry['indices']),    1)
@@ -200,6 +206,7 @@ if __name__ == '__main__':
 
         cctv_bufferattributes = {
             'position': (VertexBuffer(cctv_geometry['positions']), 3),
+            'normal':   (VertexBuffer(cctv_geometry['normals']),   3),
             'color':    (VertexBuffer(cctv_geometry['colors']),    4),
             'uv':       (VertexBuffer(cctv_geometry['uvs']),       2),
             'indices':  (IndexBuffer(cctv_geometry['indices']),    1)
@@ -207,6 +214,7 @@ if __name__ == '__main__':
 
         sphere_bufferattributes = {
             'position': (VertexBuffer(sphere_geometry['positions']), 3),
+            'normal':   (VertexBuffer(sphere_geometry['normals']),   3),
             'color':    (VertexBuffer(sphere_geometry['colors']),    4),
             'uv':       (VertexBuffer(sphere_geometry['uvs']),       2),
             'indices':  (IndexBuffer(sphere_geometry['indices']),    1)
@@ -242,7 +250,7 @@ if __name__ == '__main__':
                 'shader': Shader(),
                 'vao': VAO(),
                 'uniforms':{
-                    'diffuseMap': noise_texture
+                    'material.diffuseMap': noise_texture
                 }
             }
         }
@@ -254,7 +262,7 @@ if __name__ == '__main__':
                 'shader': Shader(),
                 'vao': VAO(),
                 'uniforms':{
-                    'diffuseMap': gradient_texture
+                    'material.diffuseMap': gradient_texture
                 }
             }
         }
@@ -266,7 +274,7 @@ if __name__ == '__main__':
                 'shader': Shader(),
                 'vao': VAO(),
                 'uniforms':{
-                    'diffuseMap': fbo.texture
+                    'material.diffuseMap': fbo.texture
                 }
                 
             }
@@ -279,7 +287,7 @@ if __name__ == '__main__':
                 'shader': Shader(),
                 'vao': VAO(),
                 'uniforms':{
-                    'diffuseMap': noise_texture
+                    'material.diffuseMap': noise_texture
                 }
             }
         }
@@ -290,7 +298,10 @@ if __name__ == '__main__':
         import time
         glEnable(GL_DEPTH_TEST)        
         while not window.should_close():
-            with profile("draw"):
+            with profile("draw", True):
+                # print(np.linalg.inv(view_matrix))
+                
+
                 Window.poll_events()
                 def draw_scene():
                     # draw each entity
@@ -300,7 +311,9 @@ if __name__ == '__main__':
                             shader.set_uniform("viewMatrix", view_matrix)
                             shader.set_uniform("projectionMatrix", np.array(projection_matrix))
                             shader.set_uniform("modelMatrix", entity['transform'])
-                            shader.set_uniform("useDiffuseMap", True)
+                            shader.set_uniform("material.useDiffuseMap", True)
+                            viewPos = np.linalg.inv(view_matrix)[3][:3]
+                            shader.set_uniform("viewPos", viewPos)
 
 
                             # set vao to geometry vbos
@@ -312,21 +325,21 @@ if __name__ == '__main__':
                                     vao.enable_vertex_attribute(location)
 
                                     # set attribute pointer in shader
-                                    vao.set_vertex_attribute(location, vbo._handle, size, GL_FLOAT)
+                                    vao.set_vertex_attribute(location, vbo, size, GL_FLOAT)
                             
                             # draw object
                             indexBuffer = entity['attributes']['indices'][0]
-                            texture = entity['material']['uniforms']['diffuseMap']
+                            texture = entity['material']['uniforms']['material.diffuseMap']
                             with indexBuffer:
                                 count = indexBuffer.count
                                 
-                                shader.set_uniform("diffuseMap", texture.texture_unit)
+                                shader.set_uniform("material.diffuseMap", texture.texture_unit)
                                 if texture:
                                     with texture:
-                                        shader.set_uniform("useDiffuseMap", True)
+                                        shader.set_uniform("material.useDiffuseMap", True)
                                         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
                                         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
-                                        shader.set_uniform("useDiffuseMap", False)
+                                        shader.set_uniform("material.useDiffuseMap", False)
                                         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
                                         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
                                         glDrawElements(GL_POINTS, count, GL_UNSIGNED_INT, None)
