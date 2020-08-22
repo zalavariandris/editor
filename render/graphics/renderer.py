@@ -7,6 +7,7 @@ import glm
 import math
 from editor.render.helpers import orbit
 from PIL import Image
+from pathlib import Path
 
 class Scene:
 	def __init__(self):
@@ -74,7 +75,7 @@ class Mesh(RenderItem):
 		self.material = material
 
 	def setup(self):
-		self.shader=gloo.Shader()
+		self.shader=gloo.Shader(Path("../shader.vert").read_text(), Path('../shader.frag').read_text())
 		self.uniforms={
 			'ambient': self.material['ambient'],
 			'diffuse': self.material['diffuse'],

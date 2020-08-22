@@ -14,6 +14,8 @@ import numpy as np
 from editor.render.helpers import orbit, plane, box, sphere, profile
 
 import functools
+from pathlib import Path
+
 class Window:
     def __init__(self, width, height, clear_color=(0,0,0,1)):
         # attributes
@@ -247,7 +249,7 @@ if __name__ == '__main__':
             'attributes': box_bufferattributes,
             'transform': glm.translate(glm.mat4(1), glm.vec3(0.5, 0.0, 0)),
             'material':{
-                'shader': Shader(),
+                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': noise_texture
@@ -259,7 +261,7 @@ if __name__ == '__main__':
             'attributes': plane_bufferattributes,
             'transform': np.eye(4),
             'material':{
-                'shader': Shader(),
+                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': gradient_texture
@@ -271,7 +273,7 @@ if __name__ == '__main__':
             'attributes': cctv_bufferattributes,
             'transform': cctv_modelmatrix,
             'material':{
-                'shader': Shader(),
+                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': fbo.texture
@@ -284,7 +286,7 @@ if __name__ == '__main__':
             'attributes': sphere_bufferattributes,
             'transform': glm.translate(glm.mat4(1), glm.vec3(-0.5, 0.0, 0)),
             'material':{
-                'shader': Shader(),
+                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': noise_texture
@@ -299,9 +301,6 @@ if __name__ == '__main__':
         glEnable(GL_DEPTH_TEST)        
         while not window.should_close():
             with profile("draw", True):
-                # print(np.linalg.inv(view_matrix))
-                
-
                 Window.poll_events()
                 def draw_scene():
                     # draw each entity
