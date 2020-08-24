@@ -8,6 +8,7 @@ import numpy as np
 from pathlib import Path
 import glm
 import math
+from PIL import Image
 
 vertexShader = """
 #version 330 core
@@ -42,6 +43,7 @@ void main(){
 """
 
 
+
 # Init
 width, height = 640, 480
 model_matrix = np.identity(4)
@@ -49,29 +51,43 @@ window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
 # create geometry
 geo_data = box()
-diffuse_data = Image.open('../assets/container2.png')
-specular_data = Image.open('../assets/container2_specular.png')
+diffuse_data = np.array(Image.open('../assets/container2.png'), dtype=np.float32)[:,:,:3]/255
+specular_data = np.array(Image.open('../assets/container2_specular.png'), dtype=np.float32)[:,:,:3]/255
 
-from PIL import Image
 with window:
 	glEnable(GL_PROGRAM_POINT_SIZE)
 	glEnable(GL_DEPTH_TEST)
 
 	# create geometry
-	elements_id = glGenBuffers(1)
+	elements_id, positions_id, uv_id = glGenBuffers(3)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_id)
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, geo['indices'].nbytes, geo['indices'], GL_STATIC_DRAW)
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, geo_data['indices'].nbytes, geo_data['indices'], GL_STATIC_DRAW)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
-	positions_id = glGenBuffers(1)
 	glBindBuffer(GL_ARRAY_BUFFER, positions_id)
-	glBufferData(GL_ARRAY_BUFFER, geo['positions'].nbytes, geo['positions'], GL_STATIC_DRAW)
+	glBufferData(GL_ARRAY_BUFFER, geo_data['positions'].nbytes, geo_data['positions'], GL_STATIC_DRAW)
+	glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+	glBindBuffer(GL_ARRAY_BUFFER, uv_id)
+	glBufferData(GL_ARRAY_BUFFER, geo_data['uvs'].nbytes, geo_data['uvs'], GL_STATIC_DRAW)
 	glBindBuffer(GL_ARRAY_BUFFER, 0)
 
 	# create textures
-	diffuseMap, specularMap = glGenTextures(2)
-	
+	diffuse_tex, specular_tex = glGenTextures(2)
+	glActiveTexture(GL_TEXTURE0+0)
+	glBindTexture(GL_TEXTURE_2D, diffuse_tex)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, diffuse_data.shape[1], diffuse_data.shape[0], 0, GL_BGR, GL_FLOAT, diffuse_data)
 
+	glActiveTexture(GL_TEXTURE0+1)
+	glBindTexture(GL_TEXTURE_2D, specular_tex)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, specular_data.shape[1], specular_data.shape[0], 0, GL_BGR, GL_FLOAT, specular_data)
+
+	glBindTexture(GL_TEXTURE_2D, 0)
+	
 	# create program
 	vshader_id = glCreateShader(GL_VERTEX_SHADER)
 	glShaderSource(vshader_id, vertexShader)
@@ -97,8 +113,14 @@ with window:
 	glBindVertexArray(vao)
 	glBindBuffer(GL_ARRAY_BUFFER, positions_id)
 	location = glGetAttribLocation(program_id, 'position')
-	glVertexAttribPointer(location, 3, GL_FLOAT, False, 0, None)
 	glEnableVertexAttribArray(location)
+	glVertexAttribPointer(location, 3, GL_FLOAT, False, 0, None)
+
+	glBindBuffer(GL_ARRAY_BUFFER, uv_id)
+	location = glGetAttribLocation(program_id, 'uv')
+	glEnableVertexAttribArray(location)
+	glVertexAttribPointer(location, 2, GL_FLOAT, False, 0, None)
+	
 	glBindVertexArray(0)
 
 # Draw
@@ -120,8 +142,9 @@ with window:
 		# draw geometry
 		glBindVertexArray(vao)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_id)
-		glDrawElements(GL_TRIANGLES, 4*8, GL_UNSIGNED_INT, None)
-		glDrawElements(GL_POINTS, 4*8, GL_UNSIGNED_INT, None)
+		glDrawElements(GL_TRIANGLES, geo_data['indices'].size, GL_UNSIGNED_INT, None)
+		glDrawElements(GL_POINTS, geo_data['indices'].size, GL_UNSIGNED_INT, None)
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
 		# swap buffers
 		window.swap_buffers()
