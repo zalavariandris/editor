@@ -21,3 +21,14 @@ class memoize:
             self.memo[args] = self.fn(*args)
         return self.memo[args]
 
+import time   
+import contextlib
+@contextlib.contextmanager
+def profile(name, disabled=False):
+    starttime = time.time()
+    yield
+    endtime = time.time()
+    deltatime = endtime-starttime
+    if not disabled:
+        print("{} {:.0f} fps".format(name, 1/deltatime if deltatime>0 else float('inf')))
+

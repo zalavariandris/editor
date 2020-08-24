@@ -11,7 +11,8 @@ import contextlib
 import sys
 import ctypes
 import numpy as np
-from editor.render.helpers import orbit, plane, box, sphere, profile
+from editor.render.gloo.helpers import orbit, plane, box, sphere
+from editor.utils import profile
 
 import functools
 from pathlib import Path
@@ -130,7 +131,7 @@ class Window:
     def poll_events():
         glfw.poll_events()
 
-from editor.render.gloo import Shader, VAO, VertexBuffer, IndexBuffer, Texture, FBO
+from editor.render.gloo import Shader, VAO, VBO, EBO, Texture, FBO
 
 
 if __name__ == '__main__':
@@ -191,36 +192,47 @@ if __name__ == '__main__':
         # Create GPU Geometry
         #
         box_bufferattributes = {
-            'position': (VertexBuffer(box_geometry['positions']), 3),
-            'normal':   (VertexBuffer(box_geometry['normals']),   3),
-            'color':    (VertexBuffer(box_geometry['colors']),    4),
-            'uv':       (VertexBuffer(box_geometry['uvs']),       2),
-            'indices':  (IndexBuffer(box_geometry['indices']),    1)
+            'position': (VBO(box_geometry['positions']), 3),
+            'normal':   (VBO(box_geometry['normals']),   3),
+            'color':    (VBO(box_geometry['colors']),    4),
+            'uv':       (VBO(box_geometry['uvs']),       2),
+            'indices':  (EBO(box_geometry['indices']),    1)
         }
 
         plane_bufferattributes = {
-            'position': (VertexBuffer(plane_geometry['positions']), 3),
-            'normal':   (VertexBuffer(plane_geometry['normals']),   3),
-            'color':    (VertexBuffer(plane_geometry['colors']),    4),
-            'uv':       (VertexBuffer(plane_geometry['uvs']),       2),
-            'indices':  (IndexBuffer(plane_geometry['indices']),    1)
+            'position': (VBO(plane_geometry['positions']), 3),
+            'normal':   (VBO(plane_geometry['normals']),   3),
+            'color':    (VBO(plane_geometry['colors']),    4),
+            'uv':       (VBO(plane_geometry['uvs']),       2),
+            'indices':  (EBO(plane_geometry['indices']),    1)
         }
 
         cctv_bufferattributes = {
-            'position': (VertexBuffer(cctv_geometry['positions']), 3),
-            'normal':   (VertexBuffer(cctv_geometry['normals']),   3),
-            'color':    (VertexBuffer(cctv_geometry['colors']),    4),
-            'uv':       (VertexBuffer(cctv_geometry['uvs']),       2),
-            'indices':  (IndexBuffer(cctv_geometry['indices']),    1)
+            'position': (VBO(cctv_geometry['positions']), 3),
+            'normal':   (VBO(cctv_geometry['normals']),   3),
+            'color':    (VBO(cctv_geometry['colors']),    4),
+            'uv':       (VBO(cctv_geometry['uvs']),       2),
+            'indices':  (EBO(cctv_geometry['indices']),    1)
         }
 
+        # TODO: Single VBO with structured nparray
+        Vertex = [('position', np.float32, 3),
+                 ('normal',   np.float32, 3),
+                 ('color',   np.float32, 3),
+                 ('uv',   np.float32, 2)]
+
+        vertices = np.zeros( 2, dtype=Vertex )
+        print(vertices['position'])
+        print(vertices['uv'])
         sphere_bufferattributes = {
-            'position': (VertexBuffer(sphere_geometry['positions']), 3),
-            'normal':   (VertexBuffer(sphere_geometry['normals']),   3),
-            'color':    (VertexBuffer(sphere_geometry['colors']),    4),
-            'uv':       (VertexBuffer(sphere_geometry['uvs']),       2),
-            'indices':  (IndexBuffer(sphere_geometry['indices']),    1)
+            'position': (VBO(sphere_geometry['positions']), 3),
+            'normal':   (VBO(sphere_geometry['normals']),   3),
+            'color':    (VBO(sphere_geometry['colors']),    4),
+            'uv':       (VBO(sphere_geometry['uvs']),       2),
+            'indices':  (EBO(sphere_geometry['indices']),    1)
         }
+
+
 
         # 
         # Create Textures
@@ -249,7 +261,7 @@ if __name__ == '__main__':
             'attributes': box_bufferattributes,
             'transform': glm.translate(glm.mat4(1), glm.vec3(0.5, 0.0, 0)),
             'material':{
-                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
+                'shader': Shader(Path('gloo/shader.vert').read_text(), Path('gloo/shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': noise_texture
@@ -261,7 +273,7 @@ if __name__ == '__main__':
             'attributes': plane_bufferattributes,
             'transform': np.eye(4),
             'material':{
-                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
+                'shader': Shader(Path('gloo/shader.vert').read_text(), Path('gloo/shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': gradient_texture
@@ -273,7 +285,7 @@ if __name__ == '__main__':
             'attributes': cctv_bufferattributes,
             'transform': cctv_modelmatrix,
             'material':{
-                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
+                'shader': Shader(Path('gloo/shader.vert').read_text(), Path('gloo/shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': fbo.texture
@@ -286,7 +298,7 @@ if __name__ == '__main__':
             'attributes': sphere_bufferattributes,
             'transform': glm.translate(glm.mat4(1), glm.vec3(-0.5, 0.0, 0)),
             'material':{
-                'shader': Shader(Path('shader.vert').read_text(), Path('shader.frag').read_text()),
+                'shader': Shader(Path('gloo/shader.vert').read_text(), Path('gloo/shader.frag').read_text()),
                 'vao': VAO(),
                 'uniforms':{
                     'material.diffuseMap': noise_texture
@@ -307,6 +319,7 @@ if __name__ == '__main__':
                     for entity in scene:
                         with entity['material']['shader'] as shader, entity['material']['vao'] as vao:
                             # update uniforms
+                            shader.set_uniform("useLights", False)
                             shader.set_uniform("viewMatrix", view_matrix)
                             shader.set_uniform("projectionMatrix", np.array(projection_matrix))
                             shader.set_uniform("modelMatrix", entity['transform'])
@@ -324,7 +337,8 @@ if __name__ == '__main__':
                                     vao.enable_vertex_attribute(location)
 
                                     # set attribute pointer in shader
-                                    vao.set_vertex_attribute(location, vbo, size, GL_FLOAT)
+                                    with vbo:
+                                        vao.set_vertex_attribute(location, size, GL_FLOAT)
                             
                             # draw object
                             indexBuffer = entity['attributes']['indices'][0]

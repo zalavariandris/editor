@@ -12,6 +12,7 @@ out vec4 vColor;
 out vec2 vUv;
 out vec3 vNormal;
 out vec3 fragPos;
+
 void main(){
 	gl_PointSize=5.0;
 	vColor = vec4(color.rgb, 1);

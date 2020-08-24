@@ -6,6 +6,7 @@ class Texture:
         """
         slot: bind to texture unit
         """
+        assert isinstance(slot, int)
         self._handle = glGenTextures(1)
         self.texture_unit = slot
 

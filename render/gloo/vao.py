@@ -1,5 +1,7 @@
 from OpenGL.GL import *
 import numpy as np
+import ctypes
+from .helpers import buffer_offset
 class VAO:
     """
     Vertex Array Object
@@ -15,22 +17,22 @@ class VAO:
         # create VAO
         self._handle = glGenVertexArrays(1)
         self._enabled_vertex_attribute_locations = set()
+        self._vbos = []
 
-    def set_vertex_attribute(self, location, vbo, size, gtype, normalize=False, stride=0, offset=None):
-        glBindBuffer(GL_ARRAY_BUFFER, vbo._handle)
-        glVertexAttribPointer(
-            location,
-            size,
-            gtype,
-            normalize,
-            stride,
-            offset
-        )
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
+    def add_vertex_attribute(self, location, vbo, size, gtype, normalize=False, stride=0, offset=0):
+        assert isinstance(offset, int)
+        self._vbos.append(vbo)
+        with vbo:
+            glVertexAttribPointer(
+                location,
+                size,
+                gtype,
+                normalize,
+                stride,
+                buffer_offset(offset)
+            )
 
     def enable_vertex_attribute(self, location):
-        assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
-        self._enabled_vertex_attribute_locations.add(location)
         glEnableVertexAttribArray(location)
 
     def disable_vertex_attribute(self, location):
@@ -43,8 +45,6 @@ class VAO:
         return self
 
     def __exit__(self, type, value, traceback):
-        for location in self._enabled_vertex_attribute_locations:
-            self.disable_vertex_attribute(location)
         # unbind VAO
         assert self._handle == glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
         glBindVertexArray(0)

@@ -1,10 +1,10 @@
 from OpenGL.GL import *
 import numpy as np
 
-class VertexBuffer:
+class VBO:
     def __init__(self, data, usage=GL_STATIC_DRAW):
         assert isinstance(data, np.ndarray), "data must be an instance of np.ndarray, got: {}".format(type(data))
-        assert data.dtype == np.float32, "elements must be np.float32, got: {}".format(data.dtype)
+        # assert data.dtype == np.float32, "elements must be np.float32, got: {}".format(data.dtype)
         self._handle = glGenBuffers(1)
 
         #upload data
@@ -12,17 +12,26 @@ class VertexBuffer:
         glBufferData(GL_ARRAY_BUFFER, data.nbytes, data, usage)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
+        self._nbytes = data.nbytes
+        self._shape = data.shape
+
     def __enter__(self):
-        self.glBindBuffer(GL_ARRAY_BUFFER, self._handle)
+        glBindBuffer(GL_ARRAY_BUFFER, self._handle)
 
     def __exit__(self, type, value, traceback):
-        self.glBindBuffer(GL_ARRAY_BUFFER, self._handle)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def __del__(self):
+        print("delete VBO")
         glDeleteBuffers(1, np.array([self._handle]))
 
+    def get_data(self):
+        glBindBuffer(GL_ARRAY_BUFFER, self._handle)
+        raw_data = glGetBufferSubData(GL_ARRAY_BUFFER, 0, self._nbytes)
+        return np.array(raw_data).view(np.float32).reshape(self._shape)
 
-class IndexBuffer:
+
+class EBO:
     def __init__(self, data, usage=GL_STATIC_DRAW):
         self._handle = glGenBuffers(1)
 

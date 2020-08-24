@@ -1,0 +1,1243 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"po",
+				"positions"
+			],
+			[
+				"spe",
+				"specularColor"
+			],
+			[
+				"diffuse",
+				"diffuseColor"
+			],
+			[
+				"diff",
+				"diffuseColor"
+			],
+			[
+				"GL_TEXTURE",
+				"GL_TEXTURE1"
+			],
+			[
+				"GL_TE",
+				"GL_TEXTURE_2D"
+			],
+			[
+				"pro",
+				"program_id"
+			],
+			[
+				"frame",
+				"frameSlice"
+			],
+			[
+				"file",
+				"filepath"
+			],
+			[
+				"render",
+				"renderFrame"
+			],
+			[
+				"time",
+				"timerange"
+			],
+			[
+				"cen",
+				"centerOn"
+			],
+			[
+				"show",
+				"show_progress"
+			],
+			[
+				"QGra",
+				"QGraphicsProxyWidget"
+			],
+			[
+				"QGrap",
+				"QGraphicsItem"
+			],
+			[
+				"inp",
+				"_inputs"
+			],
+			[
+				"outp",
+				"outputArea"
+			],
+			[
+				"footer",
+				"footerArea"
+			],
+			[
+				"setS",
+				"setSizePolicy"
+			],
+			[
+				"header",
+				"headerArea"
+			],
+			[
+				"cont",
+				"contentArea"
+			],
+			[
+				"QGr",
+				"QGraphicsLinearLayout"
+			],
+			[
+				"lin",
+				"Line"
+			],
+			[
+				"PF",
+				"PFGraphModel"
+			],
+			[
+				"Scene",
+				"ItemSceneHasChanged"
+			],
+			[
+				"QGraph",
+				"QGraphicsItem"
+			],
+			[
+				"grap",
+				"graphWidget"
+			],
+			[
+				"output",
+				"outputPort"
+			],
+			[
+				"set",
+				"setInput"
+			],
+			[
+				"portD",
+				"portData"
+			],
+			[
+				"port",
+				"portFlags"
+			],
+			[
+				"in",
+				"input"
+			],
+			[
+				"viw",
+				"viewer"
+			],
+			[
+				"outpu",
+				"output"
+			],
+			[
+				"viewer",
+				"Viewer2D"
+			],
+			[
+				"Gra",
+				"GraphView"
+			],
+			[
+				"sourc",
+				"sources"
+			],
+			[
+				"commi",
+				"commitPortData"
+			],
+			[
+				"on",
+				"onSelectionChange"
+			],
+			[
+				"out",
+				"outputValues"
+			],
+			[
+				"Graph",
+				"GraphView"
+			],
+			[
+				"source",
+				"sourcePortForEdge"
+			],
+			[
+				"input",
+				"inputPortsForNode"
+			],
+			[
+				"p",
+				"pfgraph"
+			],
+			[
+				"Gr",
+				"Graph"
+			],
+			[
+				"portData",
+				"portDataChange"
+			],
+			[
+				"sel",
+				"selection"
+			],
+			[
+				"Edge",
+				"edge"
+			],
+			[
+				"create",
+				"createPortEditor"
+			],
+			[
+				"inputport",
+				"inputPortForEdge"
+			],
+			[
+				"soc",
+				"sockets"
+			],
+			[
+				"inpu",
+				"inputPortsForNode"
+			],
+			[
+				"cone",
+				"context"
+			],
+			[
+				"so",
+				"socket"
+			],
+			[
+				"GraphWid",
+				"GraphWidgetEdgeItem"
+			],
+			[
+				"QGR",
+				"QGraphicsProxyWidget"
+			],
+			[
+				"plac",
+				"placeholder"
+			],
+			[
+				"placehol",
+				"placeholders_in_graph"
+			],
+			[
+				"place",
+				"placeholders_in_graph"
+			],
+			[
+				"pla",
+				"placeholder"
+			],
+			[
+				"ou",
+				"output"
+			],
+			[
+				"QGraphicsLi",
+				"QGraphicsLinearLayout"
+			],
+			[
+				"nodePu",
+				"nodeOutputs"
+			],
+			[
+				"Node",
+				"NodeController"
+			],
+			[
+				"ope",
+				"operation"
+			],
+			[
+				"setSe",
+				"setSelected"
+			],
+			[
+				"isOP",
+				"isOpSelected"
+			],
+			[
+				"isOp",
+				"isOpSelected"
+			],
+			[
+				"op",
+				"operations"
+			],
+			[
+				"adj",
+				"adjacentNodes"
+			],
+			[
+				"QR",
+				"QGraphicsItem"
+			],
+			[
+				"depe",
+				"dependents"
+			],
+			[
+				"Qgrap",
+				"QGraphicsItem"
+			],
+			[
+				"setPa",
+				"setParentItem"
+			],
+			[
+				"upda",
+				"updatePosition"
+			],
+			[
+				"inter",
+				"intersection"
+			],
+			[
+				"is",
+				"isCollapsed"
+			],
+			[
+				"QSize",
+				"QSizePolicy"
+			],
+			[
+				"targetP",
+				"targetPos"
+			],
+			[
+				"sourceP",
+				"sourcePos"
+			],
+			[
+				"srcP",
+				"srcPathNode"
+			],
+			[
+				"QGraphicsLin",
+				"QGraphicsLineItem"
+			],
+			[
+				"inpt",
+				"inputPin"
+			],
+			[
+				"pin1",
+				"pin1Layout"
+			],
+			[
+				"QGraphicsLine",
+				"QGraphicsLinearLayout"
+			],
+			[
+				"QGraphics",
+				"QGraphicsWidget"
+			],
+			[
+				"QFont",
+				"QFontMetricsF"
+			],
+			[
+				"draw",
+				"drawRoundedRect"
+			],
+			[
+				"setG",
+				"setGraphicsItem"
+			],
+			[
+				"tex",
+				"textWidth"
+			],
+			[
+				"size",
+				"sizeHint"
+			],
+			[
+				"QGRaphics",
+				"QGraphicsItemGroup"
+			],
+			[
+				"r",
+				"radius"
+			],
+			[
+				"e",
+				"evaluate"
+			],
+			[
+				"target",
+				"targetPoints"
+			],
+			[
+				"node",
+				"nodeEditor"
+			],
+			[
+				"read",
+				"readCapture"
+			],
+			[
+				"patc",
+				"patchControls"
+			],
+			[
+				"vi",
+				"viewer"
+			],
+			[
+				"point",
+				"pointAtPercent"
+			],
+			[
+				"ot",
+				"ouputChanged"
+			],
+			[
+				"__",
+				"__init__"
+			],
+			[
+				"q",
+				"QGraphicsItem"
+			],
+			[
+				"Re",
+				"ReadNode"
+			],
+			[
+				"pa",
+				"parent"
+			],
+			[
+				"items",
+				"itemsChanged"
+			],
+			[
+				"fiel",
+				"fieldAt"
+			],
+			[
+				"image",
+				"imageChanged"
+			],
+			[
+				"conver",
+				"convert_cvImgToPixmap"
+			],
+			[
+				"last",
+				"lastFrame"
+			],
+			[
+				"firs",
+				"firstFrame"
+			],
+			[
+				"first",
+				"firstFrameChanged"
+			],
+			[
+				"setL",
+				"setLastFrame"
+			],
+			[
+				"lastFR",
+				"lastFrameSpinner"
+			],
+			[
+				"fri",
+				"firstFrameSpinner"
+			],
+			[
+				"setF",
+				"setFirstFrame"
+			],
+			[
+				"lastFrame",
+				"lastFrameSpinner"
+			],
+			[
+				"value",
+				"valueChanged"
+			],
+			[
+				"but",
+				"buttonsBar"
+			],
+			[
+				"setM",
+				"setMinimum"
+			],
+			[
+				"play",
+				"playForwardButton"
+			],
+			[
+				"tim",
+				"timeslider"
+			],
+			[
+				"m",
+				"maximum"
+			],
+			[
+				"start",
+				"startPlayForward"
+			],
+			[
+				"fps",
+				"fpsSpinner"
+			],
+			[
+				"QSiz",
+				"QSizePolicy"
+			],
+			[
+				"path",
+				"pathChanged"
+			],
+			[
+				"def",
+				"defaultPath"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "render/gloo/vao.py",
+			"settings":
+			{
+				"buffer_size": 1681,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/gloo_with_glfw.py",
+			"settings":
+			{
+				"buffer_size": 13953,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/gloo/window.py",
+			"settings":
+			{
+				"buffer_size": 5006,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/gloo/example.py",
+			"settings":
+			{
+				"buffer_size": 10370,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Users/andris/anaconda3/lib/pathlib.py",
+			"settings":
+			{
+				"buffer_size": 50021,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "render/opengltutorial/advanced_lighting/shadows/main.py",
+			"settings":
+			{
+				"buffer_size": 2525,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/gloo_examples/minimal_example.py",
+			"settings":
+			{
+				"buffer_size": 1949,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/gloo/shader.py",
+			"settings":
+			{
+				"buffer_size": 2929,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"he",
+				"HexViewer: Toggle Hex View"
+			],
+			[
+				"inst",
+				"Package Control: Install Package"
+			],
+			[
+				"insall ",
+				"Package Control: Install Package"
+			],
+			[
+				"close",
+				"Terminus: Close All"
+			],
+			[
+				"cl",
+				"Terminus: Close All"
+			],
+			[
+				"termin",
+				"Terminus: Close All"
+			],
+			[
+				"termiun",
+				"Terminus: Close All"
+			],
+			[
+				"ter",
+				"Terminus: Close"
+			],
+			[
+				"terminus key",
+				"Preferences: Terminal Key Bindings – User"
+			],
+			[
+				"terminus",
+				"Preferences: Terminus Settings"
+			],
+			[
+				"toggle",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"togg",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"t",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 388.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/C/Users/andris/Documents/BABPythonModules/editor",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo"
+	],
+	"file_history":
+	[
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/helpers.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/__init__.py",
+		"/C/Users/andris/Desktop/PyAssimp env/assimp-tester/share/examples/pyassimp/transformations.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/shader.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/vao.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/buffers.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/shader.frag",
+		"/C/Users/andris/Desktop/PyAssimp env/main.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo_with_glfw.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/utils.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/opengltutorial/modelloading/main.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/renderer.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/with_glfw.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/shader.vert",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/shader.frag",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/shader.vert",
+		"/C/Users/andris/Desktop/Rodin2/src/rodin2_character180_v03.py",
+		"/C/Users/andris/Desktop/Rodin2/src/rodin2_character180_v04.py",
+		"/C/Users/andris/Desktop/Rodin2/src/rodin2_character180_v05.py",
+		"/C/Users/andris/Desktop/Rodin2/src/rodin2_follow180_v01.py",
+		"/C/Users/andris/Desktop/Rodin2/src/rodin2_follow-orbit180_v01.py",
+		"/C/Users/andris/Desktop/Rodin2/src/rodin2_character180_v02.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/graphwidget.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/read.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/viewer2D.py",
+		"/C/Users/andris/Desktop/thumbnails/tumbs.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/daglib.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/examples/pythonflow-MVC-example.py",
+		"/C/Users/andris/Desktop/MakePythonDroppable.reg",
+		"/C/Users/andris/Documents/BABPythonModules/editor/examples/pythonflow-QtModelView-example.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/core/deg3.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/nodeeditor.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/fileselector.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/timeslider.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/inspector.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/videoplayer.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/grassblade.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/calculator.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/core/deg1.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/core/__init__.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/patheditor.py",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/editor/grassblade_editor.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/DEG/graph.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/nodes.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/appwindow.py",
+		"/C/Users/andris/Desktop/2019 UNKP/Szobeli beszamolo/Notes.md",
+		"/C/Users/andris/Desktop/2019 UNKP/Szobeli beszamolo/traitlet_list-test.py",
+		"/C/Users/andris/Desktop/2019 UNKP/Szobeli beszamolo/ApiRoutes.pl",
+		"/C/Users/andris/Desktop/mask.json",
+		"/C/Users/andris/Documents/IKON/exhibitiondetails-parse.ipynb",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/editor.py",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/PyGrassblade-glumpy/baseline/warper.py",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/pointeditor.py",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/grassblade_pyside.py",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/PyGrassblade-vispy/main.py",
+		"/C/Users/andris/Desktop/mask.txt",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/bl/triangle.fs",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/bl/triangle.vs",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/bl/__ini__.py",
+		"/C/Users/andris/Desktop/2020 Paks/szurkites-jpeg/jpeg_python/decoder.py",
+		"/C/Users/andris/Desktop/2020 Paks/DSC00024.JPG",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/PyGrassblade-glumpy/pointeditor.py",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/PyGrassblade-vispy/qt.py",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/PyGrassblade-vispy/baseline.py",
+		"/C/Users/andris/Documents/PyGrassblade-glumpy/image-example.py",
+		"/C/Users/andris/Documents/IKON/.gitignore",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/Grassblade/data/passthrough.vert",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/Grassblade/data/passthrough_vert.glsl",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/Grassblade/data/positions.glsl",
+		"/C/Users/andris/Desktop/2020 Paks/Grassblade/Grassblade/sketch.properties",
+		"/C/Users/andris/Desktop/sketch/sketch.pde",
+		"/C/Users/andris/Desktop/2020 Paks/Perspscan/production/Perspscan-Processing/sketch/data/jumpFloodFill.glsl",
+		"/C/Users/andris/Desktop/2020 Paks/Perspscan/production/Perspscan-IMP-Python/main.py",
+		"/C/Users/andris/Documents/BABPythonModules/proxy.py",
+		"/C/Users/andris/Desktop/2020 Paks/Perspscan/production/Perspscan/main_image.py",
+		"/C/Users/andris/Documents/RectScanPyside/main.py",
+		"/C/Users/andris/Documents/BABPythonModules/QtWidgets/mainwindow.py",
+		"/C/Users/andris/Documents/rectscan_szigliget/rectscan_szigliget.py",
+		"/C/Users/andris/Documents/BABPythonModules/QtWidgets/outliner.py",
+		"/C/Users/andris/Documents/BABPythonModules/QtWidgets/__init__.py",
+		"/C/Users/andris/Documents/BABPythonModules/__init__.py",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/LatticeMesh.js",
+		"/C/Users/andris/Documents/ikon.graph/src/index.js",
+		"/C/Users/andris/Documents/ikon.graph/src/GraphComponent.js",
+		"/C/Users/andris/Documents/ikon.graph/src/simulation/GPUSimulation.js",
+		"/C/Users/andris/Documents/ikon.graph/node_modules/ajv/dist/ajv.bundle.js",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/node/Spheres.js",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/edge/Rods.js",
+		"/C/Users/andris/Documents/ikon.graph/src/style.css",
+		"/C/Users/andris/Documents/ikon.graph/src/annotation/BMLabels.js",
+		"/C/Users/andris/Documents/ikon.graph/node_modules/base/node_modules/is-descriptor/README.md",
+		"/C/Users/andris/Documents/ikon.graph/webpack.config.js",
+		"/C/Users/andris/Documents/ikon.graph/src/LatticeControls.js",
+		"/C/Users/andris/Documents/ikon.graph/src/watch.js",
+		"/C/Users/andris/Documents/ikon.graph/package.json",
+		"/C/Users/andris/Documents/ikon.graph/node_modules/@webassemblyjs/helper-module-context/esm/index.js",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/node/Points.js",
+		"/C/Users/andris/Documents/ikon.graph/src/simulation/GPUSimulation2.js",
+		"/C/Users/andris/Documents/ikon.graph/src/simulation/CPUSimulation.js",
+		"/C/Users/andris/Documents/ikon.graph/src/annotation/CanvasLabels.js",
+		"/C/Users/andris/Documents/ikon.graph/deploy.bat",
+		"/C/Users/andris/Documents/ikon.graph/src/simulation/Simulation.js",
+		"/C/Users/andris/Documents/ikon.graph/README.md",
+		"/C/Users/andris/Documents/ikon.graph/src/shader.glsl",
+		"/C/Users/andris/Documents/ikon.graph/src/Simulation.js",
+		"/C/Users/andris/Documents/ikon.graph/src/annotation/HTMLLabels.js",
+		"/C/Users/andris/Documents/ikon.graph/node_modules/three-bmfont-text/index.js",
+		"/C/Users/andris/Documents/ikon.graph/src/GraphControls.js",
+		"/C/Users/andris/Documents/ikon.graph/src/deploy.bat",
+		"/C/Users/andris/Documents/ikon.view/src/components/ArtistStats.vue",
+		"/C/Users/andris/Documents/ikon.view/src/components/careertrajectory.vue",
+		"/C/Users/andris/Documents/ikon.view/README.md",
+		"/C/Users/andris/Documents/ikon.view/.gitignore",
+		"/C/Users/andris/Documents/ikon.api/package.json",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/LatticeMesh - old.js",
+		"/C/Users/andris/Documents/ikon.graph/node_modules/base/node_modules/is-accessor-descriptor/index.js",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/Points.js",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/Rods.js",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/Spheres.js",
+		"/C/Users/andris/Documents/ikon.graph/src/lattice/Lines.js",
+		"/C/Users/andris/Documents/ikon.graph/src/AutoCompleteComponent.js",
+		"/C/Users/andris/Documents/ikon.graph/src/AutoComplete.js",
+		"/C/Users/andris/Documents/ikon.graph/node_modules/async/dist/async.js",
+		"/C/Users/andris/Documents/ikon.graph/index.html",
+		"/C/Users/andris/Documents/IKON/scrape/ArtFacts/exhibitions/magnus/35240-Gyula Benczúr-exhibitions.json",
+		"/C/Users/andris/Documents/IKON/scrape/ArtFacts/spotlight/ikon/617190-Orsolya Bajusz-spotlight.json",
+		"/C/Users/andris/Documents/IKON/scrape/ArtFacts/spotlight/ikon/16747-Annette Streyl-spotlight.json",
+		"/C/Users/andris/Documents/IKON/scrape/ArtFacts/spotlight/ikon/135673-Lörinc-Borsos-spotlight.json"
+	],
+	"find":
+	{
+		"height": 39.0
+	},
+	"find_in_files":
+	{
+		"height": 580.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"projection_matrix",
+			"projection_matrx",
+			"gl."
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			""
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "render/gloo/vao.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1681,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								957,
+								957
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 113.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "render/gloo_with_glfw.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 13953,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								13953
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2113.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "render/gloo/window.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5006,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4449,
+								4449
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 96.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "render/gloo/example.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 10370,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								8218,
+								8218
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2516.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/C/Users/andris/anaconda3/lib/pathlib.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 50021,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								35533,
+								35533
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 13420.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 5,
+					"file": "render/opengltutorial/advanced_lighting/shadows/main.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2525,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2525,
+								2525
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 477.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "render/gloo_examples/minimal_example.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1949,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								950,
+								950
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 387.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "render/gloo/shader.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2929,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1659,
+								1659
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 777.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 22.0
+	},
+	"input":
+	{
+		"height": 196.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			0.534086625252,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.Terminus":
+	{
+		"height": 194.0
+	},
+	"output.exec":
+	{
+		"height": 207.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.hex_viewer_inspector":
+	{
+		"height": 196.0
+	},
+	"pinned_build_system": "Packages/Virtualenv/Python + Virtualenv.sublime-build",
+	"project": "editor.sublime-project",
+	"replace":
+	{
+		"height": 40.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 1,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 210.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

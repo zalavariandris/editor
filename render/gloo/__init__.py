@@ -1,6 +1,6 @@
 
-from .shader import Shader
+from .program import Program
 from .vao import VAO
-from .vbo import VertexBuffer, IndexBuffer
+from .buffers import VBO, EBO
 from .texture import Texture
 from .fbo import FBO

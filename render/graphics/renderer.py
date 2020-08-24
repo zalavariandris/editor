@@ -1,5 +1,5 @@
 from editor.render import gloo
-from editor.render.with_glfw import Window
+from editor.render.gloo_with_glfw import Window
 import numpy as np
 from editor.render import helpers
 from OpenGL.GL import *
@@ -20,6 +20,7 @@ class Scene:
 		for child in self.children:
 			if isinstance(child, klass):
 				yield child
+
 
 class Geometry:
 	def __init__(self):
@@ -69,7 +70,7 @@ class RenderItem:
 
 
 class Mesh(RenderItem):
-	def __init__(self, geometry, transform, material):
+	def __init__(self, geometry: dict, transform: np.ndarray, material: dict):
 		self.geometry = geometry
 		self.transform = transform
 		self.material = material
@@ -85,10 +86,10 @@ class Mesh(RenderItem):
 			'specularMap': gloo.Texture.from_data(self.material['specularMap'], slot=1)
 		}
 		self.attributes={
-			'vertices': gloo.VertexBuffer(self.geometry.vertices),
-			'indices': gloo.IndexBuffer(self.geometry.indices),
-			'normals': gloo.VertexBuffer(self.geometry.normals),
-			'uvs': gloo.VertexBuffer(self.geometry.uvs),
+			'vertices': gloo.VBO(self.geometry.vertices),
+			'indices': gloo.EBO(self.geometry.indices),
+			'normals': gloo.VBO(self.geometry.normals),
+			'uvs': gloo.VBO(self.geometry.uvs),
 		}
 
 	def draw(self, projection_matrix, view_matrix, scene):

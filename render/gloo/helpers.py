@@ -3,15 +3,6 @@ import contextlib
 import numpy as np
 import glm
 
-@contextlib.contextmanager
-def profile(name, disabled=False):
-    starttime = time.time()
-    yield
-    endtime = time.time()
-    deltatime = endtime-starttime
-    if not disabled:
-        print("{} {:.0f} fps".format(name, 1/deltatime if deltatime>0 else float('inf')))
-
 # helpers
 def orbit(inputMatrix, dx, dy):
     horizontalAxis = glm.vec3( inputMatrix[0][0], inputMatrix[1][0], inputMatrix[2][0] )
@@ -120,7 +111,7 @@ def box(width=1, height=1, length=1, origin=(0,0, 0)):
         1.0,  0.0,
         1.0,  1.0,
         0.0,  1.0,
-    ], dtype=np.float32)
+    ], dtype=np.float32).reshape(-1,2)
 
     colors = np.repeat(np.array([
         [1.0,  1.0,  1.0,  1.0],    # Front face: white
@@ -266,3 +257,8 @@ def sphere(radius=0.5, origin=(0,0.5,0)):
         'uvs': np.array(texCoords, dtype=np.float32).reshape((-1,2)),
         'colors': np.random.uniform(0,1, (len(vertices)//3, 4) ).astype(np.float32)
     }
+
+
+def buffer_offset(itemsize):
+    import ctypes
+    return ctypes.c_void_p(itemsize)
