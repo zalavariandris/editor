@@ -1,9 +1,6 @@
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-import cv2
-
 def convert_cvImgToPixmap(cvImg):
+
+    from PySide2.QtGui import QImage, QPixmap
     # convert to pixmap
     height, width, channel = cvImg.shape
     bytesPerLine = 3 * width
@@ -14,11 +11,14 @@ def convert_cvImgToPixmap(cvImg):
 class memoize:
     def __init__(self, fn):
         self.fn = fn
-        self.memo = {}
+        self.memo = dict()
 
     def __call__(self, *args):
         if args not in self.memo:
+            print
             self.memo[args] = self.fn(*args)
+            print("memo", args)
+            print("memo", self.memo)
         return self.memo[args]
 
 import time   
