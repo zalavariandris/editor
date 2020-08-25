@@ -5,16 +5,16 @@ def buffer_offset(itemsize):
 	import ctypes
 	return ctypes.c_void_p(itemsize)
 
-def draw_quad(program):
+def quad(program):
 	try:
-		vao = draw_quad.cache
+		vao = quad.cache
 	except AttributeError:
 		positions = np.array(
 			# positions        # texture Coords
-			[(-1.0, 0.0, 1.0),
-			(-1.0,  0.0, -1.0),
-			( 1.0,  0.0, 1.0),
-			( 1.0,  0.0, -1.0)],
+			[(-1.0, 1.0, 0.0),
+			(-1.0,  -1.0, 0.0),
+			( 1.0,  1.0, 0.0),
+			( 1.0,  -1.0, 0.0)],
 			dtype=np.float32
 		)
 
@@ -46,16 +46,64 @@ def draw_quad(program):
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0)
 		glBindVertexArray(0)
-		draw_quad.cache = vao
+		quad.cache = vao
 	finally:
 		glBindVertexArray(vao)
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 		glBindVertexArray(0)
 
-def draw_cube(program):
+def plane(program):
 	try:
-		vao = draw_quad.vao
-		ebo = draw_quad.ebo
+		vao = plane.cache
+	except AttributeError:
+		positions = np.array(
+			# positions        # texture Coords
+			[(-1.0, 0.0, 1.0),
+			(-1.0,  0.0, -1.0),
+			( 1.0,  0.0, 1.0),
+			( 1.0,  0.0, -1.0)],
+			dtype=np.float32
+		)
+		positions*=(10, 1, 10)
+
+		uvs = np.array(
+			# positions        # texture Coords
+			[(0.0, 1.0),
+			(0.0, 0.0),
+			(1.0, 1.0),
+			(1.0, 0.0)],
+			dtype=np.float32
+		)
+
+		# setup VAO
+		vao = glGenVertexArrays(1)
+
+		pos_vbo, uv_vbo = glGenBuffers(2) # FIXME: use single vbo for positions and vertices
+		glBindVertexArray(vao)
+		glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
+		glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
+		position_location = glGetAttribLocation(program, 'position')
+		glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, buffer_offset(0))
+		glEnableVertexAttribArray(position_location)
+
+		uv_location = glGetAttribLocation(program, 'uv')
+		glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
+		glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
+		glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, buffer_offset(0))
+		glEnableVertexAttribArray(uv_location)
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0)
+		glBindVertexArray(0)
+		plane.cache = vao
+	finally:
+		glBindVertexArray(vao)
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+		glBindVertexArray(0)
+
+def cube(program):
+	try:
+		vao = cube.vao
+		ebo = cube.ebo
 	except AttributeError:
 		""" create flat cube
 		[https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Creating_3D_objects_using_WebGL]
@@ -156,7 +204,7 @@ def draw_cube(program):
 		# setup VAO
 		vao = glGenVertexArrays(1)
 		
-		pos_vbo, uv_vbo = glGenBuffers(2) # FIXME: use single vbo for positions and vertices
+		pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3) # FIXME: use single vbo for positions and vertices
 		glBindVertexArray(vao)
 		glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
 		glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
@@ -170,6 +218,13 @@ def draw_cube(program):
 		glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, buffer_offset(0))
 		glEnableVertexAttribArray(uv_location)
 
+		normal_location = glGetAttribLocation(program, 'normal')
+		if normal_location is not -1:
+			glBindBuffer(GL_ARRAY_BUFFER, normal_vbo)
+			glBufferData(GL_ARRAY_BUFFER, normals.nbytes, normals, GL_STATIC_DRAW)
+			glVertexAttribPointer(normal_location, 3, GL_FLOAT, False, 0, buffer_offset(0))
+			glEnableVertexAttribArray(normal_location)
+
 		glBindBuffer(GL_ARRAY_BUFFER, 0)
 
 		glBindVertexArray(0)
@@ -179,8 +234,8 @@ def draw_cube(program):
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
-		draw_quad.vao = vao
-		draw_quad.ebo = ebo
+		cube.vao = vao
+		cube.ebo = ebo
 	finally:
 		glBindVertexArray(vao)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
