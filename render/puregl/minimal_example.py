@@ -10,7 +10,6 @@ import glm
 import math
 from PIL import Image
 from editor import utils
-import cv2
 
 from editor.render.gloo.helpers import buffer_offset
 from editor.utils import memoize
@@ -77,34 +76,117 @@ void main(){
 }
 """
 
+def use_program(vertex_source, fragment_source):
+	try:
+		try:
+			memo = use_program.memo
+		except AttributeError:
+			use_program.memo = dict()
+			memo = use_program.memo
+		program = memo[(vertex_source, fragment_source)]
+	except KeyError:
+		print('create program')
+		# setup
+		vertex_shader = glCreateShader(GL_VERTEX_SHADER)
+		glShaderSource(vertex_shader, vertex_source)
+		glCompileShader(vertex_shader)
+		if glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH): # compilation error check
+			raise Exception(glGetShaderInfoLog(vertex_shader))
+
+		fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
+		glShaderSource(fragment_shader, depth_to_color_fragment_source)
+		glCompileShader(fragment_shader)
+		if glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH): # compilation error check
+			raise Exception(glGetShaderInfoLog(fragment_shader))
+
+		program = glCreateProgram()
+		glAttachShader(program, vertex_shader)
+		glAttachShader(program, fragment_shader)
+		glLinkProgram(program)
+		if glGetProgramiv(program, GL_INFO_LOG_LENGTH): # link error check
+			raise Exception(glGetProgramInfoLog(program))
+
+		use_program.memo[(vertex_source, fragment_source)]=program
+
+	# draw
+	glUseProgram(program)
+	return program
+	
+from multipledispatch import dispatch
+
+def texture_with_data(data, slot, format):
+	# get/create memo attribute
+	try:
+		memo = texture_with_data.memo
+	except AttributeError:
+		print("-setup memo")
+		memo = dict()
+		texture_with_data.memo = memo
+
+	# get, create texture
+	try:
+		tex = memo[(id(data), slot)]
+	except KeyError:
+		print("-generate texture")
+		tex = glGenTextures(1)
+		glActiveTexture(GL_TEXTURE0+slot)
+		glBindTexture(GL_TEXTURE_2D, tex)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		internalformat = {
+			GL_RGB: GL_RGB,
+			GL_BGR: GL_RGB,
+			GL_DEPTH_COMPONENT: GL_DEPTH_COMPONENT
+		}[format]
+		#FIXME: read internal and formats https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, data.shape[1], data.shape[0], 0, format, GL_FLOAT, data)
+		
+		memo[(id(data), slot)] = tex
+
+	return tex
+
+
+def texture_with_size(width, height, slot, format):
+	# get/create memo attribute
+	try:
+		memo = texture_with_data.memo
+	except AttributeError:
+		print("-setup memo")
+		memo = dict()
+		texture_with_data.memo = memo
+
+	# get, create texture
+	try:
+		tex = memo[(width, height, slot)]
+	except KeyError:
+		print("-generate texture")
+		tex = glGenTextures(1)
+		glActiveTexture(GL_TEXTURE0+slot)
+		glBindTexture(GL_TEXTURE_2D, tex)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_FLOAT, None)
+		
+		memo[(width, height, slot)] = tex
+
+	return tex
+
 # Init
 width, height = 640, 480
 model_matrix = np.identity(4)
 window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
 # create geometry
-diffuse_data = cv2.imread('../assets/container2.png')/255
-specular_data = cv2.imread('../assets/container2_specular.png')/255
+diffuse_data = np.array(Image.open('../assets/container2.png'))[...,[2,1,0]]/255
+specular_data = np.array(Image.open('../assets/container2_specular.png'))[...,[2,1,0]]/255
 
 with window:
 	glEnable(GL_PROGRAM_POINT_SIZE)
 	glEnable(GL_DEPTH_TEST)
 
-	# create textures
-	diffuse_tex, specular_tex = glGenTextures(2)
-	glActiveTexture(GL_TEXTURE0+0)
-	glBindTexture(GL_TEXTURE_2D, diffuse_tex)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, diffuse_data.shape[1], diffuse_data.shape[0], 0, GL_BGR, GL_FLOAT, diffuse_data)
-
-	glActiveTexture(GL_TEXTURE0+1)
-	glBindTexture(GL_TEXTURE_2D, specular_tex)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, specular_data.shape[1], specular_data.shape[0], 0, GL_BGR, GL_FLOAT, specular_data)
-
-	glBindTexture(GL_TEXTURE_2D, 0)
+	texture_with_data(diffuse_data, slot=0, format=GL_BGR)
+	texture_with_data(specular_data, slot=1, format=GL_BGR)
+	depth_tex = texture_with_size(1024,1024, slot=2, format=GL_DEPTH_COMPONENT)
 	
 	# create program
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER)
@@ -128,18 +210,11 @@ with window:
 
 	# create lights
 	depthfbo = glGenFramebuffers(1)
-	shadow_width, shadow_height = 1024,1024
-	depthmap = glGenTextures(1)
-	glBindTexture(GL_TEXTURE_2D, depthmap)
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+	
 
 	# attach depthmap to framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, depthfbo)
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthmap, 0)
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex, 0)
 	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 	glDrawBuffer(GL_NONE) # dont render color data
 	glReadBuffer(GL_NONE)
@@ -186,48 +261,14 @@ with window:
 	if glGetProgramiv(fbo_depth_on_screen, GL_INFO_LOG_LENGTH): # link error check
 		raise Exception(glGetProgramInfoLog(fbo_depth_on_screen))
 
-def use_program(vertex_source, fragment_source):
-	try:
-		try:
-			memo = use_program.memo
-		except AttributeError:
-			use_program.memo = dict()
-		program = use_program.memo[(vertex_source, fragment_source)]
-	except KeyError:
-		print('create program')
-		# setup
-		vertex_shader = glCreateShader(GL_VERTEX_SHADER)
-		glShaderSource(vertex_shader, vertex_source)
-		glCompileShader(vertex_shader)
-		if glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH): # compilation error check
-			raise Exception(glGetShaderInfoLog(vertex_shader))
-
-		fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
-		glShaderSource(fragment_shader, depth_to_color_fragment_source)
-		glCompileShader(fragment_shader)
-		if glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH): # compilation error check
-			raise Exception(glGetShaderInfoLog(fragment_shader))
-
-		program = glCreateProgram()
-		glAttachShader(program, vertex_shader)
-		glAttachShader(program, fragment_shader)
-		glLinkProgram(program)
-		if glGetProgramiv(program, GL_INFO_LOG_LENGTH): # link error check
-			raise Exception(glGetProgramInfoLog(program))
-
-		use_program.memo[(vertex_source, fragment_source)]=program
-
-	# draw
-	glUseProgram(program)
-	return program
-	
 
 # Draw
 with window:
 	while not window.should_close():
 		# 1. render scene to depth map
 		glBindFramebuffer(GL_FRAMEBUFFER, depthfbo)
-		glViewport(0,0,shadow_width, shadow_height)
+		
+		glViewport(0,0,1024, 1024)
 		glClear(GL_DEPTH_BUFFER_BIT)
 
 		# configure shader
@@ -240,6 +281,7 @@ with window:
 		glUniformMatrix4fv(glGetUniformLocation(depth_program, 'modelMatrix'), 1, False, np.eye(4))
 		
 		# draw geometry
+		
 		draw_cube(program)
 		draw_quad(program)
 		
@@ -250,15 +292,6 @@ with window:
 		glViewport(0, 0, window.width, window.height)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
-		# render fbo depth component on quad
-		# glUseProgram(fbo_depth_on_screen)
-		fbo_depth_on_screen = use_program(vertex_source, depth_to_color_fragment_source)
-
-		glUniformMatrix4fv(glGetUniformLocation(fbo_depth_on_screen, 'projectionMatrix'), 1, False, np.array(window.projection_matrix))
-		glUniformMatrix4fv(glGetUniformLocation(fbo_depth_on_screen, 'viewMatrix'), 1, False, np.array(window.view_matrix))
-		glUniformMatrix4fv(glGetUniformLocation(fbo_depth_on_screen, 'modelMatrix'), 1, False, np.eye(4))
-		glUniform1i(glGetUniformLocation(fbo_depth_on_screen, 'depthMap'), 1)
-		draw_quad(fbo_depth_on_screen)
 
 
 		# # configure shader
@@ -269,8 +302,19 @@ with window:
 		# glUniform1i(glGetUniformLocation(program, 'diffuseMap'), 0)
 		
 		# # draw geometry
+
 		# draw_cube(program)
 		# draw_quad(program)
+
+		# render fbo depth component on quad
+		glUseProgram(fbo_depth_on_screen)
+		fbo_depth_on_screen = use_program(vertex_source, depth_to_color_fragment_source)
+
+		glUniformMatrix4fv(glGetUniformLocation(fbo_depth_on_screen, 'projectionMatrix'), 1, False, np.array(window.projection_matrix))
+		glUniformMatrix4fv(glGetUniformLocation(fbo_depth_on_screen, 'viewMatrix'), 1, False, np.array(window.view_matrix))
+		glUniformMatrix4fv(glGetUniformLocation(fbo_depth_on_screen, 'modelMatrix'), 1, False, np.eye(4))
+		glUniform1i(glGetUniformLocation(fbo_depth_on_screen, 'depthMap'), 2)
+		draw_quad(fbo_depth_on_screen)
 
 		# swap buffers
 		window.swap_buffers()
