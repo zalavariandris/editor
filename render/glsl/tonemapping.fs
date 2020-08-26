@@ -3,6 +3,7 @@
 out vec4 color;
 in vec2 vUv;
 uniform sampler2D screenTexture;
+uniform float exposure;
 
 void main(){
     const float gamma = 2.2;
@@ -12,8 +13,7 @@ void main(){
     //vec3 mapped = hdrColor / (hdrColor+vec3(1.0));
 
     // exposure tone mapping
-    const float exposure = 1.0;
-    vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure); // FIXME: use f-stop, shutterspeed, aperturesize
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * pow(2, exposure)); // FIXME: use f-stop, shutterspeed, aperturesize
 
     // gamma correction
     mapped = pow(mapped, vec3(1.0 / gamma));  

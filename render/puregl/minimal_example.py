@@ -23,29 +23,39 @@ import draw
 import texture
 
 # load shader files
-phong_vs = Path('render/glsl/phong.vs').read_text()
-phong_fs = Path('render/glsl/phong.fs').read_text()
-simple_depth_vs = Path('render/glsl/simple_depth_shader.vs').read_text()
-simple_depth_fs = Path('render/glsl/simple_depth_shader.fs').read_text()
-debug_quad_vs = Path('render/glsl/debug_quad.vs').read_text()
-debug_quad_depth_fs = Path('render/glsl/debug_quad_depth.fs').read_text()
+render_folder = "../"
+phong_vs = Path(render_folder, 'glsl/phong.vs').read_text()
+phong_fs = Path(render_folder, 'glsl/phong.fs').read_text()
+simple_depth_vs = Path(render_folder, 'glsl/simple_depth_shader.vs').read_text()
+simple_depth_fs = Path(render_folder, 'glsl/simple_depth_shader.fs').read_text()
+debug_quad_vs = Path(render_folder, 'glsl/debug_quad.vs').read_text()
+debug_quad_depth_fs = Path(render_folder, 'glsl/debug_quad_depth.fs').read_text()
 
 # Init
-width, height = 640, 480
+width, height = 1024, 768
 model_matrix = np.identity(4)
 window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
 #read textures
-diffuse_data = np.array(Image.open('render/assets/container2.png'))[...,[2,1,0]]/255
-specular_data = np.array(Image.open('render/assets/container2_specular.png'))[...,[2,1,0]]/255
+diffuse_data = np.array(Image.open(Path(render_folder, 'assets/container2.png')))[...,[2,1,0]]/255
+specular_data = np.array(Image.open(Path(render_folder, 'assets/container2_specular.png')))[...,[2,1,0]]/255
 
 faces = [
-	"render/assets/skybox/right.jpg",
-	"render/assets/skybox/left.jpg",
-	"render/assets/skybox/top.jpg",
-	"render/assets/skybox/bottom.jpg",
-	"render/assets/skybox/front.jpg",
-	"render/assets/skybox/back.jpg",
+	Path(render_folder, "assets/skybox/right.jpg"),
+	Path(render_folder, "assets/skybox/left.jpg"),
+	Path(render_folder, "assets/skybox/top.jpg"),
+	Path(render_folder, "assets/skybox/bottom.jpg"),
+	Path(render_folder, "assets/skybox/front.jpg"),
+	Path(render_folder, "assets/skybox/back.jpg"),
+]
+
+faces = [
+	Path(render_folder, "assets/Yokohama3/posx.jpg"),
+	Path(render_folder, "assets/Yokohama3/negx.jpg"),
+	Path(render_folder, "assets/Yokohama3/posy.jpg"),
+	Path(render_folder, "assets/Yokohama3/negy.jpg"),
+	Path(render_folder, "assets/Yokohama3/posz.jpg"),
+	Path(render_folder, "assets/Yokohama3/negz.jpg"),
 ]
 # gamma correct textures
 def to_srgb(img, gamma=2.2):
@@ -88,7 +98,7 @@ with window:
 	# high dynamic range fbo
 	#
 	hdr_fbo = glGenFramebuffers(1)
-	hdr_fbo_width, hdr_fbo_height = 256, 256
+	hdr_fbo_width, hdr_fbo_height = width, height # initalize FBO with window size
 	glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo)
 
 	# attach color attachment
@@ -96,8 +106,8 @@ with window:
 	glActiveTexture(GL_TEXTURE0)
 	glBindTexture(GL_TEXTURE_2D, hdr_tex)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, hdr_fbo_width, hdr_fbo_height, 0, GL_RGB, GL_FLOAT, None)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdr_tex, 0)
 
 	# attach depth and stencil renderbuffers
@@ -110,7 +120,7 @@ with window:
 	glBindTexture(GL_TEXTURE_2D, 0)
 	glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
-	tonamapping_program = program.create(Path("render/glsl/tonemapping.vs").read_text(), Path("render/glsl/tonemapping.fs").read_text())
+	tonamapping_program = program.create(Path(render_folder, "glsl/tonemapping.vs").read_text(), Path(render_folder, "glsl/tonemapping.fs").read_text())
 
 	# environment map
 	def load_cubemap(faces):
@@ -175,7 +185,7 @@ with window:
     ], dtype=np.float32)
 	skybox_tex = load_cubemap(faces)
 
-	skybox_program = program.create(Path('render/glsl/skybox.vs').read_text(), Path('render/glsl/skybox.fs').read_text())
+	skybox_program = program.create(Path(render_folder,'glsl/skybox.vs').read_text(), Path(render_folder, 'glsl/skybox.fs').read_text())
 
 	skyboxVAO, skyboxVBO = glGenVertexArrays(1), glGenBuffers(1)
 	glBindVertexArray(skyboxVAO)
@@ -227,6 +237,8 @@ with window:
 		program.set_uniform(skybox_program, 'projectionMatrix', window.projection_matrix)
 		sky_view = glm.mat4(glm.mat3(window.view_matrix)); 
 		program.set_uniform(skybox_program, 'viewMatrix', sky_view)
+		camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
+		program.set_uniform(skybox_program, 'cameraPos', camera_pos)
 		glBindVertexArray(skyboxVAO)
 		glActiveTexture(GL_TEXTURE0)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex)
@@ -246,6 +258,7 @@ with window:
 		light_dir = glm.normalize(glm.inverse(light_view)[2]).xyz
 		program.set_uniform(phong_program, 'lightDir', light_dir)
 		camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
+		print(camera_pos)
 		program.set_uniform(phong_program, 'cameraPos', camera_pos)
 		
 		# draw geometry
@@ -287,6 +300,7 @@ with window:
 		program.set_uniform(tonamapping_program, 'viewMatrix', np.eye(4))
 		program.set_uniform(tonamapping_program, 'modelMatrix', np.eye(4))
 		program.set_uniform(tonamapping_program, 'screenTexture', 0)
+		program.set_uniform(tonamapping_program, 'exposure', 2.0)
 		glActiveTexture(GL_TEXTURE0)
 		glBindTexture(GL_TEXTURE_2D, hdr_tex)
 		draw.quad(tonamapping_program)
