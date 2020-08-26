@@ -4,22 +4,14 @@ in vec3 FragPos;
 in vec4 FragPosLightSpace;
 in vec3 vNormal;
 
-vec3 albedoColor;
-bool useAlbedoMap;
-uniform sampler2D albedoMap;
-float metalnessValue;
-bool useMetalnessMap;
-uniform sampler2D metalnessMap;
-float roughnessValue;
-bool iseRoughnessMap;
-uniform sampler2D roughnessMap;
-vec3 emissionColor;
-bool useEmissionMap;
-uniform sampler2D emissionMap;
+uniform sampler2D diffuseMap;
+uniform sampler2D specularMap;
 uniform sampler2D shadowMap;
+uniform samplerCube environmentMap;
 
 out vec4 color;
 uniform vec3 lightDir;
+uniform vec3 cameraPos;
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir){
 	// perform perspective divide
@@ -52,7 +44,16 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir){
 }
 
 void main(){
-	vec3 tex = texture(albedoMap, vUv).rgb;
+	float IOR = 1.52;
+	vec3 N = vNormal;
+	vec3 I = normalize(FragPos-cameraPos); // view direction
+	vec3 Rr = refract(I, normalize(N), 1.0/IOR); // refraction vector
+	vec3 Rl = reflect(I, normalize(N)); // reflection vector
+	vec3 tex = texture(diffuseMap, vUv).rgb;
 	float shadow = ShadowCalculation(FragPosLightSpace, normalize(lightDir));
+	
+	vec3 refraction = texture(environmentMap, Rr).rgb;
+	vec3 reflection = texture(environmentMap, Rl).rgb;
+	vec3 specular = texture(specularMap, vUv).rgb;
 	color = vec4(tex*(1-shadow*0.8), 1.0);
 }

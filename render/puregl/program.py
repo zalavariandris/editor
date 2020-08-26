@@ -48,7 +48,7 @@ def set_uniform(program, name, value):
 		else:
 			raise NotImplementedError('uniform {} {}'.format(type(value), value.shape))
 
-	elif isinstance(value, glm.mat4x4):
+	elif isinstance(value, glm.mat4):
 		glUniformMatrix4fv(location, 1, False, np.array(value))
 	elif isinstance(value, glm.vec3):
 		glUniform3f(location, value.x, value.y, value.z)
