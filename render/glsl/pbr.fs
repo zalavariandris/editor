@@ -5,6 +5,7 @@ struct Material{
 	vec3 albedo;
 	float metallic;
 	float roughness;
+	float ao;
 };
 
 uniform Material material;
@@ -24,6 +25,38 @@ const float PI = 3.14159265359;
 in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
+in vec4 FragPosLightSpace;
+
+/**/
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, sampler2D shadowMap){
+	// perform perspective divide
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+	projCoords = projCoords*0.5+0.5;
+	if(projCoords.z>1.0)
+		return 0.0;
+
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float currentDepth = projCoords.z;
+
+	if(dot(normal, lightDir)<0.0)
+	  return 0.0;
+
+	float shadow = 0.0;
+	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+	// bias = 0.05;
+	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+	for(int x = -1; x <= 1; ++x)
+	{
+	    for(int y = -1; y <= 1; ++y)
+	    {
+	        float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+	        shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+	    }    
+	}
+	shadow /= 9.0;
+	return shadow;
+}
 
 /*self shadowing microfacets*/
 float distributionGGX(float NdotH, float roughness){
@@ -66,7 +99,7 @@ void main(){
 		// calculate per-light radiance
 		vec3 L = normalize(light.position - WorldPos);
 		vec3 H = normalize(V+L); /* halfway bysecting vector */
-		float distance = length(light.position - WorldPos);
+		float distance = 1.0;//length(light.position - WorldPos);
 		float attenuation = 1.0 / (distance*distance);
 		vec3 radiance = light.color * attenuation;
 
@@ -94,7 +127,7 @@ void main(){
 		Lo+=(kD * material.albedo / PI + specular) * radiance * NdotL; //output luminance
 
 
-	vec3 ambient = vec3(0.003)*material.albedo; //FIXME: replace with environment
+	vec3 ambient = vec3(0.003)*material.albedo * material.ao; //FIXME: replace with environment
 
 	vec3 color = ambient + Lo;
 

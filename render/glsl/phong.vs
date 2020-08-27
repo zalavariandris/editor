@@ -6,7 +6,7 @@ layout (location = 2) in vec3 normal;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-uniform mat4 lightSpaceMatrix;
+uniform mat4 lightSpaceMatrix; //FIXME: multiple lights
 
 out vec2 TexCoords;
 out vec3 Normal;

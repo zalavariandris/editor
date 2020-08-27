@@ -68,7 +68,7 @@ with window:
 
 	# programs
 	lambert_program = program.create(lambert_vs, lambert_fs)
-	pbr_program = program.create(phong_vs, phong_fs)
+	phong_program = program.create(phong_vs, phong_fs)
 	pbr_program = program.create(pbr_vs, pbr_fs)
 
 	# shadow mapping
@@ -225,6 +225,7 @@ def draw_scene(prog):
 with window:
 	while not window.should_close():
 		# 1. render scene to depth map
+		# ============================
 		glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo)
 		
 		glViewport(0,0, shadow_fbo_width, shadow_fbo_height)
@@ -244,15 +245,14 @@ with window:
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-		#
-		# 2. render the scene to HDR_FBO with shadow mapping
-		# 
+		# 2. Render the scene to HDR_FBO with shadow mapping
+		# ==================================================
 		glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo)
 		glViewport(0, 0, hdr_fbo_width, hdr_fbo_height)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glCullFace(GL_BACK)
 
-		# # Render skybox
+		# Render skybox
 		glDepthFunc(GL_LEQUAL)
 		glDepthMask(GL_FALSE)
 		glUseProgram(skybox_program)
@@ -267,7 +267,47 @@ with window:
 		glDrawArrays(GL_TRIANGLES, 0, 36)
 		glDepthMask(GL_TRUE)
 
-		# Render scene
+		# # render scene with phong shading
+		# # -------------------------------
+		# glUseProgram(phong_program)
+		# program.set_uniform(phong_program, 'projectionMatrix', window.projection_matrix)
+		# program.set_uniform(phong_program, 'viewMatrix', window.view_matrix)
+		# model_matrix = glm.identity(glm.mat4x4)
+		# normal_matrix = glm.mat3( glm.transpose(glm.inverse(model_matrix)) )
+		# program.set_uniform(phong_program, 'modelMatrix', model_matrix)
+		# program.set_uniform(phong_program, 'normalMatrix', normal_matrix)
+
+		# program.set_uniform(phong_program, 'material.diffuseMap', 0)
+		# program.set_uniform(phong_program, 'material.specularMap', 1)
+		# program.set_uniform(phong_program, 'material.shiness', 5.0)
+
+
+		# light_dir = glm.normalize(glm.inverse(light_view)[2].xyz)
+		# light_pos = glm.inverse(light_view)[3].xyz
+		# program.set_uniform(phong_program, 'lightSpaceMatrix', light_projection * light_view)
+		# program.set_uniform(phong_program, 'sun.direction', light_dir)
+		# program.set_uniform(phong_program, 'sun.ambient', glm.vec3(0.3))
+		# program.set_uniform(phong_program, 'sun.diffuse', glm.vec3(1))
+		# program.set_uniform(phong_program, 'sun.specular', glm.vec3(1))
+		# program.set_uniform(phong_program, 'sun.shadowMap', 2)
+
+		# camera_pos = glm.inverse(window.view_matrix)[3].xyz
+		# program.set_uniform(phong_program, 'cameraPos', camera_pos)
+		
+		# # draw geometry
+		# glActiveTexture(GL_TEXTURE0+0)
+		# glBindTexture(GL_TEXTURE_2D, diffuse_tex)
+		# glActiveTexture(GL_TEXTURE0+1)
+		# glBindTexture(GL_TEXTURE_2D, specular_tex)
+		# glActiveTexture(GL_TEXTURE0+2)
+		# glBindTexture(GL_TEXTURE_2D, shadow_tex)
+		# glActiveTexture(GL_TEXTURE0+3)
+		# glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex)
+		# draw_scene(phong_program)
+		# glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+		# Render scene with PBR shading
+		# -----------------------------
 		glUseProgram(pbr_program)
 		program.set_uniform(pbr_program, 'projectionMatrix', window.projection_matrix)
 		program.set_uniform(pbr_program, 'viewMatrix', window.view_matrix)
@@ -276,26 +316,17 @@ with window:
 		program.set_uniform(pbr_program, 'modelMatrix', model_matrix)
 		program.set_uniform(pbr_program, 'normalMatrix', normal_matrix)
 
-		# program.set_uniform(pbr_program, 'material.diffuseMap', 0)
-		# program.set_uniform(pbr_program, 'material.specularMap', 1)
-		# program.set_uniform(pbr_program, 'material.shiness', 5.0)
-		# program.set_uniform(pbr_program, 'material.environmentMap', 3)
 
 		program.set_uniform(pbr_program, 'material.albedo', glm.vec3(0.3))
 		program.set_uniform(pbr_program, 'material.roughness', 0.3)
-		program.set_uniform(pbr_program, 'material.metallic', 1.0)
+		program.set_uniform(pbr_program, 'material.metallic', 0.0)
 
 		light_dir = glm.normalize(glm.inverse(light_view)[2].xyz)
 		light_pos = glm.inverse(light_view)[3].xyz
 		program.set_uniform(pbr_program, 'lightSpaceMatrix', light_projection * light_view)
 		program.set_uniform(pbr_program, 'light.direction', light_dir)
 		program.set_uniform(pbr_program, 'light.position', light_pos)
-		program.set_uniform(pbr_program, 'light.color', glm.vec3(500.0))
-		program.set_uniform(pbr_program, 'sun.direction', light_dir)
-		program.set_uniform(pbr_program, 'sun.ambient', glm.vec3(0.003))
-		program.set_uniform(pbr_program, 'sun.diffuse', glm.vec3(1))
-		program.set_uniform(pbr_program, 'sun.specular', glm.vec3(1))
-		program.set_uniform(pbr_program, 'sun.shadowMap', 2)
+		program.set_uniform(pbr_program, 'light.color', glm.vec3(1.0))
 
 		camera_pos = glm.inverse(window.view_matrix)[3].xyz
 		program.set_uniform(pbr_program, 'cameraPos', camera_pos)
@@ -312,9 +343,8 @@ with window:
 		draw_scene(pbr_program)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-		# #
-		# # render fbo depth component on quad
-		# #
+		# Debug: Render fbo depth component on quad
+		# -----------------------------------------
 		# glViewport(0, 0, window.width, window.height)
 		# glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		# glUseProgram(debug_depth_program)
@@ -327,9 +357,8 @@ with window:
 		# glBindTexture(GL_TEXTURE_2D, shadow_tex)
 		# imdraw.quad(debug_depth_program)
 
-		#
-		# render HDR color component on quad
-		#
+		# 3. Render HDR color component on quad
+		# ==================================
 		glViewport(0, 0, window.width, window.height)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		glUseProgram(tonamapping_program)

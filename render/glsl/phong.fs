@@ -7,7 +7,6 @@ in vec3 Normal;
 struct Material{
 	sampler2D diffuseMap;
 	sampler2D specularMap;
-	samplerCube environmentMap;
 	float shiness;
 };
 
