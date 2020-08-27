@@ -36,27 +36,9 @@ width, height = 1024, 768
 model_matrix = np.identity(4)
 window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
-#read textures
-diffuse_data = np.array(Image.open(Path(render_folder, 'assets/container2.png')))[...,[2,1,0]]/255
-specular_data = np.array(Image.open(Path(render_folder, 'assets/container2_specular.png')))[...,[2,1,0]]/255
-
-faces = [
-	Path(render_folder, "assets/skybox/right.jpg"),
-	Path(render_folder, "assets/skybox/left.jpg"),
-	Path(render_folder, "assets/skybox/top.jpg"),
-	Path(render_folder, "assets/skybox/bottom.jpg"),
-	Path(render_folder, "assets/skybox/front.jpg"),
-	Path(render_folder, "assets/skybox/back.jpg"),
-]
-
-faces = [
-	Path(render_folder, "assets/Yokohama3/posx.jpg"),
-	Path(render_folder, "assets/Yokohama3/negx.jpg"),
-	Path(render_folder, "assets/Yokohama3/posy.jpg"),
-	Path(render_folder, "assets/Yokohama3/negy.jpg"),
-	Path(render_folder, "assets/Yokohama3/posz.jpg"),
-	Path(render_folder, "assets/Yokohama3/negz.jpg"),
-]
+#
+# read textures
+#
 # gamma correct textures
 def to_srgb(img, gamma=2.2):
 	return np.power(img, (1/gamma, 1/gamma, 1/gamma))
@@ -64,6 +46,8 @@ def to_srgb(img, gamma=2.2):
 def to_linear(img, gamma=2.2):
 	return np.power(img, (gamma, gamma, gamma))
 
+diffuse_data = np.array(Image.open(Path(render_folder, 'assets/container2.png')))[...,[2,1,0]]/255
+specular_data = np.array(Image.open(Path(render_folder, 'assets/container2_specular.png')))[...,[2,1,0]]/255
 diffuse_data=to_linear(diffuse_data)
 specular_data=to_linear(specular_data)
 
@@ -122,12 +106,24 @@ with window:
 
 	tonamapping_program = program.create(Path(render_folder, "glsl/tonemapping.vs").read_text(), Path(render_folder, "glsl/tonemapping.fs").read_text())
 
+	#
 	# environment map
+	#
+	faces = [
+		Path(render_folder, "assets/Yokohama3/posx.jpg"),
+		Path(render_folder, "assets/Yokohama3/negx.jpg"),
+		Path(render_folder, "assets/Yokohama3/posy.jpg"),
+		Path(render_folder, "assets/Yokohama3/negy.jpg"),
+		Path(render_folder, "assets/Yokohama3/posz.jpg"),
+		Path(render_folder, "assets/Yokohama3/negz.jpg"),
+	]
+
+	skybox_data = [to_linear(np.array(Image.open(file))/255) for i, file in enumerate(faces)]
 	def load_cubemap(faces):
 		cubemap = glGenTextures(1)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap)
-		for i, file in enumerate(faces):
-			data = to_linear(np.array(Image.open(file), dtype=np.float32)/255)
+
+		for i, data in enumerate(skybox_data):
 			height, width, channels = data.shape
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i,
 				0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data
@@ -184,9 +180,7 @@ with window:
          1.0, -1.0,  1.0
     ], dtype=np.float32)
 	skybox_tex = load_cubemap(faces)
-
 	skybox_program = program.create(Path(render_folder,'glsl/skybox.vs').read_text(), Path(render_folder, 'glsl/skybox.fs').read_text())
-
 	skyboxVAO, skyboxVBO = glGenVertexArrays(1), glGenBuffers(1)
 	glBindVertexArray(skyboxVAO)
 	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO)
@@ -251,14 +245,13 @@ with window:
 		program.set_uniform(phong_program, 'viewMatrix', window.view_matrix)
 		program.set_uniform(phong_program, 'modelMatrix', np.eye(4))
 		program.set_uniform(phong_program, 'lightSpaceMatrix', light_projection * light_view)
-		program.set_uniform(phong_program, 'diffuseMap', 0)
-		program.set_uniform(phong_program, 'specularMap', 1)
-		program.set_uniform(phong_program, 'shadowMap', 2)
-		program.set_uniform(phong_program, 'environmentMap', 3)
+		program.set_uniform(phong_program, 'material.diffuseMap', 0)
+		program.set_uniform(phong_program, 'material.specularMap', 1)
+		program.set_uniform(phong_program, 'material.environmentMap', 3)
 		light_dir = glm.normalize(glm.inverse(light_view)[2]).xyz
-		program.set_uniform(phong_program, 'lightDir', light_dir)
+		program.set_uniform(phong_program, 'sun.lightDir', light_dir)
+		program.set_uniform(phong_program, 'sun.shadowMap', 2)
 		camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
-		print(camera_pos)
 		program.set_uniform(phong_program, 'cameraPos', camera_pos)
 		
 		# draw geometry
@@ -268,8 +261,8 @@ with window:
 		glBindTexture(GL_TEXTURE_2D, specular_tex)
 		glActiveTexture(GL_TEXTURE0+2)
 		glBindTexture(GL_TEXTURE_2D, shadow_tex)
-		glActiveTexture(GL_TEXTURE0+3)
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex)
+		# glActiveTexture(GL_TEXTURE0+3)
+		# glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex)
 		draw.cube(phong_program)
 		draw.plane(phong_program)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0)
