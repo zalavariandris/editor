@@ -6,9 +6,6 @@ in vec3 Normal;
 
 struct Material{
 	sampler2D diffuseMap;
-	sampler2D specularMap;
-	samplerCube environmentMap;
-	float shiness;
 };
 
 struct DirectionalLight{
@@ -24,7 +21,7 @@ struct DirectionalLight{
 uniform Material material;
 uniform DirectionalLight sun;
 
-out vec4 FragColor;
+out vec4 color;
 uniform vec3 cameraPos;
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, sampler2D shadowMap){
@@ -58,9 +55,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, samp
 }
 
 vec3 CalcDirLight(vec3 ambientColor, 
-	              vec3 diffuseColor, 
-	              vec3 specularColor, 
-	              float shiness, 
+	              vec3 diffuseColor,
 	              DirectionalLight light, 
 	              vec3 normal, 
 	              vec3 viewDir, 
@@ -74,29 +69,20 @@ vec3 CalcDirLight(vec3 ambientColor,
 	float diff = max(dot(norm, lightDir), 0.0);
 	vec3 diffuse = diffuseColor*diff*light.diffuse;
 
-	// specular
-	vec3 reflectDir = reflect(-lightDir, normal); 
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), pow(2, shiness));
-	vec3 specular = light.specular * (spec * specularColor); // FIXME: specular seem to be off on planar surfaces
-
 	float shadow = ShadowCalculation(fragPosLightSpace, lightDir, normal, light.shadowMap);
 
-	return ambient+(diffuse+specular)*(1-shadow);
+	return ambient+diffuse*(1-shadow);
 }
 
 void main(){
 	vec3 I = normalize(cameraPos-FragPos); // view direction
 	vec3 ambientColor = texture(material.diffuseMap, TexCoords).rgb;
 	vec3 diffuseColor = texture(material.diffuseMap, TexCoords).rgb;
-	vec3 specularColor = texture(material.specularMap, TexCoords).rgb;
-	float shiness = material.shiness;
-	vec3 color = CalcDirLight(ambientColor, 
-				            diffuseColor, 
-				            specularColor, 
-				            shiness, 
+	vec3 col = CalcDirLight(ambientColor, 
+				            diffuseColor,
 				            sun, 
 				            normalize(Normal), 
 				            I, 
 				            FragPosLightSpace);
-	FragColor = vec4(color, 1.0);
+	color = vec4(col, 1.0);
 }
