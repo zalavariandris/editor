@@ -8,15 +8,15 @@ uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 lightSpaceMatrix;
 
-out vec2 vUv;
-out vec3 vNormal;
+out vec2 TexCoords;
+out vec3 Normal;
 out vec3 FragPos;
 out vec4 FragPosLightSpace;
 
 void main(){
 	gl_PointSize = 5.0;
-	vUv = uv;
-	vNormal = normal;
+	TexCoords = uv;
+	Normal = normal;
 	FragPos = vec3(modelMatrix * vec4(position, 1.0));
 	FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
 	gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1);

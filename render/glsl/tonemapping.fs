@@ -4,9 +4,9 @@ out vec4 color;
 in vec2 vUv;
 uniform sampler2D screenTexture;
 uniform float exposure;
+uniform float gamma=1.0;
 
 void main(){
-    const float gamma = 2.2;
     vec3 hdrColor = texture(screenTexture, vUv).rgb;
 
     // reinhardt tonemapping

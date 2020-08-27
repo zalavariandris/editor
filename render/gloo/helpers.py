@@ -176,6 +176,8 @@ def plane(width=1, length=1, origin=(0,0)):
         }
 
 import math
+
+import math
 def sphere(radius=0.5, origin=(0,0.5,0)):
     """
     reference: [http://www.songho.ca/opengl/gl_sphere.html]
@@ -257,7 +259,6 @@ def sphere(radius=0.5, origin=(0,0.5,0)):
         'uvs': np.array(texCoords, dtype=np.float32).reshape((-1,2)),
         'colors': np.random.uniform(0,1, (len(vertices)//3, 4) ).astype(np.float32)
     }
-
 
 def buffer_offset(itemsize):
     import ctypes

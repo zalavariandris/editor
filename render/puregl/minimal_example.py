@@ -19,13 +19,15 @@ from pathlib import Path
 
 # puregl
 import program
-import draw
+import imdraw
 import texture
 
 # load shader files
 render_folder = "../"
 phong_vs = Path(render_folder, 'glsl/phong.vs').read_text()
 phong_fs = Path(render_folder, 'glsl/phong.fs').read_text()
+pbr_vs = Path(render_folder, 'glsl/pbr.vs').read_text()
+pbr_fs = Path(render_folder, 'glsl/pbr.fs').read_text()
 simple_depth_vs = Path(render_folder, 'glsl/simple_depth_shader.vs').read_text()
 simple_depth_fs = Path(render_folder, 'glsl/simple_depth_shader.fs').read_text()
 debug_quad_vs = Path(render_folder, 'glsl/debug_quad.vs').read_text()
@@ -59,6 +61,7 @@ with window:
 	diffuse_tex = texture.create(diffuse_data, slot=0, format=GL_BGR)
 	specular_tex = texture.create(specular_data, slot=1, format=GL_BGR)
 	phong_program = program.create(phong_vs, phong_fs)
+	pbr_program = program.create(pbr_vs, pbr_fs)
 
 	# shadow mapping
 	shadow_fbo = glGenFramebuffers(1)
@@ -110,12 +113,12 @@ with window:
 	# environment map
 	#
 	faces = [
-		Path(render_folder, "assets/Yokohama3/posx.jpg"),
-		Path(render_folder, "assets/Yokohama3/negx.jpg"),
-		Path(render_folder, "assets/Yokohama3/posy.jpg"),
-		Path(render_folder, "assets/Yokohama3/negy.jpg"),
-		Path(render_folder, "assets/Yokohama3/posz.jpg"),
-		Path(render_folder, "assets/Yokohama3/negz.jpg"),
+		Path(render_folder, "assets/Storforsen3/posx.jpg"),
+		Path(render_folder, "assets/Storforsen3/negx.jpg"),
+		Path(render_folder, "assets/Storforsen3/posy.jpg"),
+		Path(render_folder, "assets/Storforsen3/negy.jpg"),
+		Path(render_folder, "assets/Storforsen3/posz.jpg"),
+		Path(render_folder, "assets/Storforsen3/negz.jpg"),
 	]
 
 	skybox_data = [to_linear(np.array(Image.open(file))/255) for i, file in enumerate(faces)]
@@ -192,6 +195,25 @@ with window:
 
 import time
 # Draw
+def draw_scene(prog):
+	model_matrix = glm.translate(glm.mat4(1), (-1,0,0))
+	normal_matrix = glm.mat3( glm.transpose(glm.inverse(model_matrix)) )
+	program.set_uniform(prog, 'modelMatrix', model_matrix)
+	program.set_uniform(prog, 'normalMatrix', normal_matrix)
+	imdraw.cube(prog)
+
+	model_matrix = glm.translate(glm.mat4(1), (1,0,0))
+	normal_matrix = glm.mat3( glm.transpose(glm.inverse(model_matrix)) )
+	program.set_uniform(prog, 'modelMatrix', model_matrix)
+	program.set_uniform(prog, 'normalMatrix', normal_matrix)
+	imdraw.sphere(prog)
+
+	model_matrix = glm.mat4(1)
+	normal_matrix = glm.mat3( glm.transpose(glm.inverse(model_matrix)) )
+	program.set_uniform(prog, 'modelMatrix', model_matrix)
+	program.set_uniform(prog, 'normalMatrix', normal_matrix)
+	imdraw.plane(prog)
+
 with window:
 	while not window.should_close():
 		# 1. render scene to depth map
@@ -210,9 +232,7 @@ with window:
 		program.set_uniform(depth_program, 'viewMatrix', light_view)
 		program.set_uniform(depth_program, 'modelMatrix', np.eye(4))
 		
-		# draw geometry
-		draw.cube(phong_program)
-		draw.plane(phong_program)
+		draw_scene(depth_program)
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
@@ -243,14 +263,24 @@ with window:
 		glUseProgram(phong_program)
 		program.set_uniform(phong_program, 'projectionMatrix', window.projection_matrix)
 		program.set_uniform(phong_program, 'viewMatrix', window.view_matrix)
-		program.set_uniform(phong_program, 'modelMatrix', np.eye(4))
-		program.set_uniform(phong_program, 'lightSpaceMatrix', light_projection * light_view)
+		model_matrix = glm.identity(glm.mat4x4)
+		normal_matrix = glm.mat3( glm.transpose(glm.inverse(model_matrix)) )
+		program.set_uniform(phong_program, 'modelMatrix', model_matrix)
+		program.set_uniform(phong_program, 'normalMatrix', normal_matrix)
+
 		program.set_uniform(phong_program, 'material.diffuseMap', 0)
 		program.set_uniform(phong_program, 'material.specularMap', 1)
+		program.set_uniform(phong_program, 'material.shiness', 5.0)
 		program.set_uniform(phong_program, 'material.environmentMap', 3)
+
 		light_dir = glm.normalize(glm.inverse(light_view)[2]).xyz
-		program.set_uniform(phong_program, 'sun.lightDir', light_dir)
+		program.set_uniform(phong_program, 'lightSpaceMatrix', light_projection * light_view)
+		program.set_uniform(phong_program, 'sun.direction', light_dir)
+		program.set_uniform(phong_program, 'sun.ambient', glm.vec3(0.03))
+		program.set_uniform(phong_program, 'sun.diffuse', glm.vec3(1))
+		program.set_uniform(phong_program, 'sun.specular', glm.vec3(1))
 		program.set_uniform(phong_program, 'sun.shadowMap', 2)
+
 		camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
 		program.set_uniform(phong_program, 'cameraPos', camera_pos)
 		
@@ -263,8 +293,7 @@ with window:
 		glBindTexture(GL_TEXTURE_2D, shadow_tex)
 		# glActiveTexture(GL_TEXTURE0+3)
 		# glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex)
-		draw.cube(phong_program)
-		draw.plane(phong_program)
+		draw_scene(phong_program)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
 		# #
@@ -280,7 +309,7 @@ with window:
 		# program.set_uniform(debug_depth_program, 'depthMap', 2)
 		# glActiveTexture(GL_TEXTURE0+2)
 		# glBindTexture(GL_TEXTURE_2D, shadow_tex)
-		# draw.quad(debug_depth_program)
+		# imdraw.quad(debug_depth_program)
 
 		#
 		# render HDR color component on quad
@@ -294,9 +323,10 @@ with window:
 		program.set_uniform(tonamapping_program, 'modelMatrix', np.eye(4))
 		program.set_uniform(tonamapping_program, 'screenTexture', 0)
 		program.set_uniform(tonamapping_program, 'exposure', 2.0)
+		program.set_uniform(tonamapping_program, 'gamma', 2.2)
 		glActiveTexture(GL_TEXTURE0)
 		glBindTexture(GL_TEXTURE_2D, hdr_tex)
-		draw.quad(tonamapping_program)
+		imdraw.quad(tonamapping_program)
 
 		# swap buffers
 		window.swap_buffers()

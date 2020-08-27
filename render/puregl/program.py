@@ -50,6 +50,8 @@ def set_uniform(program, name, value):
 
 	elif isinstance(value, glm.mat4):
 		glUniformMatrix4fv(location, 1, False, np.array(value))
+	elif isinstance(value, glm.mat3):
+		glUniformMatrix3fv(location, 1, False, np.array(value))
 	elif isinstance(value, glm.vec3):
 		glUniform3f(location, value.x, value.y, value.z)
 
