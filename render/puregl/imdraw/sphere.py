@@ -14,8 +14,8 @@ def sphere(program):
 
     radius = 0.5
     origin = (0,-0.5,0)
-    sectorCount = 8
-    stackCount = 8
+    sectorCount = 36
+    stackCount = 36
 
     #
     sectorStep = 2 * math.pi / sectorCount
@@ -83,6 +83,7 @@ def sphere(program):
     positions-=origin
     uvs = np.array(texCoords, dtype=np.float32).reshape((-1,2))
     indices = np.array(indices, dtype=np.uint)
+    count = indices.size
 
     # create VAO
     vao = glGenVertexArrays(1)
@@ -125,6 +126,6 @@ def sphere(program):
     # draw sphere
     glBindVertexArray(vao)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
-    glDrawElements(GL_TRIANGLES, (8*13+2)*3, GL_UNSIGNED_INT, None)
+    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
     glBindVertexArray(0)

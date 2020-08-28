@@ -209,7 +209,7 @@ with window:
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_rbo)
 
 	# read image
-	environment_data = imageio.imread(Path(render_folder, 'assets/hdri/Tropical_Beach_3k.hdr'), format="HDR-FI")
+	environment_data = imageio.imread(Path(render_folder, 'assets/hdri/fin4_Ref.hdr'), format="HDR-FI")
 	env_height, env_width, env_channels = environment_data.shape
 
 	# create env texture
@@ -499,8 +499,8 @@ with window:
 		# -----------------------------
 		glUseProgram(pbr_program)
 
-		program.set_uniform(pbr_program, 'material.albedo', glm.vec3(0.3))
-		program.set_uniform(pbr_program, 'material.roughness', 0.2)
+		program.set_uniform(pbr_program, 'material.albedo', (0.7,0.0,0.0))
+		program.set_uniform(pbr_program, 'material.roughness', 0.03)
 		program.set_uniform(pbr_program, 'material.metallic', 0.0)
 		program.set_uniform(pbr_program, 'material.ao', 1.0)
 
