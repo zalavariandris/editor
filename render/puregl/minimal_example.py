@@ -23,20 +23,12 @@ import program
 import imdraw
 import texture
 
+from editor.render import glsl
+
+glsl.read("phong.vs", "phong.fs")
+
 # load shader files
 render_folder = "../"
-surface_vs = Path(render_folder, 'glsl/surface.vs').read_text()
-surface_fs = Path(render_folder, 'glsl/surface.fs').read_text()
-lambert_vs = Path(render_folder, 'glsl/lambert.vs').read_text()
-lambert_fs = Path(render_folder, 'glsl/lambert.fs').read_text()
-phong_vs = Path(render_folder, 'glsl/phong.vs').read_text()
-phong_fs = Path(render_folder, 'glsl/phong.fs').read_text()
-pbr_vs = Path(render_folder, 'glsl/pbr.vs').read_text()
-pbr_fs = Path(render_folder, 'glsl/pbr.fs').read_text()
-simple_depth_vs = Path(render_folder, 'glsl/simple_depth_shader.vs').read_text()
-simple_depth_fs = Path(render_folder, 'glsl/simple_depth_shader.fs').read_text()
-debug_quad_vs = Path(render_folder, 'glsl/debug_quad.vs').read_text()
-debug_quad_depth_fs = Path(render_folder, 'glsl/debug_quad_depth.fs').read_text()
 
 # Init
 width, height = 1024, 768
@@ -52,10 +44,10 @@ def to_srgb(img, gamma=2.2):
 def to_linear(img, gamma=2.2):
 	return np.power(img, (gamma, gamma, gamma))
 
-diffuse_data = np.array(Image.open(Path(render_folder, 'assets/container2_axis.png')))[...,[2,1,0]]/255
+diffuse_data  = np.array(Image.open(Path(render_folder, 'assets/container2_axis.png')))[...,[2,1,0]]/255
 specular_data = np.array(Image.open(Path(render_folder, 'assets/container2_specular.png')))[...,[2,1,0]]/255
-diffuse_data=to_linear(diffuse_data)
-specular_data=to_linear(specular_data)
+diffuse_data  = to_linear(diffuse_data)
+specular_data = to_linear(specular_data)
 
 with window:
 	glEnable(GL_PROGRAM_POINT_SIZE)
@@ -66,11 +58,12 @@ with window:
 	specular_tex = texture.create(specular_data, slot=1, format=GL_BGR)
 
 	# create programs
-	lambert_program = program.create(lambert_vs, lambert_fs)
-	phong_program = program.create(phong_vs, phong_fs)
-	pbr_program = program.create(pbr_vs, pbr_fs)
+	lambert_program = program.create(*glsl.read('lambert'))
+	phong_program = program.create(*glsl.read('phong'))
+	pbr_program = program.create(*glsl.read('pbr'))
 
-	# shadow mapping
+	# setup Shadow mapping
+	# ----------------------
 	shadow_fbo = glGenFramebuffers(1)
 	shadow_fbo_width, shadow_fbo_height = 1024, 1024
 	glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo)
@@ -85,16 +78,18 @@ with window:
 	glDrawBuffer(GL_NONE) # dont render color data
 	glReadBuffer(GL_NONE)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0)
-	depth_program = program.create(simple_depth_vs, simple_depth_fs)
-	debug_depth_program = program.create(debug_quad_vs, debug_quad_depth_fs)
+	depth_program = program.create(*glsl.read('simple_depth'))
+	debug_depth_program = program.create(*glsl.read('debug_quad.vs', 'debug_quad_depth.fs'))
 
-	# high dynamic range fbo
-	# ----------------------
+	# Setup Tonemapping with HDR fbo
+	# ------------------------------
+
+	# setup fbo
 	hdr_fbo = glGenFramebuffers(1)
 	hdr_fbo_width, hdr_fbo_height = width, height # initalize FBO with window size
 	glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo)
 
-	# attach color attachment
+	## attach color attachment
 	hdr_tex = glGenTextures(1)
 	glActiveTexture(GL_TEXTURE0)
 	glBindTexture(GL_TEXTURE_2D, hdr_tex)
@@ -103,7 +98,7 @@ with window:
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdr_tex, 0)
 
-	# attach depth and stencil renderbuffers
+	## attach depth and stencil renderbuffers
 	rbo = glGenRenderbuffers(1)
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo)
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, hdr_fbo_width, hdr_fbo_height)
@@ -113,10 +108,13 @@ with window:
 	glBindTexture(GL_TEXTURE_2D, 0)
 	glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
-	tonamapping_program = program.create(Path(render_folder, "glsl/tonemapping.vs").read_text(), Path(render_folder, "glsl/tonemapping.fs").read_text())
+	# Create tonemapping program
+	tonamapping_program = program.create(*glsl.read('tonemapping'))
 
-	# environment map
-	# ---------------
+	# Environment from cubemaps
+	# -------------------------
+
+	# get images for the 6 side of a cube
 	faces = [
 		Path(render_folder, "assets/Storforsen3/posx.jpg"),
 		Path(render_folder, "assets/Storforsen3/negx.jpg"),
@@ -126,8 +124,9 @@ with window:
 		Path(render_folder, "assets/Storforsen3/negz.jpg"),
 	]
 
+	# read images
 	skybox_data = [to_linear(np.array(Image.open(file))/255) for i, file in enumerate(faces)]
-	def load_cubemap(faces):
+	def load_cubemap():
 		cubemap = glGenTextures(1)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap)
 
@@ -187,8 +186,12 @@ with window:
 		-1.0, -1.0,  1.0,
 		 1.0, -1.0,  1.0
 	], dtype=np.float32).reshape(-1,3)
-	skybox_tex = load_cubemap(faces)
-	skybox_program = program.create(Path(render_folder,'glsl/skybox.vs').read_text(), Path(render_folder, 'glsl/skybox.fs').read_text())
+
+	skybox_tex = load_cubemap()
+
+	# create environment program
+	# --------------------------
+	skybox_program = program.create(*glsl.read('skybox'))
 	skyboxVAO, skyboxVBO = glGenVertexArrays(1), glGenBuffers(1)
 	glBindVertexArray(skyboxVAO)
 	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO)
@@ -197,8 +200,8 @@ with window:
 	location = glGetAttribLocation(skybox_program, 'position')
 	glVertexAttribPointer(location,3, GL_FLOAT, False, 0, None)
 
-	# Prepare Environment map
-	# ----------------------
+	# Prepare Environment map (convert an equirectangular image to cubemap)
+	# -----------------------
 	# setup fbo
 	capture_fbo =glGenFramebuffers(1)
 	capture_rbo = glGenRenderbuffers(1)
@@ -244,7 +247,7 @@ with window:
 	]
 
 	# convert equirectangular environment to cubemap
-	equirectangular_to_cubemap_program = program.create(Path(render_folder,'glsl/cubemap.vs').read_text(), Path(render_folder, 'glsl/equirectangular_to_cubemap.fs').read_text())
+	equirectangular_to_cubemap_program = program.create(*glsl.read('cubemap.vs', 'equirectangular_to_cubemap.fs'))
 
 	glUseProgram(equirectangular_to_cubemap_program)
 	program.set_uniform(equirectangular_to_cubemap_program, "equirectangularMap", 0)
@@ -261,6 +264,9 @@ with window:
 		imdraw.cube(capture_fbo)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
+	# Image based lighting 
+	# (create irradiance map for diffuse, and prefilter map for reflection ambient lighting)
+	# ------------------------
 	# crate irradiance cubemap
 	irradiance_map = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
@@ -278,7 +284,7 @@ with window:
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32)
 
 	# solve irradiance map
-	irradiance_program = program.create(Path(render_folder,'glsl/cubemap.vs').read_text(), Path(render_folder, 'glsl/irradiance_convolution.fs').read_text())
+	irradiance_program = program.create(*glsl.read('cubemap.vs', 'irradiance_convolution.fs'))
 	glUseProgram(irradiance_program)
 	program.set_uniform(irradiance_program, "environmentMap", 0)
 	program.set_uniform(irradiance_program, "projectionMatrix", capture_projection)
@@ -311,8 +317,8 @@ with window:
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
 
 	""" COPY PASTE (+convert to python and my puregl) FROM> https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/6.pbr/2.2.1.ibl_specular/ibl_specular.cpp """
+	
 	# pbr: create a pre-filter cubemap, and re-scale capture FBO to pre-filter scale.
-	# --------------------------------------------------------------------------------
 	prefilterMap = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap)
 	for i in range(6):
@@ -328,7 +334,7 @@ with window:
 
 	# pbr: run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
 	# ----------------------------------------------------------------------------------------------------
-	prefilterShader = program.create(Path(render_folder,'glsl/cubemap.vs').read_text(), Path(render_folder, 'glsl/prefilter.fs').read_text())
+	prefilterShader = program.create(*glsl.read('cubemap.vs', 'prefilter.fs'))
 	glUseProgram(prefilterShader)
 	program.set_uniform(prefilterShader, "environmentMap", 0)
 	program.set_uniform(prefilterShader, "projectionMatrix", capture_projection)
@@ -360,7 +366,7 @@ with window:
 
 	# pbr: generate a 2D LUT from the BRDF equations used.
 	# ----------------------------------------------------
-	brdfShader = program.create(Path(render_folder,"glsl/brdf.vs").read_text(), Path(render_folder,"glsl/brdf.fs").read_text())
+	brdfShader = program.create(*glsl.read('brdf'))
 	brdfLUTTexture = glGenTextures(1)
 
 	# pre-allocate enough memory for the LUT texture.
@@ -388,8 +394,8 @@ with window:
 """ END OF COPY PASTE"""
 
 import time
-# Draw
 def draw_scene(prog, projection_matrix, view_matrix):
+	"""Draw scen with a shader program"""
 	program.set_uniform(prog, 'projectionMatrix', projection_matrix)
 	program.set_uniform(prog, 'viewMatrix', view_matrix)
 	camera_pos = glm.inverse(view_matrix)[3].xyz
@@ -500,8 +506,8 @@ with window:
 		glUseProgram(pbr_program)
 
 		program.set_uniform(pbr_program, 'material.albedo', (0.7,0.0,0.0))
-		program.set_uniform(pbr_program, 'material.roughness', 0.03)
-		program.set_uniform(pbr_program, 'material.metallic', 0.0)
+		program.set_uniform(pbr_program, 'material.roughness', 0.01)
+		program.set_uniform(pbr_program, 'material.metallic', 1.0)
 		program.set_uniform(pbr_program, 'material.ao', 1.0)
 
 		light_dir = glm.normalize(glm.inverse(light_view)[2].xyz)
@@ -516,8 +522,6 @@ with window:
 		program.set_uniform(pbr_program, 'brdfLUT', 5)
 		program.set_uniform(pbr_program, 'shadowMap', 6)
 
-
-		
 		# draw geometry
 		# material
 		glActiveTexture(GL_TEXTURE0+0)

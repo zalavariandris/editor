@@ -15,10 +15,7 @@ class memoize:
 
     def __call__(self, *args):
         if args not in self.memo:
-            print
             self.memo[args] = self.fn(*args)
-            print("memo", args)
-            print("memo", self.memo)
         return self.memo[args]
 
 import time   
