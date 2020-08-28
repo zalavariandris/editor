@@ -135,14 +135,13 @@ from editor.render.gloo import Shader, VAO, VBO, EBO, Texture, FBO
 
 
 if __name__ == '__main__':
-    import math
     # variables
     width, height = 640, 480
 
     # matrices
     model_matrix = np.identity(4)
     view_matrix = glm.lookAt( glm.vec3(0, 1,4), glm.vec3(0,0.7,0), glm.vec3(0,1,0) )
-    projection_matrix = glm.perspective(math.radians(60), width/height, 0.1, 100)
+    projection_matrix = glm.perspective(glm.radians(60), width/height, 0.1, 100)
 
     #
     # Init Window
@@ -169,7 +168,7 @@ if __name__ == '__main__':
     def resize(w, h):
         global projection_matrix
         glViewport(0, 0, w, h)
-        projection_matrix = glm.perspective(math.radians(60), w/h, 1, 100)
+        projection_matrix = glm.perspective(glm.radians(60), w/h, 1, 100)
 
     #
     # Create Geometry
@@ -182,8 +181,8 @@ if __name__ == '__main__':
     # transform vertices to model position
     model = glm.mat4(1)
     model = glm.translate(model, glm.vec3(-0.7, 1.8, -0.5))
-    model = glm.rotate(model, math.radians(60), glm.vec3(0, 1, 0))
-    model = glm.rotate(model, math.radians(120), glm.vec3(1, 0, 0))
+    model = glm.rotate(model, glm.radians(60), glm.vec3(0, 1, 0))
+    model = glm.rotate(model, glm.radians(120), glm.vec3(1, 0, 0))
     model = glm.scale(model, glm.vec3(1, 1, 1))
     cctv_modelmatrix = model
 

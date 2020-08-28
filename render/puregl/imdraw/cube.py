@@ -4,9 +4,14 @@ from .helpers import buffer_offset
 
 def cube(program):
     try:
-        vao = cube.vao
-        ebo = cube.ebo
+        memo = cube.memo
     except AttributeError:
+        memo = dict()
+        cube.memo = memo
+
+    try:
+        vao, ebo, count = cube.memo[program]
+    except KeyError:
         """ create flat cube
         [https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Creating_3D_objects_using_WebGL]
         """
@@ -48,7 +53,7 @@ def cube(program):
             -0.5,  0.5,  0.5,
             -0.5,  0.5, -0.5,
         ], dtype=np.float32).reshape((-1,3))
-        positions+=(0,0.5,0)
+        positions+=(0,0.0,0)
 
         normals = np.array([
              0.0,  0.0,  1.0, # Front face
@@ -68,39 +73,46 @@ def cube(program):
             20, 21, 22,     20, 22, 23,   # left
         ], dtype=np.uint).reshape((-1,3))
 
-        print("indices.size", indices.size)
+
+        count = indices.size
 
         uvs = np.array([
            # Front
-            0.0,  0.0,
-            1.0,  0.0,
-            1.0,  1.0,
-            0.0,  1.0,
+            0,  1,
+            1,  1,
+            1,  0,  
+            0,  0,
             # Back
-            0.0,  0.0,
-            1.0,  0.0,
-            1.0,  1.0,
-            0.0,  1.0,
+            0,  0,
+            0,  1, 
+            1,  1,
+            1,  0,
+            
             # Top
-            0.0,  0.0,
-            1.0,  0.0,
-            1.0,  1.0,
-            0.0,  1.0,
+            0,  0,
+            0,  1,
+            1,  1,
+            1,  0,
+
             # Bottom
-            0.0,  0.0,
-            1.0,  0.0,
-            1.0,  1.0,
-            0.0,  1.0,
+            0,  1,
+            1,  1,
+            1,  0,
+            0,  0,
+
             # Right
-            0.0,  0.0,
-            1.0,  0.0,
-            1.0,  1.0,
-            0.0,  1.0,
+            1,  1,
+            1,  0,
+            0,  0,
+            0,  1,
+            
             # Left
-            0.0,  0.0,
-            1.0,  0.0,
-            1.0,  1.0,
-            0.0,  1.0,
+            0,  1,
+            1,  1,
+            1,  0,
+            0,  0,
+            
+            
         ], dtype=np.float32).reshape(-1,2)
 
         # setup VAO
@@ -138,7 +150,7 @@ def cube(program):
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
-        cube.vao = vao
+        cube.memo[program] = (vao, ebo, count)
     finally:
         glBindVertexArray(vao)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)

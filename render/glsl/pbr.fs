@@ -20,6 +20,14 @@ struct Light{
 uniform Light light;
 uniform vec3 cameraPos;
 
+// IBL
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
+
+uniform sampler2D shadowMap;
+
+
 const float PI = 3.14159265359;
 
 in vec2 TexCoords;
@@ -77,25 +85,31 @@ float geometrySmith(float NdotV, float NdotL, float roughness){
 	return ggx1 * ggx2;
 }
 
-vec3 fresnelSchlick(float HdotV, vec3 baseReflectivity){
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 fresnelSchlickRoughness(float HdotV, vec3 F0, float roughness){
 	// base reflectivity in range 0 to 1
 	// returns range to 1
 	// increases as HdotV decreases (more reflectivity when surface viewd at larger angles)
-	return baseReflectivity + (1.0-baseReflectivity) * pow(1.0-HdotV, 5.0);
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - HdotV, 5.0);
 }
 
 void main(){
 	vec3 N = normalize(Normal);
 	vec3 V = normalize(cameraPos - WorldPos); //view vector
+	vec3 R = reflect(-V, N); 
 
 	// calculate reflectance at normal incidence; if dia-electric (like plastic) use baseReflectivity
 	// of 0.04 and if it's a metal, use the albedo color as baseReflectivity (metallic workflow)
-	vec3 baseReflectivity = mix(vec3(0.04), material.albedo, material.metallic);
+	vec3 baseReflectivity/*F0*/ = mix(vec3(0.04), material.albedo, material.metallic);
 
 	// reflectance equation
 	vec3 Lo = vec3(0.0);
 	
-
+	for(int i=0; i<1; i++){
 		// calculate per-light radiance
 		vec3 L = normalize(light.position - WorldPos);
 		vec3 H = normalize(V+L); /* halfway bysecting vector */
@@ -124,12 +138,30 @@ void main(){
 		vec3 kD = vec3(1.0) - F; //F equals kS
 		kD *= 1.0 - material.metallic;	
 
-		Lo+=(kD * material.albedo / PI + specular) * radiance * NdotL; //output luminance
+		float shadow = ShadowCalculation(FragPosLightSpace, L, N, shadowMap);
+		Lo+=(kD * material.albedo / PI + specular) * radiance * NdotL * (1-shadow); //output luminance
+		
+	}
 
+	// ambient lighting (we now use IBL as the ambient term)
+    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), baseReflectivity, material.roughness);
+    
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - material.metallic;	  
+    
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse      = irradiance * material.albedo;
+    
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  material.roughness * MAX_REFLECTION_LOD).rgb;    
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), material.roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-	vec3 ambient = vec3(0.003)*material.albedo * material.ao; //FIXME: replace with environment
-
-	vec3 color = ambient + Lo;
+    vec3 ambient = (kD * diffuse + specular) * material.ao;
+    
+    vec3 color = ambient + Lo;
 
 	FragColor = vec4(color, 1.0);
 }
