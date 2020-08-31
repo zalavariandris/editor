@@ -65,70 +65,80 @@ with window:
 	lambert_program = program.create(*glsl.read('lambert'))
 	phong_program = program.create(*glsl.read('phong'))
 	pbr_program = program.create(*glsl.read('pbr'))
-	tonamapping_program = program.create(*glsl.read('tonemapping'))
-	skybox_program = program.create(*glsl.read('skybox'))
 
 	# setup Shadow mapping
 	# ----------------------
+	depth_program = program.create(*glsl.read('simple_depth'))
 	shadow_fbo = glGenFramebuffers(1)
 	shadow_fbo_width, shadow_fbo_height = 1024, 1024
+	shadow_tex = texture.create((shadow_fbo_width, shadow_fbo_height), 
+				slot=2, 
+				format=GL_DEPTH_COMPONENT,
+				wrap_s=GL_CLAMP_TO_BORDER,
+				wrap_t=GL_CLAMP_TO_BORDER, 
+				border_color=(1.0, 1.0, 1.0, 1.0))
+
+
 	with fbo.bind(shadow_fbo):
-		shadow_tex = texture.create((shadow_fbo_width, shadow_fbo_height), 
-						slot=2, 
-						format=GL_DEPTH_COMPONENT,
-						wrap_s=GL_CLAMP_TO_BORDER,
-						wrap_t=GL_CLAMP_TO_BORDER, 
-						border_color=(1.0, 1.0, 1.0, 1.0))
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_tex, 0)
-		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+		# dont render color data
 		glDrawBuffer(GL_NONE) # dont render color data
 		glReadBuffer(GL_NONE)
+		# attach depth component to texture
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_tex, 0)
 
-	depth_program = program.create(*glsl.read('simple_depth'))
-	debug_quad_program = program.create(*glsl.read('debug_quad.vs', 'debug_quad_depth.fs'))
+	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+
+
+	
+	
 
 	# Setup Tonemapping with HDR fbo
 	# ------------------------------
+	tonamapping_program = program.create(*glsl.read('tonemapping'))
+	
 	# setup fbo
 	hdr_fbo = glGenFramebuffers(1)
 	hdr_fbo_width, hdr_fbo_height = width, height # initalize FBO with window size
 
+	# create HDR color texture
+	hdr_tex = glGenTextures(1)
+	glActiveTexture(GL_TEXTURE0)
+	glBindTexture(GL_TEXTURE_2D, hdr_tex)
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, hdr_fbo_width, hdr_fbo_height, 0, GL_RGB, GL_FLOAT, None)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+	glBindTexture(GL_TEXTURE_2D, 0)
+
+	# create depth+stencil buffer
+	rbo = glGenRenderbuffers(1)
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo)
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, hdr_fbo_width, hdr_fbo_height)
+	glBindRenderbuffer(GL_RENDERBUFFER, 0)
+
 	with fbo.bind(hdr_fbo):
-		## attach color attachment
-		hdr_tex = glGenTextures(1)
-		glActiveTexture(GL_TEXTURE0)
-		glBindTexture(GL_TEXTURE_2D, hdr_tex)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, hdr_fbo_width, hdr_fbo_height, 0, GL_RGB, GL_FLOAT, None)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		## attach color component
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdr_tex, 0)
 
-		## attach depth and stencil renderbuffers
-		rbo = glGenRenderbuffers(1)
-		glBindRenderbuffer(GL_RENDERBUFFER, rbo)
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, hdr_fbo_width, hdr_fbo_height)
+		## attach depth and stencil component
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
 		
 		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
-		glBindTexture(GL_TEXTURE_2D, 0)
-		glBindRenderbuffer(GL_RENDERBUFFER, 0)
-
-
-	# Environment from cubemaps
+		
+	# Environment and IBL
 	# -------------------------
+	# - capture environment map to cubemap
+	equirectangular_to_cubemap_program = program.create(*glsl.read('cubemap.vs', 'equirectangular_to_cubemap.fs'))
+	# - setup skybox drawing
+	skybox_program = program.create(*glsl.read('skybox'))
+	# - create irradiance map for diffuse IBL
+	irradiance_program = program.create(*glsl.read('cubemap.vs', 'irradiance_convolution.fs'))
+	# - create prefilter map for specular IBL
+	prefilterShader = program.create(*glsl.read('cubemap.vs', 'prefilter.fs'))
+	# precompute brdf map for specular IBL
+	brdfShader = program.create(*glsl.read('brdf'))
 
-	# Prepare Environment map (convert an equirectangular image to cubemap)
-	# -----------------------
-	# setup fbo
-	capture_fbo =glGenFramebuffers(1)
-	capture_rbo = glGenRenderbuffers(1)
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_fbo) #FIXME: are we actually need depth buffer rbo 
-													#to capture an environment map to cubemap?
-	glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,512,512)
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_rbo)
-
-	# create env texture
+	## Prepare Environment map (convert an equirectangular image to cubemap)
+	# create environment texture
 	env_height, env_width, env_channels = environment_data.shape
 	environment_tex = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_2D, environment_tex)
@@ -160,19 +170,32 @@ with window:
 		glm.lookAt((0, 0, 0), ( 0,  0, -1), (0, -1,  0))
 	]
 
-	# convert equirectangular environment to cubemap
-	equirectangular_to_cubemap_program = program.create(*glsl.read('cubemap.vs', 'equirectangular_to_cubemap.fs'))
+	# capture environment map to cubemap
+	# create rbo
+	capture_rbo = glGenRenderbuffers(1)
+	glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512)
+	glBindRenderbuffer(GL_RENDERBUFFER, 0)
+
+	# setup fbo
+	capture_fbo = glGenFramebuffers(1)
+	with fbo.bind(capture_fbo):
+		# attach depth buffer
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_rbo)
+		
+	# draw environment map to skybox
+	glViewport(0,0,512,512)
+	glActiveTexture(GL_TEXTURE0)
+	glBindTexture(GL_TEXTURE_2D, environment_tex)
 	with program.use(equirectangular_to_cubemap_program):
 		program.set_uniform(equirectangular_to_cubemap_program, "equirectangularMap", 0)
 		program.set_uniform(equirectangular_to_cubemap_program, "projectionMatrix", capture_projection)
-		glActiveTexture(GL_TEXTURE0)
-		glBindTexture(GL_TEXTURE_2D, environment_tex)
 
-		glViewport(0,0,512,512)
+		
 		with fbo.bind(capture_fbo):
 			for i in range(6):
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, env_cubemap, 0)	
 				program.set_uniform(equirectangular_to_cubemap_program, "viewMatrix", capture_views[i])
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, env_cubemap, 0)
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 				imdraw.cube(equirectangular_to_cubemap_program)
 
@@ -195,9 +218,9 @@ with window:
 
 	glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32)
+	glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
 	# solve irradiance map
-	irradiance_program = program.create(*glsl.read('cubemap.vs', 'irradiance_convolution.fs'))
 	with program.use(irradiance_program):
 		program.set_uniform(irradiance_program, "environmentMap", 0)
 		program.set_uniform(irradiance_program, "projectionMatrix", capture_projection)
@@ -245,7 +268,7 @@ with window:
 
 	# pbr: run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
 	# ----------------------------------------------------------------------------------------------------
-	prefilterShader = program.create(*glsl.read('cubemap.vs', 'prefilter.fs'))
+	
 	with program.use(prefilterShader):
 		program.set_uniform(prefilterShader, "environmentMap", 0)
 		program.set_uniform(prefilterShader, "projectionMatrix", capture_projection)
@@ -275,7 +298,6 @@ with window:
 
 	# pbr: generate a 2D LUT from the BRDF equations used.
 	# ----------------------------------------------------
-	brdfShader = program.create(*glsl.read('brdf'))
 	brdfLUTTexture = glGenTextures(1)
 
 	# pre-allocate enough memory for the LUT texture.
@@ -291,12 +313,15 @@ with window:
 	with fbo.bind(capture_fbo):
 		glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512)
+		glBindRenderbuffer(GL_RENDERBUFFER, 0)
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0)
 
-		glViewport(0, 0, 512, 512)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		with program.use(brdfShader):
+	with program.use(brdfShader):
+		with fbo.bind(capture_fbo):
+			glViewport(0, 0, 512, 512)
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 			imdraw.quad(brdfShader)
+
 
 
 """ END OF COPY PASTE"""
@@ -352,16 +377,21 @@ with window:
 			glCullFace(GL_BACK)
 
 			# Render skybox
+			# -------------
 			glDepthFunc(GL_LEQUAL)
 			glDepthMask(GL_FALSE)
+			glActiveTexture(GL_TEXTURE0+0)
+			glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
 			with program.use(skybox_program):
 				program.set_uniform(skybox_program, 'projectionMatrix', window.projection_matrix)
 				sky_view = glm.mat4(glm.mat3(window.view_matrix)); 
 				program.set_uniform(skybox_program, 'viewMatrix', sky_view)
 				camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
 				program.set_uniform(skybox_program, 'cameraPos', camera_pos)
+				program.set_uniform(skybox_program, 'skybox', 0)
 				imdraw.cube(skybox_program)
 			glDepthMask(GL_TRUE)
+			glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
 
 			# # Render scene with phong shading
 			# # -------------------------------
@@ -404,8 +434,8 @@ with window:
 			# Render scene with PBR shading
 			# -----------------------------
 			with program.use(pbr_program):
-				program.set_uniform(pbr_program, 'material.albedo', (0.7,0.0,0.0))
-				program.set_uniform(pbr_program, 'material.roughness', 0.4)
+				program.set_uniform(pbr_program, 'material.albedo', (0.5,0.0,0.0))
+				program.set_uniform(pbr_program, 'material.roughness', 0.1)
 				program.set_uniform(pbr_program, 'material.metallic', 0.0)
 				program.set_uniform(pbr_program, 'material.ao', 1.0)
 
@@ -414,7 +444,7 @@ with window:
 				program.set_uniform(pbr_program, 'lightSpaceMatrix', light_projection * light_view)
 				program.set_uniform(pbr_program, 'light.direction', light_dir)
 				program.set_uniform(pbr_program, 'light.position', light_pos)
-				program.set_uniform(pbr_program, 'light.color', glm.vec3(1.0))
+				program.set_uniform(pbr_program, 'light.color', glm.vec3(10.0))
 
 				program.set_uniform(pbr_program, 'irradianceMap', 3)
 				program.set_uniform(pbr_program, 'prefilterMap', 4)
@@ -456,7 +486,7 @@ with window:
 			program.set_uniform(tonamapping_program, 'viewMatrix', np.eye(4))
 			program.set_uniform(tonamapping_program, 'modelMatrix', np.eye(4))
 			program.set_uniform(tonamapping_program, 'screenTexture', 0)
-			program.set_uniform(tonamapping_program, 'exposure', 0.0)
+			program.set_uniform(tonamapping_program, 'exposure', -1.0)
 			program.set_uniform(tonamapping_program, 'gamma', 2.2)
 			glActiveTexture(GL_TEXTURE0)
 			glBindTexture(GL_TEXTURE_2D, hdr_tex)
@@ -464,7 +494,7 @@ with window:
 
 		# Debug: Display light depth map
 		# -----------------------------------------
-		imdraw.texture(diffuse_tex, (0,0,100,100))
+		imdraw.texture(shadow_tex, (0,0,100,100), shuffle=(0,0,0,-1))
 		imdraw.texture(hdr_tex, (0,100,100,100))
 
 		# swap buffers

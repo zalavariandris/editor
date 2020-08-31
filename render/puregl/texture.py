@@ -7,12 +7,15 @@ def create(*args, **kwargs):
 	raise NotImplementedError
 
 @create.register
-def create_with_data(data: np.ndarray, slot, format, wrap_s=None, wrap_t=None, border_color=None):
+def create_with_data(data: np.ndarray, slot, format, min_filter=GL_NEAREST, mag_filter=GL_NEAREST, wrap_s=None, wrap_t=None, border_color=None):
 	tex = glGenTextures(1)
 	glActiveTexture(GL_TEXTURE0+slot)
 	glBindTexture(GL_TEXTURE_2D, tex)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+
+	if min_filter:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, min_filter)
+	if mag_filter:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 	if wrap_s:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s)
 	if wrap_t:
