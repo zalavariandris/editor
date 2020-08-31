@@ -4,12 +4,52 @@
 		"selected_items":
 		[
 			[
-				"pos",
-				"positions"
+				"plane",
+				"plane_geo"
+			],
+			[
+				"quad",
+				"quad_geo"
+			],
+			[
+				"nor",
+				"normals"
 			],
 			[
 				"po",
-				"position"
+				"positions"
+			],
+			[
+				"GL_TEXTURE_",
+				"GL_TEXTURE_CUBE_MAP"
+			],
+			[
+				"simple_",
+				"simple_depth_fs"
+			],
+			[
+				"depth",
+				"depth_program"
+			],
+			[
+				"pr",
+				"program"
+			],
+			[
+				"pho",
+				"phong_program"
+			],
+			[
+				"spe",
+				"specular"
+			],
+			[
+				"diffuse",
+				"diffuseColor"
+			],
+			[
+				"pos",
+				"positions"
 			],
 			[
 				"normal",
@@ -24,20 +64,12 @@
 				"shadowMap"
 			],
 			[
-				"spe",
-				"specularMap"
-			],
-			[
 				"amb",
 				"ambientColor"
 			],
 			[
 				"sp",
 				"specularMap"
-			],
-			[
-				"diffuse",
-				"diffuseMap"
 			],
 			[
 				"diffu",
@@ -100,10 +132,6 @@
 				"phong_program"
 			],
 			[
-				"pr",
-				"projectionMatrix"
-			],
-			[
 				"debu",
 				"debug_quad_depth_fs"
 			],
@@ -122,10 +150,6 @@
 			[
 				"phong",
 				"phong_fs"
-			],
-			[
-				"pho",
-				"phong_vs"
 			],
 			[
 				"ph",
@@ -490,40 +514,34 @@
 			[
 				"isOP",
 				"isOpSelected"
-			],
-			[
-				"isOp",
-				"isOpSelected"
-			],
-			[
-				"op",
-				"operations"
-			],
-			[
-				"adj",
-				"adjacentNodes"
-			],
-			[
-				"QR",
-				"QGraphicsItem"
-			],
-			[
-				"depe",
-				"dependents"
-			],
-			[
-				"Qgrap",
-				"QGraphicsItem"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "render/puregl/draw.py",
+			"file": "render/puregl/imdraw/cube.py",
 			"settings":
 			{
-				"buffer_size": 7208,
+				"buffer_size": 4363,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/puregl/imdraw/plane.py",
+			"settings":
+			{
+				"buffer_size": 2432,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/glsl/pbr.fs",
+			"settings":
+			{
+				"buffer_size": 5152,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -532,7 +550,7 @@
 			"file": "render/puregl/minimal_example.py",
 			"settings":
 			{
-				"buffer_size": 11214,
+				"buffer_size": 20440,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -668,21 +686,30 @@
 	[
 		"/C/Users/andris/Documents/BABPythonModules/editor",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl",
-		"/C/Users/andris/AppData/Local/Temp/Rar$DRa4492.38307/cask-1.1.1"
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw"
 	],
 	"file_history":
 	[
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/quad.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/plane.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/sphere.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/pbr.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/__init__.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/cube.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/utils.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/helpers.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/tonemapping.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/minimal_example.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/phong.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/phong.vs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/geo.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/helpers.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/pbr.fs",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/phong.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/pbr.vs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/program.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/phong.vs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/draw.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/minimal_example.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/pano-converter3.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/skybox.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/skybox.vs",
@@ -723,7 +750,6 @@
 		"/C/Users/andris/Desktop/PyAssimp env/assimp-tester/share/examples/pyassimp/transformations.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/shader.frag",
 		"/C/Users/andris/Desktop/PyAssimp env/main.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/utils.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/opengltutorial/modelloading/main.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/with_glfw.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/shader.vert",
@@ -793,15 +819,7 @@
 		"/C/Users/andris/Documents/BABPythonModules/QtWidgets/__init__.py",
 		"/C/Users/andris/Documents/BABPythonModules/__init__.py",
 		"/C/Users/andris/Documents/ikon.graph/src/lattice/LatticeMesh.js",
-		"/C/Users/andris/Documents/ikon.graph/src/index.js",
-		"/C/Users/andris/Documents/ikon.graph/src/GraphComponent.js",
-		"/C/Users/andris/Documents/ikon.graph/src/simulation/GPUSimulation.js",
-		"/C/Users/andris/Documents/ikon.graph/node_modules/ajv/dist/ajv.bundle.js",
-		"/C/Users/andris/Documents/ikon.graph/src/lattice/node/Spheres.js",
-		"/C/Users/andris/Documents/ikon.graph/src/lattice/edge/Rods.js",
-		"/C/Users/andris/Documents/ikon.graph/src/style.css",
-		"/C/Users/andris/Documents/ikon.graph/src/annotation/BMLabels.js",
-		"/C/Users/andris/Documents/ikon.graph/node_modules/base/node_modules/is-descriptor/README.md"
+		"/C/Users/andris/Documents/ikon.graph/src/index.js"
 	],
 	"find":
 	{
@@ -819,6 +837,17 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"capture_views",
+			"imdraw.cube",
+			"imdraw",
+			"CULL",
+			"glFramebuffer",
+			"glCheck",
+			"program.create",
+			"(vao, ebo, count)",
+			"draw_scene",
+			"phong_program",
+			"draw.",
 			"cube.",
 			"skybox_tex",
 			"0f",
@@ -867,6 +896,7 @@
 		"regex": false,
 		"replace_history":
 		[
+			"imdraw.",
 			"0",
 			"cube",
 			"plane",
@@ -893,33 +923,93 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 2,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "render/puregl/draw.py",
+					"file": "render/puregl/imdraw/cube.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 7208,
+						"buffer_size": 4363,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2289,
-								2289
+								109,
+								78
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/Python/Python.sublime-syntax",
-							"translate_tabs_to_spaces": false
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 10.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "render/puregl/imdraw/plane.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2432,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								967,
+								967
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 442.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "render/glsl/pbr.fs",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5152,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								974,
+								974
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/OpenGL Shading Language (GLSL)/GLSL.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 50.0,
+						"translation.y": 549.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -932,20 +1022,20 @@
 			"sheets":
 			[
 				{
-					"buffer": 1,
+					"buffer": 3,
 					"file": "render/puregl/minimal_example.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 11214,
+						"buffer_size": 20440,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1223,
-								1223
+								5227,
+								5227
 							]
 						],
 						"settings":
@@ -954,7 +1044,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 581.0,
+						"translation.y": 2516.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -991,7 +1081,7 @@
 		"cols":
 		[
 			0.0,
-			0.684126984127,
+			0.556967213115,
 			1.0
 		],
 		"rows":
@@ -1059,7 +1149,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 240.0,
+	"side_bar_width": 280.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

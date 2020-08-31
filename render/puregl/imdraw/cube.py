@@ -1,11 +1,11 @@
 from OpenGL.GL import *
 import numpy as np
 from .helpers import buffer_offset
-from editor.utils import memoize
 import logging
+import functools
 
-@memoize
-def cube_geo():
+@functools.lru_cache(maxsize=128)
+def cube_geo(flip=False):
     logging.debug("create cube geo")
     positions = np.array([
         # Front face
@@ -100,12 +100,16 @@ def cube_geo():
         20, 21, 22,     20, 22, 23,   # left
     ], dtype=np.uint).reshape((-1,3))
 
+    if flip:
+        indices = np.flip(indices)
+        normals*=(-1,-1,-1)
+
     return positions, normals, uvs, indices
 
-@memoize
-def cube_buffer(program):
+@functools.lru_cache(maxsize=128)
+def cube_buffer(program, flip=False):
     logging.debug("create cube buffer for program: {}".format(program))
-    positions, normals, uvs, indices = cube_geo()
+    positions, normals, uvs, indices = cube_geo(flip=flip)
     count = indices.size
 
     # setup VAO
@@ -145,9 +149,10 @@ def cube_buffer(program):
 
     return vao, ebo, count
 
-def cube(program):
-    vao, ebo, count = cube_buffer(program)
+def cube(program, flip=False):
+    vao, ebo, count = cube_buffer(program, flip=flip)
 
+    # draw
     glBindVertexArray(vao)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
     glDrawElements(GL_TRIANGLES, 6*6, GL_UNSIGNED_INT, None)

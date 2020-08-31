@@ -51,7 +51,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, samp
 	  return 0.0;
 
 	float shadow = 0.0;
-	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+	float bias = max(0.0005 * (1.0 - dot(normal, lightDir)), 0.00005);
 	// bias = 0.05;
 	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
 	for(int x = -1; x <= 1; ++x)
@@ -75,7 +75,6 @@ float distributionGGX(float NdotH, float roughness){
 	return a2 / max(denom, 0.0000001); 
 }
 
-
 /*rougness effect based on light and normnal angle*/
 float geometrySmith(float NdotV, float NdotL, float roughness){
 	float r = roughness + 1.0;
@@ -98,7 +97,7 @@ vec3 fresnelSchlickRoughness(float HdotV, vec3 F0, float roughness){
 }
 
 void main(){
-	vec3 N = normalize(Normal);
+	vec3 N = gl_FrontFacing ? normalize(Normal) : -normalize(Normal);
 	vec3 V = normalize(cameraPos - WorldPos); //view vector
 	vec3 R = reflect(-V, N); 
 
@@ -163,5 +162,5 @@ void main(){
     
     vec3 color = ambient + Lo;
 
-	FragColor = vec4(color, 1.0);
+	FragColor = gl_FrontFacing ? vec4(color, 1.0) : vec4(0.0,0.5,0.0,1.0);
 }

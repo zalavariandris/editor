@@ -3,11 +3,16 @@ import numpy as np
 from .helpers import buffer_offset
 import math
 
-def sphere(program):
-    # create sphere geometry
+import logging
+import functools
+
+@functools.lru_cache(maxsize=128)
+def sphere_geo():
     """
     reference: [http://www.songho.ca/opengl/gl_sphere.html]
     """
+    logging.debug('create sphere geometry')
+
     vertices = []
     normals = []
     texCoords = []
@@ -84,6 +89,12 @@ def sphere(program):
     uvs = np.array(texCoords, dtype=np.float32).reshape((-1,2))
     indices = np.array(indices, dtype=np.uint)
     count = indices.size
+    return positions, normals, uvs, indices, count
+
+@functools.lru_cache(maxsize=128)
+def create_buffer(program):
+    positions, normals, uvs, indices, count = sphere_geo()
+    logging.debug("create sphere buffer")
 
     # create VAO
     vao = glGenVertexArrays(1)
@@ -120,8 +131,11 @@ def sphere(program):
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
-    sphere.vao = vao
-    sphere.ebo = ebo
+    return vao, ebo, count
+
+
+def sphere(program):
+    vao, ebo, count = create_buffer(program)
 
     # draw sphere
     glBindVertexArray(vao)

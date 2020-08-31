@@ -56,6 +56,7 @@ environment_data = imageio.imread(Path(assets_folder, 'hdri/fin4_Ref.hdr'), form
 with window:
 	glEnable(GL_PROGRAM_POINT_SIZE)
 	glEnable(GL_DEPTH_TEST)
+	glEnable(GL_CULL_FACE)
 	
 	# create material textures
 	diffuse_tex = texture.create(diffuse_data, slot=0, format=GL_BGR)
@@ -158,6 +159,7 @@ with window:
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
 
 	# setup cubemap projections to render each face
 	capture_projection = glm.perspective(glm.radians(90), 1.0,0.1,10.0)
@@ -197,7 +199,7 @@ with window:
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, env_cubemap, 0)	
 				program.set_uniform(equirectangular_to_cubemap_program, "viewMatrix", capture_views[i])
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-				imdraw.cube(equirectangular_to_cubemap_program)
+				imdraw.cube(equirectangular_to_cubemap_program, flip=True)
 
 
 	# Image based lighting 
@@ -234,7 +236,7 @@ with window:
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_map, 0)
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-				imdraw.cube(irradiance_program)
+				imdraw.cube(irradiance_program, flip=True)
 
 	# prefilter hdri map for specular IBL
 	prefilterMap = glGenTextures(1)
@@ -294,7 +296,7 @@ with window:
 					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip)
 
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-					imdraw.cube(prefilterShader)
+					imdraw.cube(prefilterShader, flip=True)
 
 	# pbr: generate a 2D LUT from the BRDF equations used.
 	# ----------------------------------------------------
@@ -389,7 +391,7 @@ with window:
 				camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
 				program.set_uniform(skybox_program, 'cameraPos', camera_pos)
 				program.set_uniform(skybox_program, 'skybox', 0)
-				imdraw.cube(skybox_program)
+				imdraw.cube(skybox_program, flip=True)
 			glDepthMask(GL_TRUE)
 			glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
 

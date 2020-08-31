@@ -2,7 +2,12 @@ from OpenGL.GL import *
 import numpy as np
 from .helpers import buffer_offset
 
-def quad(program):
+import logging
+import functools
+
+@functools.lru_cache(maxsize=128)
+def quad_geo():
+    logging.debug("create quad geo")
     positions = np.array(
         # positions        # texture Coords
         [(-1.0, 1.0, 0.0),
@@ -20,6 +25,13 @@ def quad(program):
         (1.0, 0.0)],
         dtype=np.float32
     )
+
+    return positions, uvs
+
+@functools.lru_cache(maxsize=128)
+def create_buffer(program):
+    logging.debug("create quad buffer")
+    positions, uvs = quad_geo()
 
     # setup VAO
     vao = glGenVertexArrays(1)
@@ -42,6 +54,11 @@ def quad(program):
 
     glBindBuffer(GL_ARRAY_BUFFER, 0)
     glBindVertexArray(0)
+
+    return vao
+
+def quad(program):
+    vao = create_buffer(program)
 
     # draw
     glBindVertexArray(vao)

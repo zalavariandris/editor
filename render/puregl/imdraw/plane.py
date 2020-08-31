@@ -2,22 +2,28 @@ from OpenGL.GL import *
 import numpy as np
 from .helpers import buffer_offset
 
-def plane(program):
+import logging
+import functools
+
+@functools.lru_cache(maxsize=128)
+def plane_geo():
+    logging.debug("create plane geo")
     positions = np.array(
         # positions        # texture Coords
         [(-1.0, 0.0, 1.0),
-        (-1.0,  0.0, -1.0),
         ( 1.0,  0.0, 1.0),
+        (-1.0,  0.0, -1.0),
         ( 1.0,  0.0, -1.0)],
         dtype=np.float32
     )
     positions*=(3, 1, 3)
+    # positions = np.flip(positions)
 
     uvs = np.array(
         # positions        # texture Coords
         [(0.0, 1.0),
-        (0.0, 0.0),
         (1.0, 1.0),
+        (0.0, 0.0),
         (1.0, 0.0)],
         dtype=np.float32
     )
@@ -31,6 +37,12 @@ def plane(program):
         dtype=np.float32
     )
 
+    return positions, uvs, normals
+
+@functools.lru_cache(maxsize=128)
+def create_buffer(program):
+    positions, uvs, normals = plane_geo()
+    logging.debug("create plane buffer")
     # setup VAO
     vao = glGenVertexArrays(1)
 
@@ -59,6 +71,13 @@ def plane(program):
 
     glBindBuffer(GL_ARRAY_BUFFER, 0)
     glBindVertexArray(0)
+
+    return vao
+
+def plane(program):
+    positions, uvs, normals = plane_geo()
+    vao = create_buffer(program)
+    
 
     glBindVertexArray(vao)
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)

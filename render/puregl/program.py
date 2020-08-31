@@ -3,8 +3,9 @@ from contextlib import contextmanager
 from editor.utils import memoize
 
 import logging
+import functools
 
-@memoize
+@functools.lru_cache(maxsize=None)
 def create(vs, fs):
 	logging.debug('create program')
 	# create certex shader
