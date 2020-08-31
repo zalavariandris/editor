@@ -2,9 +2,11 @@ from OpenGL.GL import *
 import numpy as np
 from .helpers import buffer_offset
 from editor.utils import memoize
+import logging
 
 @memoize
 def cube_geo():
+    logging.debug("create cube geo")
     positions = np.array([
         # Front face
         -0.5, -0.5,  0.5,
@@ -102,6 +104,7 @@ def cube_geo():
 
 @memoize
 def cube_buffer(program):
+    logging.debug("create cube buffer for program: {}".format(program))
     positions, normals, uvs, indices = cube_geo()
     count = indices.size
 

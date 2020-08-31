@@ -22,13 +22,12 @@ import imageio
 import program
 import imdraw
 import texture
+import fbo
 
 from editor.render import glsl
 
-glsl.read("phong.vs", "phong.fs")
-
-# load shader files
-render_folder = "../"
+import logging
+logging.basicConfig(filename=None, level=logging.DEBUG, format='%(levelname)s:%(module)s.%(funcName)s: %(message)s')
 
 # Init
 width, height = 1024, 768
@@ -36,18 +35,23 @@ model_matrix = np.identity(4)
 window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
 #
-# read textures
+# read assets
 #
+assets_folder = "../assets"
 def to_srgb(img, gamma=2.2):
 	return np.power(img, (1/gamma, 1/gamma, 1/gamma))
 
 def to_linear(img, gamma=2.2):
 	return np.power(img, (gamma, gamma, gamma))
 
-diffuse_data  = np.array(Image.open(Path(render_folder, 'assets/container2_axis.png')))[...,[2,1,0]]/255
-specular_data = np.array(Image.open(Path(render_folder, 'assets/container2_specular.png')))[...,[2,1,0]]/255
+# textures
+diffuse_data  = np.array(Image.open(Path(assets_folder, 'container2_axis.png')))[...,[2,1,0]]/255
+specular_data = np.array(Image.open(Path(assets_folder, 'container2_specular.png')))[...,[2,1,0]]/255
 diffuse_data  = to_linear(diffuse_data)
 specular_data = to_linear(specular_data)
+
+# environment
+environment_data = imageio.imread(Path(assets_folder, 'hdri/fin4_Ref.hdr'), format="HDR-FI")
 
 with window:
 	glEnable(GL_PROGRAM_POINT_SIZE)
@@ -61,144 +65,57 @@ with window:
 	lambert_program = program.create(*glsl.read('lambert'))
 	phong_program = program.create(*glsl.read('phong'))
 	pbr_program = program.create(*glsl.read('pbr'))
+	tonamapping_program = program.create(*glsl.read('tonemapping'))
+	skybox_program = program.create(*glsl.read('skybox'))
 
 	# setup Shadow mapping
 	# ----------------------
 	shadow_fbo = glGenFramebuffers(1)
 	shadow_fbo_width, shadow_fbo_height = 1024, 1024
-	glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo)
-	shadow_tex = texture.create((shadow_fbo_width, shadow_fbo_height), 
-					slot=2, 
-					format=GL_DEPTH_COMPONENT,
-					wrap_s=GL_CLAMP_TO_BORDER,
-					wrap_t=GL_CLAMP_TO_BORDER, 
-					border_color=(1.0, 1.0, 1.0, 1.0))
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_tex, 0)
-	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
-	glDrawBuffer(GL_NONE) # dont render color data
-	glReadBuffer(GL_NONE)
-	glBindFramebuffer(GL_FRAMEBUFFER, 0)
+	with fbo.bind(shadow_fbo):
+		shadow_tex = texture.create((shadow_fbo_width, shadow_fbo_height), 
+						slot=2, 
+						format=GL_DEPTH_COMPONENT,
+						wrap_s=GL_CLAMP_TO_BORDER,
+						wrap_t=GL_CLAMP_TO_BORDER, 
+						border_color=(1.0, 1.0, 1.0, 1.0))
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_tex, 0)
+		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+		glDrawBuffer(GL_NONE) # dont render color data
+		glReadBuffer(GL_NONE)
+
 	depth_program = program.create(*glsl.read('simple_depth'))
-	debug_depth_program = program.create(*glsl.read('debug_quad.vs', 'debug_quad_depth.fs'))
+	debug_quad_program = program.create(*glsl.read('debug_quad.vs', 'debug_quad_depth.fs'))
 
 	# Setup Tonemapping with HDR fbo
 	# ------------------------------
-
 	# setup fbo
 	hdr_fbo = glGenFramebuffers(1)
 	hdr_fbo_width, hdr_fbo_height = width, height # initalize FBO with window size
-	glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo)
 
-	## attach color attachment
-	hdr_tex = glGenTextures(1)
-	glActiveTexture(GL_TEXTURE0)
-	glBindTexture(GL_TEXTURE_2D, hdr_tex)
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, hdr_fbo_width, hdr_fbo_height, 0, GL_RGB, GL_FLOAT, None)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdr_tex, 0)
+	with fbo.bind(hdr_fbo):
+		## attach color attachment
+		hdr_tex = glGenTextures(1)
+		glActiveTexture(GL_TEXTURE0)
+		glBindTexture(GL_TEXTURE_2D, hdr_tex)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, hdr_fbo_width, hdr_fbo_height, 0, GL_RGB, GL_FLOAT, None)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdr_tex, 0)
 
-	## attach depth and stencil renderbuffers
-	rbo = glGenRenderbuffers(1)
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo)
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, hdr_fbo_width, hdr_fbo_height)
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
-	
-	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
-	glBindTexture(GL_TEXTURE_2D, 0)
-	glBindRenderbuffer(GL_RENDERBUFFER, 0)
+		## attach depth and stencil renderbuffers
+		rbo = glGenRenderbuffers(1)
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo)
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, hdr_fbo_width, hdr_fbo_height)
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
+		
+		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+		glBindTexture(GL_TEXTURE_2D, 0)
+		glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
-	# Create tonemapping program
-	tonamapping_program = program.create(*glsl.read('tonemapping'))
 
 	# Environment from cubemaps
 	# -------------------------
-
-	# get images for the 6 side of a cube
-	faces = [
-		Path(render_folder, "assets/Storforsen3/posx.jpg"),
-		Path(render_folder, "assets/Storforsen3/negx.jpg"),
-		Path(render_folder, "assets/Storforsen3/posy.jpg"),
-		Path(render_folder, "assets/Storforsen3/negy.jpg"),
-		Path(render_folder, "assets/Storforsen3/posz.jpg"),
-		Path(render_folder, "assets/Storforsen3/negz.jpg"),
-	]
-
-	# read images
-	skybox_data = [to_linear(np.array(Image.open(file))/255) for i, file in enumerate(faces)]
-	def load_cubemap():
-		cubemap = glGenTextures(1)
-		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap)
-
-		for i, data in enumerate(skybox_data):
-			height, width, channels = data.shape
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i,
-				0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data
-			)
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)  
-		return cubemap
-
-	skybox_positions = np.array([
-		# positions          
-		-1.0,  1.0, -1.0,
-		-1.0, -1.0, -1.0,
-		 1.0, -1.0, -1.0,
-		 1.0, -1.0, -1.0,
-		 1.0,  1.0, -1.0,
-		-1.0,  1.0, -1.0,
-
-		-1.0, -1.0,  1.0,
-		-1.0, -1.0, -1.0,
-		-1.0,  1.0, -1.0,
-		-1.0,  1.0, -1.0,
-		-1.0,  1.0,  1.0,
-		-1.0, -1.0,  1.0,
-
-		 1.0, -1.0, -1.0,
-		 1.0, -1.0,  1.0,
-		 1.0,  1.0,  1.0,
-		 1.0,  1.0,  1.0,
-		 1.0,  1.0, -1.0,
-		 1.0, -1.0, -1.0,
-
-		-1.0, -1.0,  1.0,
-		-1.0,  1.0,  1.0,
-		 1.0,  1.0,  1.0,
-		 1.0,  1.0,  1.0,
-		 1.0, -1.0,  1.0,
-		-1.0, -1.0,  1.0,
-
-		-1.0,  1.0, -1.0,
-		 1.0,  1.0, -1.0,
-		 1.0,  1.0,  1.0,
-		 1.0,  1.0,  1.0,
-		-1.0,  1.0,  1.0,
-		-1.0,  1.0, -1.0,
-
-		-1.0, -1.0, -1.0,
-		-1.0, -1.0,  1.0,
-		 1.0, -1.0, -1.0,
-		 1.0, -1.0, -1.0,
-		-1.0, -1.0,  1.0,
-		 1.0, -1.0,  1.0
-	], dtype=np.float32).reshape(-1,3)
-
-	skybox_tex = load_cubemap()
-
-	# create environment program
-	# --------------------------
-	skybox_program = program.create(*glsl.read('skybox'))
-	skyboxVAO, skyboxVBO = glGenVertexArrays(1), glGenBuffers(1)
-	glBindVertexArray(skyboxVAO)
-	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO)
-	glBufferData(GL_ARRAY_BUFFER, skybox_positions.nbytes, skybox_positions, GL_STATIC_DRAW)
-	glEnableVertexAttribArray(0)
-	location = glGetAttribLocation(skybox_program, 'position')
-	glVertexAttribPointer(location,3, GL_FLOAT, False, 0, None)
 
 	# Prepare Environment map (convert an equirectangular image to cubemap)
 	# -----------------------
@@ -211,11 +128,8 @@ with window:
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,512,512)
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_rbo)
 
-	# read image
-	environment_data = imageio.imread(Path(render_folder, 'assets/hdri/fin4_Ref.hdr'), format="HDR-FI")
-	env_height, env_width, env_channels = environment_data.shape
-
 	# create env texture
+	env_height, env_width, env_channels = environment_data.shape
 	environment_tex = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_2D, environment_tex)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, env_width, env_height, 0, GL_RGB, GL_FLOAT, environment_data)
@@ -248,26 +162,26 @@ with window:
 
 	# convert equirectangular environment to cubemap
 	equirectangular_to_cubemap_program = program.create(*glsl.read('cubemap.vs', 'equirectangular_to_cubemap.fs'))
+	with program.use(equirectangular_to_cubemap_program):
+		program.set_uniform(equirectangular_to_cubemap_program, "equirectangularMap", 0)
+		program.set_uniform(equirectangular_to_cubemap_program, "projectionMatrix", capture_projection)
+		glActiveTexture(GL_TEXTURE0)
+		glBindTexture(GL_TEXTURE_2D, environment_tex)
 
-	glUseProgram(equirectangular_to_cubemap_program)
-	program.set_uniform(equirectangular_to_cubemap_program, "equirectangularMap", 0)
-	program.set_uniform(equirectangular_to_cubemap_program, "projectionMatrix", capture_projection)
-	glActiveTexture(GL_TEXTURE0)
-	glBindTexture(GL_TEXTURE_2D, environment_tex)
+		glViewport(0,0,512,512)
+		with fbo.bind(capture_fbo):
+			for i in range(6):
+				program.set_uniform(equirectangular_to_cubemap_program, "viewMatrix", capture_views[i])
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, env_cubemap, 0)
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+				imdraw.cube(equirectangular_to_cubemap_program)
 
-	glViewport(0,0,512,512)
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_fbo)
-	for i in range(6):
-		program.set_uniform(equirectangular_to_cubemap_program, "viewMatrix", capture_views[i])
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, env_cubemap, 0)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		imdraw.cube(capture_fbo)
-	glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
 	# Image based lighting 
 	# (create irradiance map for diffuse, and prefilter map for reflection ambient lighting)
 	# ------------------------
-	# crate irradiance cubemap
+
+	# create irradiance cubemap
 	irradiance_map = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
 	for i in range(6):
@@ -279,30 +193,27 @@ with window:
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_fbo)
 	glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32)
 
 	# solve irradiance map
 	irradiance_program = program.create(*glsl.read('cubemap.vs', 'irradiance_convolution.fs'))
-	glUseProgram(irradiance_program)
-	program.set_uniform(irradiance_program, "environmentMap", 0)
-	program.set_uniform(irradiance_program, "projectionMatrix", capture_projection)
-	glActiveTexture(GL_TEXTURE0)
-	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
+	with program.use(irradiance_program):
+		program.set_uniform(irradiance_program, "environmentMap", 0)
+		program.set_uniform(irradiance_program, "projectionMatrix", capture_projection)
+		glActiveTexture(GL_TEXTURE0)
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
 
-	glViewport(0, 0, 32, 32) # don't forget to configure the viewport to the capture dimensions.
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_fbo)
-	for i in range(6):
-		program.set_uniform(irradiance_program, "viewMatrix", capture_views[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_map, 0)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glViewport(0, 0, 32, 32) # don't forget to configure the viewport to the capture dimensions.
+		with fbo.bind(capture_fbo):
+			for i in range(6):
+				program.set_uniform(irradiance_program, "viewMatrix", capture_views[i]);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_map, 0)
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-		imdraw.cube(irradiance_program)
+				imdraw.cube(irradiance_program)
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0)
-
-	# prefilet hdri map for specular IBL
+	# prefilter hdri map for specular IBL
 	prefilterMap = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap)
 	for i in range(6):
@@ -335,34 +246,32 @@ with window:
 	# pbr: run a quasi monte-carlo simulation on the environment lighting to create a prefilter (cube)map.
 	# ----------------------------------------------------------------------------------------------------
 	prefilterShader = program.create(*glsl.read('cubemap.vs', 'prefilter.fs'))
-	glUseProgram(prefilterShader)
-	program.set_uniform(prefilterShader, "environmentMap", 0)
-	program.set_uniform(prefilterShader, "projectionMatrix", capture_projection)
-	glActiveTexture(GL_TEXTURE0)
-	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
+	with program.use(prefilterShader):
+		program.set_uniform(prefilterShader, "environmentMap", 0)
+		program.set_uniform(prefilterShader, "projectionMatrix", capture_projection)
+		glActiveTexture(GL_TEXTURE0)
+		glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
 
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_fbo)
-	maxMipLevels = 5
+		with fbo.bind(capture_fbo):
+			maxMipLevels = 5
 
-	for mip in range(maxMipLevels):
-		# resize framebuffer according to mip-level size.
-		mipWidth  = int(128 * math.pow(0.5, mip))
-		mipHeight = int(128 * math.pow(0.5, mip))
-		glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight)
-		glViewport(0, 0, mipWidth, mipHeight)
+			for mip in range(maxMipLevels):
+				# resize framebuffer according to mip-level size.
+				mipWidth  = int(128 * math.pow(0.5, mip))
+				mipHeight = int(128 * math.pow(0.5, mip))
+				glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo);
+				glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight)
+				glViewport(0, 0, mipWidth, mipHeight)
 
-		roughness = mip / (maxMipLevels - 1)
-		program.set_uniform(prefilterShader, "roughness", roughness)
+				roughness = mip / (maxMipLevels - 1)
+				program.set_uniform(prefilterShader, "roughness", roughness)
 
-		for i in range(6):
-			program.set_uniform(prefilterShader, "viewMatrix", capture_views[i])
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip)
+				for i in range(6):
+					program.set_uniform(prefilterShader, "viewMatrix", capture_views[i])
+					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip)
 
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-			imdraw.cube(prefilterShader)
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0)
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+					imdraw.cube(prefilterShader)
 
 	# pbr: generate a 2D LUT from the BRDF equations used.
 	# ----------------------------------------------------
@@ -379,17 +288,16 @@ with window:
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
 	# then re-configure capture framebuffer object and render screen-space quad with BRDF shader.
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_fbo)
-	glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512)
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0)
+	with fbo.bind(capture_fbo):
+		glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512)
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0)
 
-	glViewport(0, 0, 512, 512)
-	glUseProgram(brdfShader)
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-	imdraw.quad(brdfShader)
+		glViewport(0, 0, 512, 512)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		with program.use(brdfShader):
+			imdraw.quad(brdfShader)
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
 """ END OF COPY PASTE"""
 
@@ -419,161 +327,145 @@ def draw_scene(prog, projection_matrix, view_matrix):
 	program.set_uniform(prog, 'normalMatrix', normal_matrix)
 	imdraw.plane(prog)
 
+
 with window:
 	while not window.should_close():
 		# 1. render scene to depth map
 		# ============================
-		glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo)
-		
-		glViewport(0,0, shadow_fbo_width, shadow_fbo_height)
-		glClear(GL_DEPTH_BUFFER_BIT)
-		glCullFace(GL_FRONT)
+		with fbo.bind(shadow_fbo):
+			glViewport(0,0, shadow_fbo_width, shadow_fbo_height)
+			glClear(GL_DEPTH_BUFFER_BIT)
+			glCullFace(GL_FRONT)
 
-		# configure shader
-		light_projection = glm.ortho(-2,2,-2,2, 0.5,12)
-		light_view = glm.lookAt((math.sin(time.time()*3)*5,5,2), (0,0,0), (0,1,0))
+			# configure shader
+			light_projection = glm.ortho(-2,2,-2,2, 0.5,12)
+			light_view = glm.lookAt((math.sin(time.time()*3)*5,5,2), (0,0,0), (0,1,0))
 
-		glUseProgram(depth_program)
-
-		
-		draw_scene(depth_program, light_projection, light_view)
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			with program.use(depth_program):
+				draw_scene(depth_program, light_projection, light_view)
 
 		# 2. Render the scene to HDR_FBO with shadow mapping
 		# ==================================================
-		glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo)
-		glViewport(0, 0, hdr_fbo_width, hdr_fbo_height)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		glCullFace(GL_BACK)
+		with fbo.bind(hdr_fbo):
+			glViewport(0, 0, hdr_fbo_width, hdr_fbo_height)
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+			glCullFace(GL_BACK)
 
-		# Render skybox
-		glDepthFunc(GL_LEQUAL)
-		glDepthMask(GL_FALSE)
-		glUseProgram(skybox_program)
-		program.set_uniform(skybox_program, 'projectionMatrix', window.projection_matrix)
-		sky_view = glm.mat4(glm.mat3(window.view_matrix)); 
-		program.set_uniform(skybox_program, 'viewMatrix', sky_view)
-		camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
-		program.set_uniform(skybox_program, 'cameraPos', camera_pos)
-		glBindVertexArray(skyboxVAO)
-		glActiveTexture(GL_TEXTURE0)
-		glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
-		glDrawArrays(GL_TRIANGLES, 0, 36)
-		glDepthMask(GL_TRUE)
+			# Render skybox
+			glDepthFunc(GL_LEQUAL)
+			glDepthMask(GL_FALSE)
+			with program.use(skybox_program):
+				program.set_uniform(skybox_program, 'projectionMatrix', window.projection_matrix)
+				sky_view = glm.mat4(glm.mat3(window.view_matrix)); 
+				program.set_uniform(skybox_program, 'viewMatrix', sky_view)
+				camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
+				program.set_uniform(skybox_program, 'cameraPos', camera_pos)
+				imdraw.cube(skybox_program)
+			glDepthMask(GL_TRUE)
 
-		# # Render scene with phong shading
-		# # -------------------------------
-		# glUseProgram(phong_program)
-		# program.set_uniform(phong_program, 'projectionMatrix', window.projection_matrix)
-		# program.set_uniform(phong_program, 'viewMatrix', window.view_matrix)
-		# model_matrix = glm.identity(glm.mat4x4)
-		# normal_matrix = glm.mat3( glm.transpose(glm.inverse(model_matrix)) )
-		# program.set_uniform(phong_program, 'modelMatrix', model_matrix)
-		# program.set_uniform(phong_program, 'normalMatrix', normal_matrix)
+			# # Render scene with phong shading
+			# # -------------------------------
+			# with program.use(phong_program):
+			# 	program.set_uniform(phong_program, 'projectionMatrix', window.projection_matrix)
+			# 	program.set_uniform(phong_program, 'viewMatrix', window.view_matrix)
+			# 	model_matrix = glm.identity(glm.mat4x4)
+			# 	normal_matrix = glm.mat3( glm.transpose(glm.inverse(model_matrix)) )
+			# 	program.set_uniform(phong_program, 'modelMatrix', model_matrix)
+			# 	program.set_uniform(phong_program, 'normalMatrix', normal_matrix)
 
-		# program.set_uniform(phong_program, 'material.diffuseMap', 0)
-		# program.set_uniform(phong_program, 'material.specularMap', 1)
-		# program.set_uniform(phong_program, 'material.shiness', 5.0)
+			# 	program.set_uniform(phong_program, 'material.diffuseMap', 0)
+			# 	program.set_uniform(phong_program, 'material.specularMap', 1)
+			# 	program.set_uniform(phong_program, 'material.shiness', 5.0)
 
 
-		# light_dir = glm.normalize(glm.inverse(light_view)[2].xyz)
-		# light_pos = glm.inverse(light_view)[3].xyz
-		# program.set_uniform(phong_program, 'lightSpaceMatrix', light_projection * light_view)
-		# program.set_uniform(phong_program, 'sun.direction', light_dir)
-		# program.set_uniform(phong_program, 'sun.ambient', glm.vec3(0.3))
-		# program.set_uniform(phong_program, 'sun.diffuse', glm.vec3(1))
-		# program.set_uniform(phong_program, 'sun.specular', glm.vec3(1))
-		# program.set_uniform(phong_program, 'sun.shadowMap', 2)
+			# 	light_dir = glm.normalize(glm.inverse(light_view)[2].xyz)
+			# 	light_pos = glm.inverse(light_view)[3].xyz
+			# 	program.set_uniform(phong_program, 'lightSpaceMatrix', light_projection * light_view)
+			# 	program.set_uniform(phong_program, 'sun.direction', light_dir)
+			# 	program.set_uniform(phong_program, 'sun.ambient', glm.vec3(0.3))
+			# 	program.set_uniform(phong_program, 'sun.diffuse', glm.vec3(1))
+			# 	program.set_uniform(phong_program, 'sun.specular', glm.vec3(1))
+			# 	program.set_uniform(phong_program, 'sun.shadowMap', 2)
 
-		# camera_pos = glm.inverse(window.view_matrix)[3].xyz
-		# program.set_uniform(phong_program, 'cameraPos', camera_pos)
-		
-		# # draw geometry
-		# glActiveTexture(GL_TEXTURE0+0)
-		# glBindTexture(GL_TEXTURE_2D, diffuse_tex)
-		# glActiveTexture(GL_TEXTURE0+1)
-		# glBindTexture(GL_TEXTURE_2D, specular_tex)
-		# glActiveTexture(GL_TEXTURE0+2)
-		# glBindTexture(GL_TEXTURE_2D, shadow_tex)
-		# glActiveTexture(GL_TEXTURE0+3)
-		# glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex)
-		# draw_scene(phong_program, window.projection_matrix, window.view_matrix)
-		# glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			# 	camera_pos = glm.inverse(window.view_matrix)[3].xyz
+			# 	program.set_uniform(phong_program, 'cameraPos', camera_pos)
+				
+			# 	# draw geometry
+			# 	glActiveTexture(GL_TEXTURE0+0)
+			# 	glBindTexture(GL_TEXTURE_2D, diffuse_tex)
+			# 	glActiveTexture(GL_TEXTURE0+1)
+			# 	glBindTexture(GL_TEXTURE_2D, specular_tex)
+			# 	glActiveTexture(GL_TEXTURE0+2)
+			# 	glBindTexture(GL_TEXTURE_2D, shadow_tex)
+			# 	glActiveTexture(GL_TEXTURE0+3)
+			# 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex)
+			# 	draw_scene(phong_program, window.projection_matrix, window.view_matrix)
 
-		# Render scene with PBR shading
-		# -----------------------------
-		glUseProgram(pbr_program)
+			# Render scene with PBR shading
+			# -----------------------------
+			with program.use(pbr_program):
+				program.set_uniform(pbr_program, 'material.albedo', (0.7,0.0,0.0))
+				program.set_uniform(pbr_program, 'material.roughness', 0.4)
+				program.set_uniform(pbr_program, 'material.metallic', 0.0)
+				program.set_uniform(pbr_program, 'material.ao', 1.0)
 
-		program.set_uniform(pbr_program, 'material.albedo', (0.7,0.0,0.0))
-		program.set_uniform(pbr_program, 'material.roughness', 0.01)
-		program.set_uniform(pbr_program, 'material.metallic', 1.0)
-		program.set_uniform(pbr_program, 'material.ao', 1.0)
+				light_dir = glm.normalize(glm.inverse(light_view)[2].xyz)
+				light_pos = glm.inverse(light_view)[3].xyz
+				program.set_uniform(pbr_program, 'lightSpaceMatrix', light_projection * light_view)
+				program.set_uniform(pbr_program, 'light.direction', light_dir)
+				program.set_uniform(pbr_program, 'light.position', light_pos)
+				program.set_uniform(pbr_program, 'light.color', glm.vec3(1.0))
 
-		light_dir = glm.normalize(glm.inverse(light_view)[2].xyz)
-		light_pos = glm.inverse(light_view)[3].xyz
-		program.set_uniform(pbr_program, 'lightSpaceMatrix', light_projection * light_view)
-		program.set_uniform(pbr_program, 'light.direction', light_dir)
-		program.set_uniform(pbr_program, 'light.position', light_pos)
-		program.set_uniform(pbr_program, 'light.color', glm.vec3(1.0))
+				program.set_uniform(pbr_program, 'irradianceMap', 3)
+				program.set_uniform(pbr_program, 'prefilterMap', 4)
+				program.set_uniform(pbr_program, 'brdfLUT', 5)
+				program.set_uniform(pbr_program, 'shadowMap', 6)
 
-		program.set_uniform(pbr_program, 'irradianceMap', 3)
-		program.set_uniform(pbr_program, 'prefilterMap', 4)
-		program.set_uniform(pbr_program, 'brdfLUT', 5)
-		program.set_uniform(pbr_program, 'shadowMap', 6)
+				# draw geometry
+				# material
+				glActiveTexture(GL_TEXTURE0+0)
+				glBindTexture(GL_TEXTURE_2D, diffuse_tex)
+				glActiveTexture(GL_TEXTURE0+1)
+				glBindTexture(GL_TEXTURE_2D, specular_tex)
+				glActiveTexture(GL_TEXTURE0+2)
+				glBindTexture(GL_TEXTURE_2D, shadow_tex)
 
-		# draw geometry
-		# material
-		glActiveTexture(GL_TEXTURE0+0)
-		glBindTexture(GL_TEXTURE_2D, diffuse_tex)
-		glActiveTexture(GL_TEXTURE0+1)
-		glBindTexture(GL_TEXTURE_2D, specular_tex)
-		glActiveTexture(GL_TEXTURE0+2)
-		glBindTexture(GL_TEXTURE_2D, shadow_tex)
+				# IBL
+				glActiveTexture(GL_TEXTURE0+3)
+				glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map)
+				glActiveTexture(GL_TEXTURE0+4)
+				glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap)
+				glActiveTexture(GL_TEXTURE0+5)
+				glBindTexture(GL_TEXTURE_2D, brdfLUTTexture)
+				glActiveTexture(GL_TEXTURE0+6)
+				glBindTexture(GL_TEXTURE_2D, shadow_tex)
 
-		# IBL
-		glActiveTexture(GL_TEXTURE0+3)
-		glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map)
-		glActiveTexture(GL_TEXTURE0+4)
-		glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap)
-		glActiveTexture(GL_TEXTURE0+5)
-		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture)
-		glActiveTexture(GL_TEXTURE0+6)
-		glBindTexture(GL_TEXTURE_2D, shadow_tex)
+				draw_scene(pbr_program, window.projection_matrix, window.view_matrix)
 
-		draw_scene(pbr_program, window.projection_matrix, window.view_matrix)
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0)
-
-		# Debug: Render fbo depth component on quad
-		# -----------------------------------------
-		# glViewport(0, 0, window.width, window.height)
-		# glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		# glUseProgram(debug_depth_program)
-
-		# program.set_uniform(debug_depth_program, 'projectionMatrix', np.eye(4))
-		# program.set_uniform(debug_depth_program, 'viewMatrix', np.eye(4))
-		# program.set_uniform(debug_depth_program, 'modelMatrix', np.eye(4))
-		# program.set_uniform(debug_depth_program, 'depthMap', 2)
-		# glActiveTexture(GL_TEXTURE0+2)
-		# glBindTexture(GL_TEXTURE_2D, shadow_tex)
-		# imdraw.quad(debug_depth_program)
 
 		# 3. Render HDR color component on quad
 		# ==================================
-		glViewport(0, 0, window.width, window.height)
+		# clear viweport
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		glUseProgram(tonamapping_program)
 
-		program.set_uniform(tonamapping_program, 'projectionMatrix', np.eye(4))
-		program.set_uniform(tonamapping_program, 'viewMatrix', np.eye(4))
-		program.set_uniform(tonamapping_program, 'modelMatrix', np.eye(4))
-		program.set_uniform(tonamapping_program, 'screenTexture', 0)
-		program.set_uniform(tonamapping_program, 'exposure', 0.0)
-		program.set_uniform(tonamapping_program, 'gamma', 2.2)
-		glActiveTexture(GL_TEXTURE0)
-		glBindTexture(GL_TEXTURE_2D, hdr_tex)
-		imdraw.quad(tonamapping_program)
+		# tonemap HDR texture and blit to screen
+		glViewport(0, 0, window.width, window.height)
+
+		with program.use(tonamapping_program):
+			program.set_uniform(tonamapping_program, 'projectionMatrix', np.eye(4))
+			program.set_uniform(tonamapping_program, 'viewMatrix', np.eye(4))
+			program.set_uniform(tonamapping_program, 'modelMatrix', np.eye(4))
+			program.set_uniform(tonamapping_program, 'screenTexture', 0)
+			program.set_uniform(tonamapping_program, 'exposure', 0.0)
+			program.set_uniform(tonamapping_program, 'gamma', 2.2)
+			glActiveTexture(GL_TEXTURE0)
+			glBindTexture(GL_TEXTURE_2D, hdr_tex)
+			imdraw.quad(tonamapping_program)
+
+		# Debug: Display light depth map
+		# -----------------------------------------
+		imdraw.texture(diffuse_tex, (0,0,100,100))
+		imdraw.texture(hdr_tex, (0,100,100,100))
 
 		# swap buffers
 		window.swap_buffers()

@@ -1,39 +1,35 @@
 from OpenGL.GL import *
+from contextlib import contextmanager
+from editor.utils import memoize
 
+import logging
+
+@memoize
 def create(vs, fs):
-	try:
-		try:
-			memo = create.memo
-		except AttributeError:
-			create.memo = dict()
-			memo = create.memo
-		program = memo[(vs, fs)]
-	except KeyError:
-		print('create program')
-		# setup
-		vertex_shader = glCreateShader(GL_VERTEX_SHADER)
-		glShaderSource(vertex_shader, vs)
-		glCompileShader(vertex_shader)
-		if glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH): # compilation error check
-			raise Exception(glGetShaderInfoLog(vertex_shader))
+	logging.debug('create program')
+	# create certex shader
+	vertex_shader = glCreateShader(GL_VERTEX_SHADER)
+	glShaderSource(vertex_shader, vs)
+	glCompileShader(vertex_shader)
+	if glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH): # compilation error check
+		raise Exception(glGetShaderInfoLog(vertex_shader))
 
-		fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
-		glShaderSource(fragment_shader, fs)
-		glCompileShader(fragment_shader)
-		if glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH): # compilation error check
-			raise Exception(glGetShaderInfoLog(fragment_shader))
+	#create fragment shader
+	fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
+	glShaderSource(fragment_shader, fs)
+	glCompileShader(fragment_shader)
+	if glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH): # compilation error check
+		raise Exception(glGetShaderInfoLog(fragment_shader))
 
-		program = glCreateProgram()
-		glAttachShader(program, vertex_shader)
-		glAttachShader(program, fragment_shader)
-		glLinkProgram(program)
-		if glGetProgramiv(program, GL_INFO_LOG_LENGTH): # link error check
-			raise Exception(glGetProgramInfoLog(program))
-
-		memo[(vs, fs)]=program
+	# link shaders
+	program = glCreateProgram()
+	glAttachShader(program, vertex_shader)
+	glAttachShader(program, fragment_shader)
+	glLinkProgram(program)
+	if glGetProgramiv(program, GL_INFO_LOG_LENGTH): # link error check
+		raise Exception(glGetProgramInfoLog(program))
 
 	return program
-
 
 def set_uniform(program, name, value):
 	import glm
@@ -68,7 +64,9 @@ def set_uniform(program, name, value):
 	else:
 		raise NotImplementedError(type(value))
 
-def use(vs, fs):
-	program = create(vs, fs)
-	glUseProgram(program)
-	return program
+
+@contextmanager
+def use(prog):
+	glUseProgram(prog) #FIXME: push pip current program
+	yield prog
+	glUseProgram(0)

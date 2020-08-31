@@ -2,7 +2,6 @@ from pathlib import Path
 
 def read(*args):
 	glsl_folder = Path(__file__).parent
-
 	if len(args)==1:
 		shader = args[0]
 		return Path(glsl_folder, shader+'.vs').read_text(), Path(glsl_folder, shader+'.fs').read_text()

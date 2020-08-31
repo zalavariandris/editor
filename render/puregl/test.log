@@ -1,0 +1,69 @@
+DEBUG:PIL.PngImagePlugin:STREAM b'IHDR' 16 13
+DEBUG:PIL.PngImagePlugin:STREAM b'pHYs' 41 9
+DEBUG:PIL.PngImagePlugin:STREAM b'iTXt' 62 1530
+DEBUG:PIL.PngImagePlugin:STREAM b'IDAT' 1604 403757
+DEBUG:PIL.PngImagePlugin:STREAM b'IHDR' 16 13
+DEBUG:PIL.PngImagePlugin:STREAM b'pHYs' 41 9
+DEBUG:PIL.PngImagePlugin:STREAM b'iCCP' 62 2639
+DEBUG:PIL.PngImagePlugin:iCCP profile name b'Photoshop ICC profile'
+DEBUG:PIL.PngImagePlugin:Compression method 0
+DEBUG:PIL.PngImagePlugin:STREAM b'cHRM' 2713 32
+DEBUG:PIL.PngImagePlugin:STREAM b'IDAT' 2757 141308
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:PIL.PngImagePlugin:STREAM b'IHDR' 16 13
+DEBUG:PIL.PngImagePlugin:STREAM b'pHYs' 41 9
+DEBUG:PIL.PngImagePlugin:STREAM b'iTXt' 62 1530
+DEBUG:PIL.PngImagePlugin:STREAM b'IDAT' 1604 403757
+DEBUG:PIL.PngImagePlugin:STREAM b'IHDR' 16 13
+DEBUG:PIL.PngImagePlugin:STREAM b'pHYs' 41 9
+DEBUG:PIL.PngImagePlugin:STREAM b'iCCP' 62 2639
+DEBUG:PIL.PngImagePlugin:iCCP profile name b'Photoshop ICC profile'
+DEBUG:PIL.PngImagePlugin:Compression method 0
+DEBUG:PIL.PngImagePlugin:STREAM b'cHRM' 2713 32
+DEBUG:PIL.PngImagePlugin:STREAM b'IDAT' 2757 141308
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG:root:create program
+DEBUG STREAM b'IHDR' 16 13
+DEBUG STREAM b'pHYs' 41 9
+DEBUG STREAM b'iTXt' 62 1530
+DEBUG STREAM b'IDAT' 1604 403757
+DEBUG STREAM b'IHDR' 16 13
+DEBUG STREAM b'pHYs' 41 9
+DEBUG STREAM b'iCCP' 62 2639
+DEBUG iCCP profile name b'Photoshop ICC profile'
+DEBUG Compression method 0
+DEBUG STREAM b'cHRM' 2713 32
+DEBUG STREAM b'IDAT' 2757 141308
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program
+DEBUG create program

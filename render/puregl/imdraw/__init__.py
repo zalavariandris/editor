@@ -3,6 +3,8 @@ from .plane import plane
 from .cube import cube
 from .sphere import sphere
 
+from .texture import texture
+
 
 
 
