@@ -120,8 +120,6 @@ with window:
 				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, hdr_color_buffers[i], 0
 			)
 
-
-
 		# create depth+stencil buffer
 		rbo = glGenRenderbuffers(1)
 		glBindRenderbuffer(GL_RENDERBUFFER, rbo)
@@ -159,9 +157,11 @@ with window:
 
 	# create cubemap
 	env_cubemap = glGenTextures(1)
+	env_width = 512
+	env_height = 512
 	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
 	for i in range(6):
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL_RGB16F, 512,512,0,GL_RGB, GL_FLOAT, None)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL_RGB16F, env_width, env_height,0,GL_RGB, GL_FLOAT, None)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
@@ -183,7 +183,7 @@ with window:
 	# create rbo
 	capture_rbo = glGenRenderbuffers(1)
 	glBindRenderbuffer(GL_RENDERBUFFER, capture_rbo)
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512)
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, env_width, env_height)
 	glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
 	# create fbo
@@ -193,7 +193,7 @@ with window:
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_rbo)
 		
 	# draw environment map to skybox
-	glViewport(0,0,512,512)
+	glViewport(0,0,env_width,env_height)
 	glActiveTexture(GL_TEXTURE0)
 	glBindTexture(GL_TEXTURE_2D, environment_tex)
 	with program.use(equirectangular_to_cubemap_program):
@@ -367,16 +367,28 @@ with window:
 		# use 3 color attachments
 		glDrawBuffers(3, [GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2])
 
-		# create depth+stencil buffer
+		# create stencil buffer
 		rbo = glGenRenderbuffers(1)
 		glBindRenderbuffer(GL_RENDERBUFFER, rbo)
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT)
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX, SCR_WIDTH, SCR_HEIGHT)
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
 		glBindRenderbuffer(GL_RENDERBUFFER, 0)
-
-		## attach depth and stencil component
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
 		
-		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+		fbo_incomplete_codes = {
+			GL_FRAMEBUFFER_UNDEFINED: "GL_FRAMEBUFFER_UNDEFINED",
+			GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT",
+			GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT",
+			GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER",
+			GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER",
+			GL_FRAMEBUFFER_UNSUPPORTED: "GL_FRAMEBUFFER_UNSUPPORTED",
+			GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"
+		}
+
+		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,  "error: {}".format(fbo_incomplete_codes[glCheckFramebufferStatus(GL_FRAMEBUFFER)])
+
+	# AMBIENT OCCLUSION
+	# =================
+	ssao_program = program.create(*glsl.read("ssao_geometry"))
 
 def draw_scene(prog, projection_matrix, view_matrix):
 	"""Draw scen with a shader program"""
@@ -545,13 +557,13 @@ with window:
 
 		# Debug
 		# -----------------------------------------
-		imdraw.texture(shadow_tex,         (0,   0, 100, 100), shuffle=(0,0,0,-1))
-		imdraw.texture(hdr_color_buffers[0],   (0, 100, 100, 100))
-		imdraw.texture(pingpong_buffer[0], (0, 200, 100, 100))
-		imdraw.texture(gPosition,          (0, 300, 100, 100))
-		imdraw.texture(gNormal,            (0, 400, 100, 100))
-		imdraw.texture(gAlbedoSpec,        (0, 500, 100, 100), shuffle=(0,1,2,-1))
-		imdraw.texture(gAlbedoSpec,        (0, 600, 100, 100), shuffle=(3,3,3,-1))
+		imdraw.texture(shadow_tex,           (  0,   0, 100, 100), shuffle=(0,0,0,-1))
+		imdraw.texture(hdr_color_buffers[0], (  0, 100, 100, 100))
+		imdraw.texture(pingpong_buffer[0],   (  0, 200, 100, 100))
+		imdraw.texture(gPosition,            (  0, 300, 100, 100))
+		imdraw.texture(gNormal,              (  0, 400, 100, 100))
+		imdraw.texture(gAlbedoSpec,          (  0, 500, 100, 100), shuffle=(0,1,2,-1))
+		imdraw.texture(gAlbedoSpec,          (  0, 600, 100, 100), shuffle=(3,3,3,-1))
 
 
 		# swap buffers
