@@ -103,11 +103,11 @@ with window:
 	hdr_fbo_width, hdr_fbo_height = width, height # initalize FBO with window size
 	with fbo.bind(hdr_fbo):
 		# create HDR color texture
-		color_buffers = glGenTextures(2)
+		hdr_color_buffers = glGenTextures(2)
 
 		for i in range(2):
 			glActiveTexture(GL_TEXTURE0)
-			glBindTexture(GL_TEXTURE_2D, color_buffers[i])
+			glBindTexture(GL_TEXTURE_2D, hdr_color_buffers[i])
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, hdr_fbo_width, hdr_fbo_height, 0, GL_RGB, GL_FLOAT, None)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
@@ -117,8 +117,10 @@ with window:
 
 			## attach color component
 			glFramebufferTexture2D(
-				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, color_buffers[i], 0
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, hdr_color_buffers[i], 0
 			)
+
+
 
 		# create depth+stencil buffer
 		rbo = glGenRenderbuffers(1)
@@ -375,10 +377,6 @@ with window:
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
 		
 		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
-		
-
-
-	
 
 def draw_scene(prog, projection_matrix, view_matrix):
 	"""Draw scen with a shader program"""
@@ -408,8 +406,8 @@ def draw_scene(prog, projection_matrix, view_matrix):
 
 with window:
 	while not window.should_close():
-		# 1. render scene to depth map
-		# ============================
+		# 1. render scene to shadow map
+		# =============================
 		with fbo.bind(shadow_fbo):
 			glViewport(0,0, shadow_fbo_width, shadow_fbo_height)
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -502,7 +500,7 @@ with window:
 				program.set_uniform(gaussianblur_program, 'horizontal', horizontal)
 				glActiveTexture(GL_TEXTURE0)
 				glBindTexture(
-					GL_TEXTURE_2D, color_buffers[1] if first_iteration else pingpong_buffer[1-horizontal]
+					GL_TEXTURE_2D, hdr_color_buffers[1] if first_iteration else pingpong_buffer[1-horizontal]
 				)
 				imdraw.quad(gaussianblur_program)
 				if first_iteration:
@@ -527,7 +525,7 @@ with window:
 			program.set_uniform(tonemapping_program, 'exposure', 0.0)
 			program.set_uniform(tonemapping_program, 'gamma', 2.2)
 			glActiveTexture(GL_TEXTURE0)
-			glBindTexture(GL_TEXTURE_2D, color_buffers[0])
+			glBindTexture(GL_TEXTURE_2D, hdr_color_buffers[0])
 			glActiveTexture(GL_TEXTURE0+1)
 			glBindTexture(GL_TEXTURE_2D, pingpong_buffer[0])
 			imdraw.quad(tonemapping_program)
@@ -548,7 +546,7 @@ with window:
 		# Debug
 		# -----------------------------------------
 		imdraw.texture(shadow_tex,         (0,   0, 100, 100), shuffle=(0,0,0,-1))
-		imdraw.texture(color_buffers[0],   (0, 100, 100, 100))
+		imdraw.texture(hdr_color_buffers[0],   (0, 100, 100, 100))
 		imdraw.texture(pingpong_buffer[0], (0, 200, 100, 100))
 		imdraw.texture(gPosition,          (0, 300, 100, 100))
 		imdraw.texture(gNormal,            (0, 400, 100, 100))
