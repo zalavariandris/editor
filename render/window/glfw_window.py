@@ -75,6 +75,7 @@ class GLFWWindow:
 
         self._width, self._height = width, height
 
+
     @property
     def width(self):
         return self._width

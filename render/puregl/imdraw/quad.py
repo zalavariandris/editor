@@ -5,7 +5,7 @@ from .helpers import buffer_offset
 import logging
 import functools
 
-@functools.lru_cache(maxsize=128)
+@functools.lru_cache(maxsize=None)
 def quad_geo():
     logging.debug("create quad geo")
     positions = np.array(
@@ -28,7 +28,7 @@ def quad_geo():
 
     return positions, uvs
 
-@functools.lru_cache(maxsize=128)
+@functools.lru_cache(maxsize=None)
 def create_buffer(program):
     logging.debug("create quad buffer")
     positions, uvs = quad_geo()
@@ -41,11 +41,13 @@ def create_buffer(program):
     glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
     glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
     position_location = glGetAttribLocation(program, 'position')
+    if position_location<0: logging.warning("no 'position' attribute")
     # assert position_location>=0
     glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, buffer_offset(0))
     glEnableVertexAttribArray(position_location)
 
     uv_location = glGetAttribLocation(program, 'uv')
+    if uv_location<0: logging.warning("no 'uv' attribute")
     # assert uv_location>=0
     glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
     glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
