@@ -13,6 +13,7 @@ uniform Channels shuffle;
 
 void main(){
 	vec4 color = texture(tex, TexCoords).rgba;
+
 	FragColor = vec4(shuffle.red  >=0 ? color[shuffle.red]   : 0.0, 
 		             shuffle.green>=0 ? color[shuffle.green] : 0.0, 
 		             shuffle.blue >=0 ? color[shuffle.blue]  : 0.0, 
