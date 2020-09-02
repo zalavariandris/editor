@@ -20,10 +20,8 @@ import imageio
 import time
 
 # puregl
-import program
-import imdraw
-import texture
-import fbo
+from editor.render.puregl import imdraw, program, texture, fbo
+
 
 from editor.render import glsl
 
@@ -38,7 +36,7 @@ window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 #
 # read assets
 #
-assets_folder = "../assets"
+assets_folder = "../../assets"
 def to_srgb(img, gamma=2.2):
 	return np.power(img, (1/gamma, 1/gamma, 1/gamma))
 
