@@ -18,7 +18,7 @@ def sphere_geo():
     texCoords = []
 
     radius = 0.5
-    origin = (0,-0.5,0)
+    origin = (0,0,0)
     sectorCount = 36
     stackCount = 36
 

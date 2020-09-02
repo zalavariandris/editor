@@ -5,7 +5,7 @@ from .helpers import buffer_offset
 import logging
 import functools
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=128)
 def quad_geo():
     logging.debug("create quad geo")
     positions = np.array(
@@ -28,7 +28,7 @@ def quad_geo():
 
     return positions, uvs
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=128)
 def create_buffer(program):
     logging.debug("create quad buffer")
     positions, uvs = quad_geo()
@@ -38,23 +38,28 @@ def create_buffer(program):
 
     pos_vbo, uv_vbo = glGenBuffers(2) # FIXME: use single vbo for positions and vertices
     glBindVertexArray(vao)
-    glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
-    glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
+
     position_location = glGetAttribLocation(program, 'position')
-    if position_location<0: logging.warning("no 'position' attribute")
-    # assert position_location>=0
-    glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, buffer_offset(0))
-    glEnableVertexAttribArray(position_location)
+    if position_location>=0:
+        glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
+        glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
+        glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, buffer_offset(0))
+        glEnableVertexAttribArray(position_location)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+    else:
+        logging.warning("no 'position' attribute")
 
     uv_location = glGetAttribLocation(program, 'uv')
-    if uv_location<0: logging.warning("no 'uv' attribute")
-    # assert uv_location>=0
-    glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
-    glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
-    glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, buffer_offset(0))
-    glEnableVertexAttribArray(uv_location)
+    if uv_location>=0:
+        glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
+        glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
+        glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, buffer_offset(0))
+        glEnableVertexAttribArray(uv_location)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+    else:
+        logging.warning("no 'uv' attribute")
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0)
+    
     glBindVertexArray(0)
 
     return vao
