@@ -43,5 +43,7 @@ with window:
 			program.set_uniform(prog, 'modelMatrix', np.eye(4))
 			imdraw.cube(prog)
 
+			# draw grid
+
 		window.swap_buffers()
 		GLFWViewer.poll_events()
