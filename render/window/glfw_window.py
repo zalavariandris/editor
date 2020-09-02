@@ -159,3 +159,10 @@ class GLFWViewer(GLFWWindow):
         def resize(w, h):
             glViewport(0, 0, w, h)
             self.projection_matrix = glm.perspective(math.radians(60), w/h, 1, 100)
+
+        self._callbacks['draw'] = []
+
+    def start(self):
+        while not self.should_close():
+            for f in self._callbacks['draw']:
+                f()
