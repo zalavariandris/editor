@@ -113,7 +113,7 @@ void main(){
 		// calculate per-light radiance
 		vec3 L = normalize(light.position - WorldPos);
 		vec3 H = normalize(V+L); /* halfway bysecting vector */
-		float distance = 1.0;//length(light.position - WorldPos);
+		float distance = 1.0; //length(light.position - WorldPos);
 		float attenuation = 1.0 / (distance*distance);
 		vec3 radiance = light.color * attenuation;
 
@@ -140,7 +140,6 @@ void main(){
 
 		float shadow = ShadowCalculation(FragPosLightSpace, L, N, shadowMap);
 		Lo+=(kD * material.albedo / PI + specular) * radiance * NdotL * (1-shadow); //output luminance
-		
 	}
 
 	// ambient lighting (we now use IBL as the ambient term)

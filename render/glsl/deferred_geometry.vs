@@ -8,8 +8,24 @@ uniform mat4 view;
 uniform mat4 model;
 
 out vec3 FragPos;
+out vec3 Normal;
+out vec3 Albedo;
+out float Specular;
 
 void main(){
-    FragPos = (projection * view * model * vec4(position, 1.0)).xyz;
+	// positin in world-space
+    FragPos = (model * vec4(position, 1.0)).xyz;
+
+    // normal in word-space
+    mat3 normalMatrix = transpose(inverse(mat3( model)));
+	Normal = normalMatrix * normal;
+
+	// albedo
+	Albedo = vec3(0.8,0.3,0.3);
+
+	// specular
+	Specular = 0.3;
+
+	// transform vertices 
     gl_Position = projection * view * model * vec4(position, 1.0);
 }

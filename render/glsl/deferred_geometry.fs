@@ -1,7 +1,17 @@
 #version 330 core
+
 in vec3 FragPos;
-out vec4 FragColor;
+in vec3 Normal;
+in vec3 Albedo;
+in float Specular;
+
+layout (location = 0) out vec3 gPosition;
+layout (location = 1) out vec3 gNormal;
+layout (location = 2) out vec4 gAlbedoSpec;
 
 void main(){
-    FragColor = vec4(FragPos, 1.0);
+    gPosition = FragPos;
+    gNormal = normalize(Normal);
+    gAlbedoSpec.rgb = vec3(0.5,0,0);
+    gAlbedoSpec.w = 1.0;
 }

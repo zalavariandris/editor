@@ -14,6 +14,7 @@ struct Material{
 	float roughness;
 	float ao;
 };
+
 uniform Material material;
 
 void main(){
