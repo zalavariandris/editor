@@ -8,6 +8,7 @@ struct Light{
 	sampler2D shadowMap;
 	samplerCube shadowCube;
 	mat4 matrix;
+	float cutOff;
 };
 
 // Geometry
@@ -21,7 +22,7 @@ uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
 
 // Lights
-uniform Light lights[4];
+uniform Light lights[2];
 
 in vec2 TexCoords;
 out vec4 FragColor;
@@ -44,10 +45,10 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, samp
 	if(dot(normal, lightDir)<0.0)
 	  return 0.0;
 
-	float shadow = 0.0;
-	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
-	// bias = 0.05;
+	// float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
+	float bias = 0.00001;
 	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+	float shadow = 0.0;
 	for(int x = -1; x <= 1; ++x)
 	{
 	    for(int y = -1; y <= 1; ++y)
@@ -98,7 +99,7 @@ void main(){
 	vec3 normal = texture(gNormal, TexCoords).rgb;
 
 	// fetch material properties
-	vec3 albedo = vec3(0.7);
+	vec3 albedo = vec3(0.1);
 	float roughness = 0.1;
 	float metallic = 0.0;
 	float ao = 1.0;
@@ -122,7 +123,7 @@ void main(){
 		// calculate per-light radiance
 		vec3 L = lights[i].type == 0 ? normalize(-lights[i].direction) : normalize(lights[i].position - fragPos);
 		vec3 H = normalize(V+L); /* halfway bysecting vector */
-		float distance = lights[i].type==0 ? 1.0 : length(lights[i].position - fragPos);
+		float distance = length(lights[i].position - fragPos);
 		float attenuation = lights[i].type==0 ? 1.0 : 1.0 / (distance*distance);
 		vec3 radiance = lights[i].color * attenuation;
 
@@ -150,13 +151,16 @@ void main(){
 		// calc luminance
 		vec3 luminance = (kD * albedo / PI + specular) * radiance * NdotL;
 
-		// calc shadow
-		if(i==0){
-			vec4 fragPosLightSpace = lights[0].matrix * vec4(fragPos, 1.0);
-			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[0].shadowMap);
-			luminance*=1-shadow;
+		if cutoff>=0{
+			float theta = dot(L, normalize(-lights[i].direction));
 		}
+
+		// calc shadow
+		vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
+		float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
+		luminance*=1-shadow;
 		
+		// sum per-light luminance
 		Lo+=luminance;
 	}
 
@@ -183,7 +187,7 @@ void main(){
   	
   	// Final lighting
   	// ==============
-    vec3 color = ambient + Lo;
+    vec3 color = ambient*0.0 + Lo;
 
 	// Output
 	// ======
