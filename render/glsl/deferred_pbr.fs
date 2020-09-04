@@ -5,22 +5,63 @@ struct Light{
 	vec3 position;
 	vec3 direction;
 	vec3 color;
+	sampler2D shadowMap;
+	samplerCube shadowCube;
+	mat4 matrix;
 };
 
- uniform sampler2D gPosition;
+// Geometry
+uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpecular;
 
-uniform Light lights[16];
+// IBL
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
+
+// Lights
+uniform Light lights[4];
 
 in vec2 TexCoords;
-
 out vec4 FragColor;
-const float PI = 3.14159265359;
 
 uniform vec3 cameraPos;
-/* PBR HELPER FUNCTIONS*/
 
+
+// Shadow Map
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, sampler2D shadowMap){
+	// perform perspective divide
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+	projCoords = projCoords*0.5+0.5;
+	if(projCoords.z>1.0)
+		return 0.0;
+
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float currentDepth = projCoords.z;
+
+	if(dot(normal, lightDir)<0.0)
+	  return 0.0;
+
+	float shadow = 0.0;
+	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
+	// bias = 0.05;
+	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+	for(int x = -1; x <= 1; ++x)
+	{
+	    for(int y = -1; y <= 1; ++y)
+	    {
+	        float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+	        shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+	    }    
+	}
+	shadow /= 9.0;
+	return shadow;
+}
+
+/* PBR HELPER FUNCTIONS*/
+const float PI = 3.14159265359;
 /*self shadowing microfacets*/
 float distributionGGX(float NdotH, float roughness){
 	float a = roughness * roughness;
@@ -58,8 +99,9 @@ void main(){
 
 	// fetch material properties
 	vec3 albedo = vec3(0.7);
-	float roughness = 0.3;
+	float roughness = 0.1;
 	float metallic = 0.0;
+	float ao = 1.0;
 
 
 	// Calculate lighting
@@ -108,16 +150,40 @@ void main(){
 		// calc luminance
 		vec3 luminance = (kD * albedo / PI + specular) * radiance * NdotL;
 
-		Lo+=luminance; //output luminance
+		// calc shadow
+		if(i==0){
+			vec4 fragPosLightSpace = lights[0].matrix * vec4(fragPos, 1.0);
+			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[0].shadowMap);
+			luminance*=1-shadow;
+		}
+		
+		Lo+=luminance;
 	}
-
-	
-	vec3 color = Lo;
 
 	// PBR ambient
 	// -----------
+	// # Diffuse component
+	vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), baseReflectivity, roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;	  
+    
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse      = irradiance * albedo;
+    
+    // # Specular component
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;    
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-
+    // combine diffuse and specular component lighting
+    vec3 ambient = (kD * diffuse + specular) * ao;
+  	
+  	// Final lighting
+  	// ==============
+    vec3 color = ambient + Lo;
 
 	// Output
 	// ======

@@ -90,7 +90,7 @@ with window:
 		# attach depth component to texture
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_tex, 0)
 
-	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 
 	# Setup Tonemapping with HDR fbo
 	# ==============================
@@ -186,10 +186,7 @@ with window:
 
 	# create fbo
 	capture_fbo = glGenFramebuffers(1)
-	with fbo.bind(capture_fbo):
-		# attach depth buffer
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_rbo)
-		
+	
 	# draw environment map to skybox
 	glViewport(0,0,env_width,env_height)
 	glActiveTexture(GL_TEXTURE0)
