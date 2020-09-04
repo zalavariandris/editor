@@ -11,6 +11,11 @@ struct Light{
 	float cutOff;
 };
 
+struct PointLight{
+	vec3 position;
+	vec3 color;
+};
+
 // Geometry
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
@@ -23,7 +28,7 @@ uniform sampler2D brdfLUT;
 
 // Lights
 uniform Light lights[2];
-
+uniform Light pointLights[1];
 in vec2 TexCoords;
 out vec4 FragColor;
 
@@ -93,13 +98,15 @@ vec3 fresnelSchlickRoughness(float HdotV, vec3 F0, float roughness){
 	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - HdotV, 5.0);
 }
 
+
+
 void main(){
 	// fetch geometry
 	vec3 fragPos = texture(gPosition, TexCoords).rgb;	
 	vec3 normal = texture(gNormal, TexCoords).rgb;
 
 	// fetch material properties
-	vec3 albedo = vec3(0.3);
+	vec3 albedo = vec3(0.5);
 	float roughness = 0.1;
 	float metallic = 0.0;
 	float ao = 1.0;
@@ -119,15 +126,32 @@ void main(){
 
 	// reflectance equation
 	vec3 Lo = vec3(0.0);
-	for(int i=0; i<3; ++i){
+
+
+	for(int i=0; i<2; ++i){
 		// calculate per-light radiance
+		// ----------------------------
 		vec3 L = lights[i].type == 0 ? normalize(-lights[i].direction) : normalize(lights[i].position - fragPos);
-		vec3 H = normalize(V+L); /* halfway bysecting vector */
+		
 		float distance = length(lights[i].position - fragPos);
 		float attenuation = lights[i].type==0 ? 1.0 : 1.0 / (distance*distance);
 		vec3 radiance = lights[i].color * attenuation;
 
+		// spotlight cutoff
+		if(lights[i].cutOff>=0){
+			float theta = dot(L, normalize(-lights[i].direction));
+			if(theta<lights[i].cutOff){
+				radiance=vec3(0);
+			}
+		}
+
+		// calc shadow
+		vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
+		float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
+		radiance*=1-shadow;
+
 		//Cook-Torrance BRDF
+		vec3 H = normalize(V+L); /* halfway bysecting vector */
 		float NdotV = max(dot(N, V), 0.0000001);
 		float NdotL = max(dot(N, L), 0.0000001);
 		float HdotV = max(dot(H, V), 0.0);
@@ -146,22 +170,11 @@ void main(){
 		// kD: diffuse component
 		// Ks: specular component
 		vec3 kD = vec3(1.0) - F; //F equals kS
-		kD *= 1.0 - metallic;	
+		kD *= 1.0 - metallic;
 
-		// calc luminance
+		// calc surface luminance
+		// ----------------------
 		vec3 luminance = (kD * albedo / PI + specular) * radiance * NdotL;
-
-		if(lights[i].cutOff>=0){
-			float theta = dot(L, normalize(-lights[i].direction));
-			if(theta<lights[i].cutOff){
-				luminance=vec3(0);
-			}
-		}
-
-		// calc shadow
-		vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
-		float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
-		luminance*=1-shadow;
 		
 		// sum per-light luminance
 		Lo+=luminance;

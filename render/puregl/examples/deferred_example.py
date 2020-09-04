@@ -37,10 +37,16 @@ lights = [
 	# },
 ]
 
+point_lights = [
+	{
+		'type': 2,
+		'position': glm.vec3(0,2,0),
+		'color': glm.vec3(1)*1500,
+	}
+]
 
 
 with window:
-
 	# SETUP GL
 	# ========
 	glEnable(GL_DEPTH_TEST)
@@ -77,6 +83,7 @@ with window:
 	# Shadowmap Pass
 	# --------------
 
+	## directional and spotlights
 	shadow_fbos = glGenFramebuffers(len(lights))
 	shadow_texs = glGenTextures(len(lights))
 	for i, light in enumerate(lights):
@@ -106,13 +113,12 @@ with window:
 				GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texs[i], 0
 			)
 			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
-
+	
 	# Environment pass
 	# ----------------
 	## Create environment texture
 	
 	environment_data = assets.imread('hdri/fin4_Ref.hdr')
-
 
 	env_height, env_width, env_channels = environment_data.shape
 	environment_tex = glGenTextures(1)
@@ -499,7 +505,7 @@ with window:
 			program.set_uniform(pbr_program, 'prefilterMap', 4)
 			program.set_uniform(pbr_program, 'brdfLUT', 5)
 
-			# upload lights
+			# upload directional and spotlights
 			for i, light in enumerate(lights):
 				light_pos = light.get('position', glm.vec3(1))
 				light_dir = light.get('direction', glm.vec3(1))
@@ -519,6 +525,10 @@ with window:
 				program.set_uniform(pbr_program, 'lights[{}].matrix'.format(i), light_projection * light_view)
 				program.set_uniform(pbr_program, 'lights[{}].shadowMap'.format(i), 6+i)
 
+			# upload point lights
+			for i, light in enumerate(point_lights):
+				program.set_uniform(pbr_program, "pointLights[{}].position".format(i), light['position'])
+				program.set_uniform(pbr_program, "pointLights[{}].color".format(i), light['color'])
 			# draw quad
 			imdraw.quad(pbr_program)
 
