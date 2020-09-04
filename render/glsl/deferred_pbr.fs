@@ -99,7 +99,7 @@ void main(){
 	vec3 normal = texture(gNormal, TexCoords).rgb;
 
 	// fetch material properties
-	vec3 albedo = vec3(0.1);
+	vec3 albedo = vec3(0.3);
 	float roughness = 0.1;
 	float metallic = 0.0;
 	float ao = 1.0;
@@ -151,8 +151,11 @@ void main(){
 		// calc luminance
 		vec3 luminance = (kD * albedo / PI + specular) * radiance * NdotL;
 
-		if cutoff>=0{
+		if(lights[i].cutOff>=0){
 			float theta = dot(L, normalize(-lights[i].direction));
+			if(theta<lights[i].cutOff){
+				luminance=vec3(0);
+			}
 		}
 
 		// calc shadow
@@ -187,7 +190,7 @@ void main(){
   	
   	// Final lighting
   	// ==============
-    vec3 color = ambient*0.0 + Lo;
+    vec3 color = ambient + Lo;
 
 	// Output
 	// ======

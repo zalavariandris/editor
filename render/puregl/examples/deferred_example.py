@@ -5,7 +5,7 @@ import glm
 from editor.render.window import GLFWViewer
 from editor.render.puregl import imdraw, program, fbo, texture
 from editor.render import glsl
-
+from editor.render import assets
 
 width, height = 1024, 768
 model_matrix = np.identity(4)
@@ -26,9 +26,9 @@ lights = [
 		'type': 1, # Spot
 		'position': glm.vec3(-2, 3, -10),
 		'direction': glm.vec3(2,  -3, 10),
-		'color': glm.vec3(0.2,0.18,0.7)*200.0,
-		'projection': glm.perspective(glm.radians(90), 1.0,0.1,13.0),
-		'cutOff': glm.cos(glm.radians(12.5))
+		'color': glm.vec3(0.2,0.18,0.7)*1500.0,
+		'projection': glm.perspective(glm.radians(15*2), 1.0,0.1,13.0),
+		'cutOff': glm.cos(glm.radians(15))
 	},
 	# {
 	# 	'type': 1, # Point
@@ -110,10 +110,9 @@ with window:
 	# Environment pass
 	# ----------------
 	## Create environment texture
-	import imageio
-	from pathlib import Path
-	assets_folder = "../../assets"
-	environment_data = imageio.imread(Path(assets_folder, 'hdri/fin4_Ref.hdr'), format="HDR-FI")
+	
+	environment_data = assets.imread('hdri/fin4_Ref.hdr')
+
 
 	env_height, env_width, env_channels = environment_data.shape
 	environment_tex = glGenTextures(1)
@@ -396,7 +395,7 @@ with window:
 		# animate light
 		lights[0]['position'] = glm.vec3(1,5, 2)
 		lights[0]['direction'] = -lights[0]['position']
-		lights[1]['position'] = glm.vec3(math.cos(time.time()*3)*5, 2, 2)
+		lights[1]['position'] = glm.vec3(math.cos(time.time()*3)*4, 0.15, -3)
 		lights[1]['direction'] = -lights[1]['position']
 		# DRAW GL
 		# =======
@@ -509,7 +508,7 @@ with window:
 				program.set_uniform(pbr_program, "lights[{}].position".format(i), light_pos)
 				program.set_uniform(pbr_program, "lights[{}].direction".format(i), light_dir)
 				program.set_uniform(pbr_program, "lights[{}].color".format(i), light['color'])
-				program.set_uniform(pbr_program, "lights[{}].cutOff".format(i), light.get('cutOff', -1))
+				program.set_uniform(pbr_program, "lights[{}].cutOff".format(i), light.get('cutOff', -1.0))
 
 			# set shadowmaps
 			for i, light in enumerate(lights):
@@ -580,7 +579,7 @@ with window:
 
 			program.set_uniform(prog, 'screenTexture', 0)
 			# program.set_uniform(prog, 'bloomBlur', 1)
-			program.set_uniform(prog, 'exposure', 0.0)
+			program.set_uniform(prog, 'exposure', -1.0)
 			program.set_uniform(prog, 'gamma', 2.2)
 
 			imdraw.quad(prog)
