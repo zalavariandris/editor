@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 import numpy as np
+import glm
 
 from . import cube
 from .. import program
@@ -37,6 +38,7 @@ def cubemap(tex, projection, view):
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex)
 		program.set_uniform(prog, "projectionMatrix", projection)
 		program.set_uniform(prog, "viewMatrix", view)
-		program.set_uniform(prog, "modelMatrix", np.eye(4))
+		
+		program.set_uniform(prog, "modelMatrix", glm.scale(glm.mat4(1), (1.1, 1.1, 1.1)))
 		cube(prog)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0)

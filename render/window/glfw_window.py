@@ -133,6 +133,7 @@ class GLFWWindow:
         glfw.poll_events()
 
 import math
+import time
 from editor.render.gloo.helpers import orbit
 class GLFWViewer(GLFWWindow):
     def __init__(self, width, height, clear_color=(0.3,0.1,0.1,1)):
@@ -160,9 +161,18 @@ class GLFWViewer(GLFWWindow):
             glViewport(0, 0, w, h)
             self.projection_matrix = glm.perspective(math.radians(60), w/h, 1, 100)
 
+        self._callbacks['setup'] = []
         self._callbacks['draw'] = []
 
     def start(self):
+        with self:
+            for setup in self._callbacks['draw']:
+                setup()
+
         while not self.should_close():
-            for f in self._callbacks['draw']:
-                f()
+            with self:
+                for draw in self._callbacks['draw']:
+                    draw()
+
+            # time.sleep(1/60)
+            GLFWViewer.poll_events()

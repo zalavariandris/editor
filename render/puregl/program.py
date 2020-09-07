@@ -47,6 +47,9 @@ def set_uniform(program, name, value):
 	import numpy as np
 	location = glGetUniformLocation(program, name)
 
+	if location<0:
+		logging.warning('uniform with name {} is not udes by current shader'.format(name))
+
 	if isinstance(value, np.ndarray):
 		if value.shape == (4, 4): # matrix
 			glUniformMatrix4fv(location, 1, False, value)

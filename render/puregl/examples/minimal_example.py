@@ -4,6 +4,11 @@ import numpy as np
 from editor.render.puregl import imdraw, program
 
 from editor.render import glsl
+
+import logging
+logging.basicConfig(filename=None, level=logging.DEBUG, format='%(levelname)s:%(module)s.%(funcName)s: %(message)s')
+
+
 width, height = 1024, 768
 model_matrix = np.identity(4)
 window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
