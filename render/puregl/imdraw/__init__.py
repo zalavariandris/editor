@@ -4,6 +4,7 @@ from .cube import cube
 from .sphere import sphere
 
 from .texture import texture
+from .cubemap import cubemap
 
 
 
