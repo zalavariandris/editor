@@ -11,11 +11,6 @@ struct Light{
 	float cutOff;
 };
 
-struct PointLight{
-	vec3 position;
-	vec3 color;
-};
-
 // Geometry
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
@@ -27,8 +22,8 @@ uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
 
 // Lights
-uniform Light lights[2];
-uniform Light pointLights[1];
+# define NUM_LIGHTS 3
+uniform Light lights[NUM_LIGHTS];
 in vec2 TexCoords;
 out vec4 FragColor;
 
@@ -106,8 +101,8 @@ void main(){
 	vec3 normal = texture(gNormal, TexCoords).rgb;
 
 	// fetch material properties
-	vec3 albedo = vec3(0.5);
-	float roughness = 0.1;
+	vec3 albedo = vec3(0.1);
+	float roughness = 0.5;
 	float metallic = 0.0;
 	float ao = 1.0;
 
@@ -127,30 +122,50 @@ void main(){
 	// reflectance equation
 	vec3 Lo = vec3(0.0);
 
-
-	for(int i=0; i<2; ++i){
+	for(int i=0; i<NUM_LIGHTS; ++i){
 		// calculate per-light radiance
 		// ----------------------------
-		vec3 L = lights[i].type == 0 ? normalize(-lights[i].direction) : normalize(lights[i].position - fragPos);
-		
-		float distance = length(lights[i].position - fragPos);
-		float attenuation = lights[i].type==0 ? 1.0 : 1.0 / (distance*distance);
+		vec3 L;
+		float attenuation;
+		if(lights[i].type==0){ //Directional
+			L = normalize(-lights[i].direction);
+			attenuation = 1.0;
+
+			// calc shadow
+			vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
+			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
+			attenuation*=1-shadow;
+		}else
+		if(lights[i].type==1){ //Spot
+			L = normalize(lights[i].position - fragPos);
+			float distance = length(lights[i].position - fragPos);
+			attenuation = 1.0 / (distance*distance);
+
+			// spotlight cutoff
+			if(lights[i].cutOff>=0){
+				float theta = dot(L, normalize(-lights[i].direction));
+				if(theta<lights[i].cutOff){
+					attenuation=0.0;
+				}
+			}
+
+			// calc shadow
+			vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
+			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
+			attenuation*=1-shadow;
+		}else
+		if(lights[i].type==2){ //Omni
+			L = normalize(lights[i].position - fragPos);
+			float distance = length(lights[i].position - fragPos);
+			attenuation = 1.0 / (distance*distance);
+			
+			// calc shadow
+		}
 		vec3 radiance = lights[i].color * attenuation;
 
-		// spotlight cutoff
-		if(lights[i].cutOff>=0){
-			float theta = dot(L, normalize(-lights[i].direction));
-			if(theta<lights[i].cutOff){
-				radiance=vec3(0);
-			}
-		}
 
-		// calc shadow
-		vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
-		float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
-		radiance*=1-shadow;
-
-		//Cook-Torrance BRDF
+		// Cook-Torrance BRDF
+		//-------------------
 		vec3 H = normalize(V+L); /* halfway bysecting vector */
 		float NdotV = max(dot(N, V), 0.0000001);
 		float NdotL = max(dot(N, L), 0.0000001);

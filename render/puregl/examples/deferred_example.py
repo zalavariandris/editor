@@ -13,35 +13,32 @@ window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
 # Setup Scene
 # ============
+from enum import IntEnum
+class LightType(IntEnum):
+	DIRECTIONAL=0
+	SPOT=1
+	POINT=2
 
 # lights
 lights = [
 	{
-		'type': 0, # Directional
+		'type': LightType.DIRECTIONAL, # Directional
 		'direction': glm.vec3(5, -8, -3),
 		'color': glm.vec3(1.0)*1.0,
 		'projection': glm.ortho(-5,5,-5,5, 0.5,10)
 	},
 	{
-		'type': 1, # Spot
+		'type': LightType.SPOT, # Spot
 		'position': glm.vec3(-2, 3, -10),
 		'direction': glm.vec3(2,  -3, 10),
 		'color': glm.vec3(0.2,0.18,0.7)*1500.0,
 		'projection': glm.perspective(glm.radians(15*2), 1.0,0.1,13.0),
 		'cutOff': glm.cos(glm.radians(15))
 	},
-	# {
-	# 	'type': 1, # Point
-	# 	'position': glm.vec3(2, 1,3),
-	# 	'color': glm.vec3(0.66,0.35,0.2)*20
-	# },
-]
-
-point_lights = [
 	{
-		'type': 2,
-		'position': glm.vec3(0,2,0),
-		'color': glm.vec3(1)*1500,
+		'type': LightType.POINT,
+		'position': glm.vec3(2,0.1,2),
+		'color': glm.vec3(1, 0.7, 0.1)*30,
 	}
 ]
 
@@ -80,44 +77,94 @@ with window:
 	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 	glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-	# Shadowmap Pass
-	# --------------
+	# Shadowmap Pass setup
+	# --------------------
 
 	## directional and spotlights
-	shadow_fbos = glGenFramebuffers(len(lights))
-	shadow_texs = glGenTextures(len(lights))
+	shadow_fbos = glGenFramebuffers(3)
+	shadow_texs = glGenTextures(2)
+	shadow_cubemap = glGenTextures(1)
+	shadow_width, shadow_height = 256, 256
 	for i, light in enumerate(lights):
-		depth_program = program.create(*glsl.read("simple_depth"))
-		
-		shadow_width, shadow_height = 1024, 1024
-		
-		glBindTexture(GL_TEXTURE_2D, shadow_texs[i])
-		glTexImage2D(
-			GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None
-		)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, np.array([1,1,1,1]))
-		
-		glBindTexture(GL_TEXTURE_2D, 0)
-
-		with fbo.bind(shadow_fbos[i]):
-			# dont render color data
-			glDrawBuffer(GL_NONE)
-			glReadBuffer(GL_NONE)
-
-			#attach depth component
-			glFramebufferTexture2D(
-				GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texs[i], 0
+		if light['type'] in (LightType.DIRECTIONAL, LightType.SPOT):
+			depth_program = program.create(*glsl.read("simple_depth"))
+			
+			glBindTexture(GL_TEXTURE_2D, shadow_texs[i])
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None
 			)
-			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
-	
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+			glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, np.array([1,1,1,1]))
+			
+			glBindTexture(GL_TEXTURE_2D, 0)
+
+			with fbo.bind(shadow_fbos[i]):
+				# dont render color data
+				glDrawBuffer(GL_NONE)
+				glReadBuffer(GL_NONE)
+
+				#attach depth component
+				glFramebufferTexture2D(
+					GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texs[i], 0
+				)
+				assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+		
+		elif light['type'] == LightType.POINT:
+			from pathlib import Path
+
+			# cube matrices
+			aspect = shadow_width/shadow_height
+			near = 1.0
+			far = 25.0
+			lightPos = light['position']
+
+			shadowProj = glm.perspective(glm.radians(90), aspect, near, far) 
+			shadowTransforms = []
+			shadowTransforms.append(shadowProj * 
+			                 glm.lookAt(lightPos, lightPos + glm.vec3( 1.0, 0.0, 0.0), glm.vec3(0.0,-1.0, 0.0)))
+			shadowTransforms.append(shadowProj * 
+			                 glm.lookAt(lightPos, lightPos + glm.vec3(-1.0, 0.0, 0.0), glm.vec3(0.0,-1.0, 0.0)))
+			shadowTransforms.append(shadowProj * 
+			                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0, 1.0, 0.0), glm.vec3(0.0, 0.0, 1.0)))
+			shadowTransforms.append(shadowProj * 
+			                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0,-1.0, 0.0), glm.vec3(0.0, 0.0,-1.0)))
+			shadowTransforms.append(shadowProj * 
+			                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0, 0.0, 1.0), glm.vec3(0.0,-1.0, 0.0)))
+			shadowTransforms.append(shadowProj * 
+			                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0, 0.0,-1.0), glm.vec3(0.0,-1.0, 0.0)))
+
+			cube_depth_program = program.create(
+				Path("../../glsl/point_shadow.vs").read_text(),
+				Path("../../glsl/point_shadow.fs").read_text(),
+				Path("../../glsl/point_shadow.gs").read_text()
+			)
+			with program.use(cube_depth_program):
+				location = glGetUniformLocation(cube_depth_program, 'shadowMatrices')
+				shadowTransforms = np.array([np.array(m) for m in shadowTransforms])
+				glUniformMatrix4fv(location, 6, False, shadowTransforms)
+
+			# cubemap texture
+			glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_cubemap)
+			for j in range(6):
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL_DEPTH_COMPONENT,
+					shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None)
+				glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+				glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+				glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+				glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+				glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
+
+			with fbo.bind(shadow_fbos[i]):
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_cubemap, 0)
+				glDrawBuffer(GL_NONE)
+				glReadBuffer(GL_NONE)
+
 	# Environment pass
 	# ----------------
 	## Create environment texture
-	
 	environment_data = assets.imread('hdri/fin4_Ref.hdr')
 
 	env_height, env_width, env_channels = environment_data.shape
@@ -294,8 +341,8 @@ with window:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 			imdraw.quad(brdfShader)
 
-	# Lighting pass
-	# -------------
+	# Lighting pass setup
+	# -------------------
 	pbr_fbo = glGenFramebuffers(1)
 	glBindFramebuffer(GL_FRAMEBUFFER, pbr_fbo)
 	glDrawBuffers(1, [GL_COLOR_ATTACHMENT0+0])
@@ -433,41 +480,65 @@ with window:
 			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.plane(prog)
 
-		# Shadowmap Pass
-		# --------------
+		# Shadowmap Pass draw
+		# -------------------
 		glCullFace(GL_FRONT)
 		import math, time
 		for i, light in enumerate(lights):
-			with fbo.bind(shadow_fbos[i]), program.use(depth_program) as prog:
+			if light['type'] in (LightType.DIRECTIONAL, LightType.SPOT): # directional, spot
+				with fbo.bind(shadow_fbos[i]), program.use(depth_program) as prog:
+					glViewport(0,0,shadow_width, shadow_height)
+					glClear(GL_DEPTH_BUFFER_BIT)
+					
+					light_pos = light.get('position', glm.vec3(0))
+					light_dir = light.get('direction', glm.vec3(0))
+					light_projection = light.get('projection')
+					light_view = glm.lookAt(light_pos, light_pos+light_dir, (0,1,0))
+
+					program.set_uniform(prog, "projectionMatrix", light_projection)
+					program.set_uniform(prog, "viewMatrix", light_view)
+
+					# draw cube
+					model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
+					program.set_uniform(prog, 'modelMatrix', model_matrix)
+
+					imdraw.cube(prog)
+
+					# draw sphere
+					model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
+					program.set_uniform(prog, 'modelMatrix', model_matrix)
+					imdraw.sphere(prog)
+
+					# draw groundplane
+					model_matrix = glm.translate(glm.mat4(1), (0,0.0,0))
+					program.set_uniform(prog, 'modelMatrix', model_matrix)
+					imdraw.plane(prog)
+
+			elif light['type'] == LightType.POINT:
 				glViewport(0,0,shadow_width, shadow_height)
-				glClear(GL_DEPTH_BUFFER_BIT)
+				with fbo.bind(shadow_fbos[i]), program.use(cube_depth_program) as prog:
+					program.set_uniform(prog, 'light_pos', light.get('position'))
+					program.set_uniform(prog, 'far_plane', 25.0)
+
+
+					# # draw cube
+					# model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
+					# program.set_uniform(prog, 'modelMatrix', model_matrix)
+
+					# imdraw.cube(prog)
+
+					# # draw sphere
+					# model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
+					# program.set_uniform(prog, 'modelMatrix', model_matrix)
+					# imdraw.sphere(prog)
+
+					# # draw groundplane
+					# model_matrix = glm.translate(glm.mat4(1), (0,0.0,0))
+					# program.set_uniform(prog, 'modelMatrix', model_matrix)
+					# imdraw.plane(prog)
 				
-				light_pos = light.get('position', glm.vec3(0))
-				light_dir = light.get('direction', glm.vec3(0))
-				light_projection = light.get('projection')
-				light_view = glm.lookAt(light_pos, light_pos+light_dir, (0,1,0))
-
-				program.set_uniform(prog, "projectionMatrix", light_projection)
-				program.set_uniform(prog, "viewMatrix", light_view)
-
-				# draw cube
-				model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
-				program.set_uniform(prog, 'modelMatrix', model_matrix)
-
-				imdraw.cube(prog)
-
-				# draw sphere
-				model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
-				program.set_uniform(prog, 'modelMatrix', model_matrix)
-				imdraw.sphere(prog)
-
-				# draw groundplane
-				model_matrix = glm.translate(glm.mat4(1), (0,0.0,0))
-				program.set_uniform(prog, 'modelMatrix', model_matrix)
-				imdraw.plane(prog)
-				
-		# Lighting Pass
-		# -------------
+		# Lighting Pass draw
+		# ------------------
 		glCullFace(GL_BACK)
 		with fbo.bind(pbr_fbo), program.use(pbr_program):
 			glViewport(0,0,window.width, window.height)
@@ -517,18 +588,25 @@ with window:
 				program.set_uniform(pbr_program, "lights[{}].cutOff".format(i), light.get('cutOff', -1.0))
 
 			# set shadowmaps
-			for i, light in enumerate(lights):
-				glActiveTexture(GL_TEXTURE0+6+i)
-				glBindTexture(GL_TEXTURE_2D, shadow_texs[i])
-				light_projection = light['projection']
-				light_view = glm.lookAt(light['position'], light['position']+light['direction'], (0,1,0))
-				program.set_uniform(pbr_program, 'lights[{}].matrix'.format(i), light_projection * light_view)
-				program.set_uniform(pbr_program, 'lights[{}].shadowMap'.format(i), 6+i)
+			dir_light = lights[0]
+			glActiveTexture(GL_TEXTURE0+6+0)
+			glBindTexture(GL_TEXTURE_2D, shadow_texs[0])
+			light_projection = dir_light['projection']
+			light_view = glm.lookAt(dir_light['position'], dir_light['position']+dir_light['direction'], (0,1,0))
+			program.set_uniform(pbr_program, 'lights[{}].matrix'.format(0), light_projection * light_view)
+			program.set_uniform(pbr_program, 'lights[{}].shadowMap'.format(0), 6+0)
+			
+			spot_light = lights[1]
+			glActiveTexture(GL_TEXTURE0+6+1)
+			glBindTexture(GL_TEXTURE_2D, shadow_texs[1])
+			light_projection = spot_light['projection']
+			light_view = glm.lookAt(spot_light['position'], spot_light['position']+spot_light['direction'], (0,1,0))
+			program.set_uniform(pbr_program, 'lights[{}].matrix'.format(1), light_projection * light_view)
+			program.set_uniform(pbr_program, 'lights[{}].shadowMap'.format(1), 6+1)
+	
+			point_light = lights[2]
 
-			# upload point lights
-			for i, light in enumerate(point_lights):
-				program.set_uniform(pbr_program, "pointLights[{}].position".format(i), light['position'])
-				program.set_uniform(pbr_program, "pointLights[{}].color".format(i), light['color'])
+
 			# draw quad
 			imdraw.quad(pbr_program)
 

@@ -6,7 +6,7 @@ import logging
 import functools
 
 @functools.lru_cache(maxsize=None)
-def create(vs, fs):
+def create(vs, fs, gs=None):
 	logging.debug('create program')
 	# create certex shader
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER)
@@ -22,10 +22,20 @@ def create(vs, fs):
 	if glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH): # compilation error check
 		raise Exception(glGetShaderInfoLog(fragment_shader))
 
+	# create geometry shader
+	if gs:
+		geometry_shader = glCreateShader(GL_GEOMETRY_SHADER)
+		glShaderSource(geometry_shader, gs)
+		glCompileShader(geometry_shader)
+		if glGetShaderiv(geometry_shader, GL_INFO_LOG_LENGTH):
+			raise Exception(glGetShaderInfoLog(geometry_shader))
+
 	# link shaders
 	program = glCreateProgram()
 	glAttachShader(program, vertex_shader)
 	glAttachShader(program, fragment_shader)
+	if gs:
+		glAttachShader(program, geometry_shader)
 	glLinkProgram(program)
 	if glGetProgramiv(program, GL_INFO_LOG_LENGTH): # link error check
 		raise Exception(glGetProgramInfoLog(program))
