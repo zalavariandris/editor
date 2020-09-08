@@ -106,8 +106,8 @@ void main(){
 	vec3 normal = texture(gNormal, TexCoords).rgb;
 
 	// fetch material properties
-	vec3 albedo = vec3(0.1);
-	float roughness = 0.1;
+	vec3 albedo = vec3(0.5);
+	float roughness = 0.3;
 	float metallic = 0.0;
 	float ao = 1.0;
 

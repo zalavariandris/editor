@@ -91,13 +91,13 @@ dirlight = DirectionalLight(direction=glm.vec3(5,-8,-3),
 
 spotlight = Spotlight(position=glm.vec3(-2, 1.1, -10),
 	                  direction=glm.vec3(2, -1.1, 10),
-	                  color=glm.vec3(0.2, 0.18, 0.7)*1500,
+	                  color=glm.vec3(0.2, 0.18, 0.7)*150,
 	                  fov=30.0,
 	                  near=0.1,
 	                  far=13.0)
 
 pointlight = Pointlight(position=glm.vec3(5, 2, 0.5),
-	                    color=glm.vec3(1, 0.7, 0.1)*300,
+	                    color=glm.vec3(1, 0.7, 0.1)*30,
 	                    near=1.0,
 	                    far=8.0)
 
@@ -229,12 +229,13 @@ with window:
 	# Environment pass
 	# ----------------
 	## Create environment texture
-	environment_data = assets.imread('hdri/fin4_Ref.hdr')
+	environment_data = assets.imread('hdri/Tropical_Beach_3k.hdr')
+	environment_data = assets.to_linear(environment_data)
 
 	env_height, env_width, env_channels = environment_data.shape
 	environment_tex = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_2D, environment_tex)
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, env_width, env_height, 0, GL_RGB, GL_FLOAT, environment_data)
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, env_width, env_height, 0, GL_RGB, GL_FLOAT, environment_data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
@@ -249,7 +250,7 @@ with window:
 	env_width, env_height = 512, 512
 	glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
 	for i in range(6):
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL_RGB16F, env_width, env_height,0,GL_RGB, GL_FLOAT, None)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL_RGB32F, env_width, env_height,0,GL_RGB, GL_FLOAT, None)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
@@ -307,7 +308,7 @@ with window:
 	irradiance_map = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
 	for i in range(6):
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, None)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, 32, 32, 0, GL_RGB, GL_FLOAT, None)
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
@@ -341,7 +342,7 @@ with window:
 	prefilterMap = glGenTextures(1)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap)
 	for i in range(6):
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, None)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, 128, 128, 0, GL_RGB, GL_FLOAT, None)
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
@@ -465,7 +466,7 @@ with window:
 		glBindFramebuffer(GL_FRAMEBUFFER, bloom_blur_fbos[i])
 		glBindTexture(GL_TEXTURE_2D, bloom_blur_texs[i])
 		glTexImage2D(
-			GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, None
+			GL_TEXTURE_2D, 0, GL_RGBA32F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, None
 		)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
@@ -700,6 +701,36 @@ with window:
 			# draw quad
 			imdraw.quad(pbr_program)
 
+		# FORWARD SHADING
+		# ===============
+		## Copy depth from geometry pass
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer)
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pbr_fbo) # write to default framebuffer
+		glBlitFramebuffer(
+		  0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST
+		);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		with fbo.bind(pbr_fbo):
+			# Environment Pass
+			# ----------------
+			glViewport(0,0,window.width,window.height);
+			glDepthFunc(GL_LEQUAL)
+			glDepthMask(GL_FALSE)
+			
+			with program.use(skybox_program):
+				program.set_uniform(skybox_program, 'projectionMatrix', window.projection_matrix)
+				sky_view = glm.mat4(glm.mat3(window.view_matrix)); 
+				program.set_uniform(skybox_program, 'viewMatrix', sky_view)
+				camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
+				program.set_uniform(skybox_program, 'cameraPos', camera_pos)
+				program.set_uniform(skybox_program, 'skybox', 0)
+				program.set_uniform(skybox_program, 'groundProjection', True)
+				glActiveTexture(GL_TEXTURE0+0)
+				glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
+				imdraw.cube(skybox_program, flip=True)
+			glDepthMask(GL_TRUE)
+			glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
+
 		# Bloom pass
 		# ----------
 		# cutoff highlights
@@ -757,7 +788,7 @@ with window:
 
 			program.set_uniform(prog, 'screenTexture', 0)
 			program.set_uniform(prog, 'bloomBlur', 1)
-			program.set_uniform(prog, 'exposure', -1.0)
+			program.set_uniform(prog, 'exposure', 1.0)
 			program.set_uniform(prog, 'gamma', 2.2)
 
 			imdraw.quad(prog)
@@ -770,54 +801,20 @@ with window:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
 		# display composite
-		imdraw.texture(tonemapping_color, (0,0,window.width, window.height))
-
-
-		# FORWARD SHADING
-		# ===============
-
-		## Copy depth from geometry pass
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer)
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0) # write to default framebuffer
-		glBlitFramebuffer(
-		  0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST
-		);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		# Environment Pass
-		# ----------------
-		glViewport(0,0,window.width,window.height);
-		glDepthFunc(GL_LEQUAL)
-		glDepthMask(GL_FALSE)
-		
-		with program.use(skybox_program):
-			program.set_uniform(skybox_program, 'projectionMatrix', window.projection_matrix)
-			sky_view = glm.mat4(glm.mat3(window.view_matrix)); 
-			program.set_uniform(skybox_program, 'viewMatrix', sky_view)
-			camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
-			program.set_uniform(skybox_program, 'cameraPos', camera_pos)
-			program.set_uniform(skybox_program, 'skybox', 0)
-			program.set_uniform(skybox_program, 'groundProjection', True)
-			glActiveTexture(GL_TEXTURE0+0)
-			glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
-			imdraw.cube(skybox_program, flip=True)
-		glDepthMask(GL_TRUE)
-		glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
+		imdraw.texture(tonemapping_color, (0, 0, window.width, window.height))
 
 		# display AOVs
-		imdraw.texture(gPosition,         (  0,   0, 90, 90))
-		imdraw.texture(gNormal,           (100,   0, 90, 90))
-		imdraw.texture(gAlbedoSpecular,   (200,   0, 90, 90), shuffle=(0,1,2,-1))
-		imdraw.texture(gAlbedoSpecular,   (300,   0, 90, 90), shuffle=(3,3,3,-1))
+		imdraw.texture(gPosition,           (  0,   0, 90, 90))
+		imdraw.texture(gNormal,             (100,   0, 90, 90))
+		imdraw.texture(gAlbedoSpecular,     (200,   0, 90, 90), shuffle=(0,1,2,-1))
+		imdraw.texture(gAlbedoSpecular,     (300,   0, 90, 90), shuffle=(3,3,3,-1))
 
-		imdraw.texture(beautyBuffer,      (  0, 100, 90, 90), shuffle=(0,1,2,-1))
-		imdraw.texture(highlights_tex,         (100, 100, 90, 90), shuffle=(0,1,2,-1))
-		imdraw.texture(bloom_blur_texs[1],         (200, 100, 90, 90), shuffle=(0,1,2,-1))
+		imdraw.texture(beautyBuffer,        (  0, 100, 90, 90), shuffle=(0,1,2,-1))
+		imdraw.texture(highlights_tex,      (100, 100, 90, 90), shuffle=(0,1,2,-1))
+		imdraw.texture(bloom_blur_texs[1],  (200, 100, 90, 90), shuffle=(0,1,2,-1))
 
-		imdraw.texture(dirlight_shadowmap,        (  0, 200, 90, 90), shuffle=(0,0,0,-1))
-		imdraw.texture(spotlight_shadowmap,        (100, 200, 90, 90), shuffle=(0,0,0,-1))
-
-
+		imdraw.texture(dirlight_shadowmap,  (  0, 200, 90, 90), shuffle=(0,0,0,-1))
+		imdraw.texture(spotlight_shadowmap, (100, 200, 90, 90), shuffle=(0,0,0,-1))
 
 		window.swap_buffers()
 		GLFWViewer.poll_events()

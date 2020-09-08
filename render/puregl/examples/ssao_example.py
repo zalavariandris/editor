@@ -1,7 +1,6 @@
 from OpenGL.GL import *
 import numpy as np
 import glm
-
 from editor.render.window import GLFWViewer
 from editor.render.puregl import imdraw, program, fbo
 from editor.render import glsl
@@ -150,6 +149,7 @@ with window:
 		with fbo.bind(ssao_fbo):
 			with program.use(ssao_program):
 				program.set_uniform(ssao_program, 'projectionMatrix', window.projection_matrix)
+				program.set_uniform(ssao_program, 'viewProjectionMatrix', window.projection_matrix*window.view_matrix)
 
 				glActiveTexture(GL_TEXTURE0+0)
 				glBindTexture(GL_TEXTURE_2D, gPosition)
@@ -164,14 +164,15 @@ with window:
 
 				imdraw.quad(ssao_program)
 
-		with fbo.bind(ssao_blur_fbo):
-			with program.use(ssao_blur_program):
-				glActiveTexture(GL_TEXTURE0+0)
-				glBindTexture(GL_TEXTURE_2D, ssao_tex)
-				program.set_uniform(ssao_blur_program, 'ssaoInput', 0)
-				imdraw.quad(ssao_blur_program)
+		# with fbo.bind(ssao_blur_fbo):
+		# 	with program.use(ssao_blur_program):
+		# 		glActiveTexture(GL_TEXTURE0+0)
+		# 		glBindTexture(GL_TEXTURE_2D, ssao_tex)
+		# 		program.set_uniform(ssao_blur_program, 'ssaoInput', 0)
+		# 		imdraw.quad(ssao_blur_program)
 
-		imdraw.texture(ssao_blur_tex, (0, 0, window.width, window.height), shuffle=(0,0,0,-1))
+		imdraw.texture(ssao_tex, (0, 0, window.width, window.height), shuffle=(0,0,0,-1))
+
 
 		window.swap_buffers()
 		GLFWViewer.poll_events()

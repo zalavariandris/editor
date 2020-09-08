@@ -11,7 +11,7 @@ uniform vec3 samples[64];
 
 // parameters (you'd probably want to use them as uniforms to more easily tweak the effect)
 int kernelSize = 64;
-float radius = 1.0;
+float radius = 5.0;
 float bias = 0.025;
 
 // tile noise texture over screen based on screen dimensions divided by noise size
@@ -25,15 +25,12 @@ void main()
     vec3 fragPos = texture(gPosition, TexCoords).xyz;
     vec3 normal = normalize(texture(gNormal, TexCoords).rgb);
     vec3 randomVec = normalize(texture(texNoise, TexCoords * noiseScale).xyz);
+
     // create TBN change-of-basis matrix: from tangent-space to view-space
     vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
     vec3 bitangent = cross(normal, tangent);
     mat3 TBN = mat3(tangent, bitangent, normal);
 
-    // calculate radius at depth
-    vec4 projCorner = projectionMatrix * vec4(1.0, 0.0, fragPos.z, 1.0);
-    float pointSize = projCorner.x/projCorner.w;
-    radius*=pointSize;
     // iterate over the sample kernel and calculate occlusion factor
     float occlusion = 0.0;
     for(int i = 0; i < kernelSize; ++i)
