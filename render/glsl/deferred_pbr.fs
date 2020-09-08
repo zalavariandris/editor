@@ -5,11 +5,14 @@ struct Light{
 	vec3 position;
 	vec3 direction;
 	vec3 color;
-	sampler2D shadowMap;
-	samplerCube shadowCube;
 	mat4 matrix;
 	float cutOff;
+	float farPlane;
+	int shadowIdx;
 };
+
+uniform sampler2D shadowMaps[2];
+uniform samplerCube shadowCubes[1];
 
 // Geometry
 uniform sampler2D gPosition;
@@ -22,7 +25,7 @@ uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
 
 // Lights
-# define NUM_LIGHTS 1
+# define NUM_LIGHTS 3
 uniform Light lights[NUM_LIGHTS];
 in vec2 TexCoords;
 out vec4 FragColor;
@@ -49,6 +52,19 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, samp
 	float bias = 0.00001;
 	float pcfDepth = texture(shadowMap, projCoords.xy).r; 
 	float shadow = currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+	return shadow;
+}
+
+float PointShadowCalculation(vec3 lightPos, vec3 surfacePos, samplerCube shadowCubemap, float farPlane){
+	vec3 L=surfacePos-lightPos;
+	float shadowDepth = texture(shadowCubemap, normalize(L)).r;
+	shadowDepth*=farPlane;
+
+	float surfaceDepth = length(L);
+
+	float bias = 0.1;
+	float shadow = surfaceDepth > shadowDepth ? 1.0 : 0.0;
+
 	return shadow;
 }
 
@@ -84,8 +100,6 @@ vec3 fresnelSchlickRoughness(float HdotV, vec3 F0, float roughness){
 	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - HdotV, 5.0);
 }
 
-
-
 void main(){
 	// fetch geometry
 	vec3 fragPos = texture(gPosition, TexCoords).rgb;	
@@ -93,7 +107,7 @@ void main(){
 
 	// fetch material properties
 	vec3 albedo = vec3(0.1);
-	float roughness = 0.5;
+	float roughness = 0.1;
 	float metallic = 0.0;
 	float ao = 1.0;
 
@@ -104,7 +118,6 @@ void main(){
 	// PBR direct lighting
 	// -------------------
 	vec3 N = gl_FrontFacing ? normalize(normal) : -normalize(normal);
-	vec3 L = normalize(lights[0].position-fragPos);
 	vec3 V = normalize(cameraPos - fragPos); //view vector
 	vec3 R = reflect(-V, N);
 
@@ -116,8 +129,8 @@ void main(){
 	for(int i=0; i<NUM_LIGHTS; ++i){
 		// calculate per-light radiance
 		// ----------------------------
-		vec3 L;
-		float attenuation;
+		vec3 L=vec3(0);
+		float attenuation=1.0;
 		if(lights[i].type==0)
 		{ //Directional
 			L = normalize(-lights[i].direction);
@@ -125,7 +138,7 @@ void main(){
 
 			// calc shadow
 			vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
-			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
+			float shadow = ShadowCalculation(fragPosLightSpace, L, N, shadowMaps[lights[i].shadowIdx]);
 			attenuation*=1-shadow;
 		}
 		else if(lights[i].type==1)
@@ -145,7 +158,7 @@ void main(){
 
 			// calc shadow
 			vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
-			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
+			float shadow = ShadowCalculation(fragPosLightSpace, L, N, shadowMaps[lights[i].shadowIdx]);
 			attenuation*=1-shadow;
 		}
 		else if(lights[i].type==2)
@@ -155,6 +168,9 @@ void main(){
 			attenuation = 1.0 / (distance*distance);
 			
 			// calc shadow
+			float shadow = PointShadowCalculation(lights[i].position, fragPos, shadowCubes[0], lights[i].farPlane);
+			
+			attenuation*=1-shadow;
 		}
 		else{
 			continue;
@@ -217,7 +233,7 @@ void main(){
   	
   	// Final lighting
   	// ==============
-    vec3 color = ambient*0.0 + Lo;
+    vec3 color = ambient + Lo;
 
 	// Output
 	// ======

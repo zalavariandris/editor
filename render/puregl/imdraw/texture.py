@@ -1,4 +1,5 @@
 from OpenGL.GL import *
+from contextlib import contextmanager
 import numpy as np
 from .helpers import buffer_offset
 from editor.render.puregl import program
@@ -30,3 +31,9 @@ def texture(tex, rect, shuffle=(0,1,2,-1)):
 		glBindTexture(GL_TEXTURE_2D, tex)
 		quad(debug_quad_program)
 		glBindTexture(GL_TEXTURE_2D, 0)
+
+@contextmanager
+def bind(target, tex):
+	glBindTexture(target, tex)
+	yield tex
+	glBindTexture(target, 0)

@@ -13,34 +13,6 @@ window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
 # Setup Scene
 # ============
-from enum import IntEnum
-# class LightType(IntEnum):
-# 	DIRECTIONAL=0
-# 	SPOT=1
-# 	POINT=2
-
-# # lights
-# lights = [
-# 	{
-# 		'type': LightType.DIRECTIONAL, # Directional
-# 		'direction': glm.vec3(5, -8, -3),
-# 		'color': glm.vec3(1.0)*1.0,
-# 		'projection': glm.ortho(-5,5,-5,5, 0.5,10)
-# 	},
-# 	{
-# 		'type': LightType.SPOT, # Spot
-# 		'position': glm.vec3(-2, 3, -10),
-# 		'direction': glm.vec3(2,  -3, 10),
-# 		'color': glm.vec3(0.2,0.18,0.7)*1500.0,
-# 		'projection': glm.perspective(glm.radians(15*2), 1.0,0.1,13.0),
-# 		'cutOff': glm.cos(glm.radians(15))
-# 	},
-# 	{
-# 		'type': LightType.POINT,
-# 		'position': glm.vec3(2, 0.1, 2),
-# 		'color': glm.vec3(1, 0.7, 0.1)*30,
-# 	}
-# ]
 
 class DirectionalLight:
 	def __init__(self, direction, color, position, radius, near, far):
@@ -59,12 +31,6 @@ class DirectionalLight:
 	def view(self):
 		return glm.lookAt(self.position, self.position+self.direction, (0,1,0))
 
-dirlight = DirectionalLight(direction=glm.vec3(5,-8,-3),
-	                        color=glm.vec3(1.0)*10.0,
-	                        position=glm.vec3(-5, 8, 3),
-	                        radius=5.0,
-	                        near=1.0,
-	                        far=30)
 
 class Spotlight:
 	def __init__(self, position, direction, color, fov, near, far):
@@ -87,14 +53,7 @@ class Spotlight:
 	@property
 	def cut_off(self):
 		return glm.cos(glm.radians(self.fov/2))
-	
 
-spotlight = Spotlight(position=glm.vec3(-2, 1.1, -10),
-	                  direction=glm.vec3(2, -1.1, 10),
-	                  color=glm.vec3(0.2, 0.18, 0.7)*3500,
-	                  fov=45.0,
-	                  near=0.1,
-	                  far=13.0)
 
 class Pointlight:
 	def __init__(self, position, color, near, far):
@@ -103,10 +62,44 @@ class Pointlight:
 		self.near = near
 		self.far = far
 
-pointlight = Pointlight(position=glm.vec3(2, 0.1, 2),
+	@property
+	def projection(self):
+		aspect = 1.0
+		return glm.perspective(glm.radians(90.0), aspect, self.near, self.far)
+	
+
+	@property
+	def views(self):
+		shadowTransforms = []
+		shadowTransforms.append(glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 1, 0, 0), glm.vec3(0,-1, 0)))
+		shadowTransforms.append(glm.lookAt(pointlight.position, pointlight.position + glm.vec3(-1, 0, 0), glm.vec3(0,-1, 0)))
+		shadowTransforms.append(glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 0, 1, 0), glm.vec3(0, 0, 1)))
+		shadowTransforms.append(glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 0,-1, 0), glm.vec3(0, 0,-1)))
+		shadowTransforms.append(glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 0, 0, 1), glm.vec3(0,-1, 0)))
+		shadowTransforms.append(glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 0, 0,-1), glm.vec3(0,-1, 0)))
+
+		shadowTransforms = np.array([np.array(m) for m in shadowTransforms])
+		return shadowTransforms
+	
+
+dirlight = DirectionalLight(direction=glm.vec3(5,-8,-3),
+	                        color=glm.vec3(1.0)*1.0,
+	                        position=glm.vec3(-5, 8, 3),
+	                        radius=5.0,
+	                        near=1.0,
+	                        far=30)
+
+spotlight = Spotlight(position=glm.vec3(-2, 1.1, -10),
+	                  direction=glm.vec3(2, -1.1, 10),
+	                  color=glm.vec3(0.2, 0.18, 0.7)*1500,
+	                  fov=30.0,
+	                  near=0.1,
+	                  far=13.0)
+
+pointlight = Pointlight(position=glm.vec3(5, 2, 0.5),
 	                    color=glm.vec3(1, 0.7, 0.1)*300,
-	                    near=1,
-	                    far=25)
+	                    near=1.0,
+	                    far=8.0)
 
 with window:
 	# SETUP GL
@@ -144,17 +137,16 @@ with window:
 
 	# Shadowmap Pass setup
 	# --------------------
-	shadow_width, shadow_height = 1024, 1024
-
 	depth_program = program.create(*glsl.read("simple_depth"))
 	
 	## dirlight
 	dirlight_fbo = glGenFramebuffers(1)
 	dirlight_shadowmap = glGenTextures(1)
+	dirlight_shadowsize = 1024, 1024
 
 	glBindTexture(GL_TEXTURE_2D, dirlight_shadowmap)
 	glTexImage2D(
-		GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None
+		GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, *dirlight_shadowsize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None
 	)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
@@ -178,9 +170,10 @@ with window:
 	## spotlight shadow setup
 	spotlight_fbo = glGenFramebuffers(1)
 	spotlight_shadowmap = glGenTextures(1)
+	spotlight_shadowsize = 1024, 1024
 	glBindTexture(GL_TEXTURE_2D, spotlight_shadowmap)
 	glTexImage2D(
-		GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None
+		GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, spotlight_shadowsize[0], spotlight_shadowsize[1], 0, GL_DEPTH_COMPONENT, GL_FLOAT, None
 	)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
@@ -203,26 +196,27 @@ with window:
 		
 	# Point Shadow Pass setup
 	# -----------------
-	shadow_width, shadow_height = 512, 512
-	shadow_depth_fbo = glGenFramebuffers(1)
-
+	pointlight_shadowfbo = glGenFramebuffers(1)
+	pointlight_shadowsize = 1024, 1024
 	# create depth cubemap texture
-	shadow_depth_cubemap = glGenTextures(1)
-	glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_depth_cubemap)
+	pointlight_shadowcube = glGenTextures(1)
+	glActiveTexture(GL_TEXTURE0+6+2)
+	glBindTexture(GL_TEXTURE_CUBE_MAP, pointlight_shadowcube)
 
 	for i in range(6):
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL_DEPTH_COMPONENT,
-			shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None)
+			pointlight_shadowsize[0], pointlight_shadowsize[1], 0, GL_DEPTH_COMPONENT, GL_FLOAT, None)
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
+	
 
 	# attach cubemap to fbo depth attachment
-	glBindFramebuffer(GL_FRAMEBUFFER, shadow_depth_fbo);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_depth_cubemap, 0)
+	glBindFramebuffer(GL_FRAMEBUFFER, pointlight_shadowfbo);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pointlight_shadowcube, 0)
 	glDrawBuffer(GL_NONE)
 	glReadBuffer(GL_NONE)
 	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
@@ -230,30 +224,6 @@ with window:
 
 	# create shader
 	point_shadow_program = program.create(*glsl.read("point_shadow"))
-
-	aspect = shadow_width/shadow_height
-	near_plane = 1.0
-	far_plane = 8.0
-	lightPos = glm.vec3(0,3,0)
-	
-	shadowProj = glm.perspective(glm.radians(90.0), aspect, near_plane, far_plane);
-
-	shadowTransforms = []
-	shadowTransforms.append(shadowProj * 
-	                 glm.lookAt(lightPos, lightPos + glm.vec3( 1.0, 0.0, 0.0), glm.vec3(0.0,-1.0, 0.0)))
-	shadowTransforms.append(shadowProj * 
-	                 glm.lookAt(lightPos, lightPos + glm.vec3(-1.0, 0.0, 0.0), glm.vec3(0.0,-1.0, 0.0)))
-	shadowTransforms.append(shadowProj * 
-	                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0, 1.0, 0.0), glm.vec3(0.0, 0.0, 1.0)))
-	shadowTransforms.append(shadowProj * 
-	                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0,-1.0, 0.0), glm.vec3(0.0, 0.0,-1.0)))
-	shadowTransforms.append(shadowProj * 
-	                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0, 0.0, 1.0), glm.vec3(0.0,-1.0, 0.0)))
-	shadowTransforms.append(shadowProj * 
-	                 glm.lookAt(lightPos, lightPos + glm.vec3( 0.0, 0.0,-1.0), glm.vec3(0.0,-1.0, 0.0)))
-
-	shadowTransforms = np.array([np.array(m) for m in shadowTransforms])
-
 
 
 	# Environment pass
@@ -536,12 +506,15 @@ with window:
 	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 	glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-import math, time
+
 with window:
 	while not window.should_close():
 		# animate lights
-		spotlight.position = glm.vec3(math.cos(time.time()*3)*4, 1.1, -3)
+		import math, time
+		spotlight.position = glm.vec3(math.cos(time.time()*3)*4, 0.3, -4)
 		spotlight.direction = -spotlight.position
+
+		pointlight.position = glm.vec3(math.cos(time.time())*4, 1.0, math.sin(time.time())*4)
 
 		# DRAW GL
 		# =======
@@ -580,97 +553,78 @@ with window:
 
 		## dirlight
 		with fbo.bind(dirlight_fbo), program.use(depth_program) as prog:
-			glViewport(0,0,shadow_width, shadow_height)
+			glViewport(0,0,*dirlight_shadowsize)
 			glClear(GL_DEPTH_BUFFER_BIT)
 			
-			light_projection = dirlight.projection
-			light_view = dirlight.view
+			program.set_uniform(prog, "projectionMatrix", dirlight.projection)
+			program.set_uniform(prog, "viewMatrix", dirlight.view)
 
-			program.set_uniform(prog, "projectionMatrix", light_projection)
-			program.set_uniform(prog, "viewMatrix", light_view)
-
-			# draw cube
+			# Draw Scene
+			## draw cube
 			model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
 			program.set_uniform(prog, 'modelMatrix', model_matrix)
-
 			imdraw.cube(prog)
 
-			# draw sphere
+			## draw sphere
 			model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
 			program.set_uniform(prog, 'modelMatrix', model_matrix)
 			imdraw.sphere(prog)
 
-			# draw groundplane
-			model_matrix = glm.translate(glm.mat4(1), (0,0.0,0))
+			## draw groundplane
+			model_matrix = glm.translate(glm.mat4(1), (0,0,0))
 			program.set_uniform(prog, 'modelMatrix', model_matrix)
 			imdraw.plane(prog)
 
 		## spotlight
 		with fbo.bind(spotlight_fbo), program.use(depth_program) as prog:
-			glViewport(0,0,shadow_width, shadow_height)
+			glViewport(0,0,*spotlight_shadowsize)
 			glClear(GL_DEPTH_BUFFER_BIT)
 			
-			# light_projection = glm.perspective(glm.radians(spotlight.fov*2), 1.0,0.1,13.0),
-			# light_view = glm.lookAt(spotlight.position, spotlight.position+spotlight.direction, (0,1,0))
-
 			program.set_uniform(prog, "projectionMatrix", spotlight.projection)
 			program.set_uniform(prog, "viewMatrix", spotlight.view)
 
-			# draw cube
+			# Draw Scene
+			## draw cube
 			model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
 			program.set_uniform(prog, 'modelMatrix', model_matrix)
-
 			imdraw.cube(prog)
 
-			# draw sphere
+			## draw sphere
 			model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
 			program.set_uniform(prog, 'modelMatrix', model_matrix)
 			imdraw.sphere(prog)
 
-			# draw groundplane
-			model_matrix = glm.translate(glm.mat4(1), (0,0.0,0))
+			## draw groundplane
+			model_matrix = glm.translate(glm.mat4(1), (0,0,0))
 			program.set_uniform(prog, 'modelMatrix', model_matrix)
 			imdraw.plane(prog)
 
 		# shadow depth cubemap pass
 		# -------------------------
-		shadowTransforms = []
-		shadowTransforms.append(shadowProj * 
-		                 glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 1.0, 0.0, 0.0), glm.vec3(0.0,-1.0, 0.0)))
-		shadowTransforms.append(shadowProj * 
-		                 glm.lookAt(pointlight.position, pointlight.position + glm.vec3(-1.0, 0.0, 0.0), glm.vec3(0.0,-1.0, 0.0)))
-		shadowTransforms.append(shadowProj * 
-		                 glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 0.0, 1.0, 0.0), glm.vec3(0.0, 0.0, 1.0)))
-		shadowTransforms.append(shadowProj * 
-		                 glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 0.0,-1.0, 0.0), glm.vec3(0.0, 0.0,-1.0)))
-		shadowTransforms.append(shadowProj * 
-		                 glm.lookAt(pointlight.position, lightPos + glm.vec3( 0.0, 0.0, 1.0), glm.vec3(0.0,-1.0, 0.0)))
-		shadowTransforms.append(shadowProj * 
-		                 glm.lookAt(pointlight.position, pointlight.position + glm.vec3( 0.0, 0.0,-1.0), glm.vec3(0.0,-1.0, 0.0)))
-
-		shadowTransforms = np.array([np.array(m) for m in shadowTransforms])
-		glViewport(0, 0, shadow_width, shadow_height);
-		with fbo.bind(shadow_depth_fbo), program.use(point_shadow_program) as prog:
+		with fbo.bind(pointlight_shadowfbo), program.use(point_shadow_program) as prog:
+			glViewport(0, 0, *pointlight_shadowsize);
 			glClear(GL_DEPTH_BUFFER_BIT)
 			for i in range(6):
-				program.set_uniform(prog, "shadowMatrices[{}]".format(i), shadowTransforms[i])
+				program.set_uniform(prog, "shadowMatrices[{}]".format(i), pointlight.projection*pointlight.views[i])
 			program.set_uniform(prog, 'farPlane', pointlight.far)
 			program.set_uniform(prog, 'lightPos', pointlight.position)
 
-			# draw scene
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (-1,0.5, -1)))
-			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (1,0.5, -1)))
-			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (1,0.5, 1)))
-			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (-1,0.5, 1)))
+			# Draw Scene
+			## draw cube
+			model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
+			program.set_uniform(prog, 'modelMatrix', model_matrix)
 			imdraw.cube(prog)
 
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (0,0.0, 0)))
+			## draw sphere
+			model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
+			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			imdraw.sphere(prog)
+
+			## draw groundplane
+			model_matrix = glm.translate(glm.mat4(1), (0,0,0))
+			program.set_uniform(prog, 'modelMatrix', model_matrix)
 			imdraw.plane(prog)
 
-				
 		# Lighting Pass draw
 		# ------------------
 		glCullFace(GL_BACK)
@@ -680,13 +634,12 @@ with window:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
 			# set matrices (this is redundant as we are simple drawing a textured quad on screen)
-			program.set_uniform(pbr_program, "projection", np.eye(4))
-			program.set_uniform(pbr_program, "view", np.eye(4))
-			program.set_uniform(pbr_program, "model", np.eye(4))
+			program.set_uniform(pbr_program, "projectionMatrix", np.eye(4))
+			program.set_uniform(pbr_program, "viewMatrix", np.eye(4))
+			program.set_uniform(pbr_program, "modelMatrix", np.eye(4))
 
 			camera_pos = glm.inverse(window.view_matrix)[3].xyz
 			program.set_uniform(pbr_program, 'cameraPos', camera_pos)
-			program.set_uniform(pbr_program, "view", np.eye(4))
 
 			# upload gBuffer
 			glActiveTexture(GL_TEXTURE0+0)
@@ -718,7 +671,8 @@ with window:
 			glActiveTexture(GL_TEXTURE0+6+0)
 			glBindTexture(GL_TEXTURE_2D, dirlight_shadowmap)
 			program.set_uniform(pbr_program, 'lights[0].matrix', dirlight.projection * dirlight.view)
-			program.set_uniform(pbr_program, 'lights[0].shadowMap', 6+0)
+			program.set_uniform(pbr_program, 'lights[0].shadowIdx', 0)
+			program.set_uniform(pbr_program, 'shadowMaps[0]', 6+0)
 
 			## spotlight
 			program.set_uniform(pbr_program, "lights[1].type", 1)
@@ -729,21 +683,19 @@ with window:
 			glActiveTexture(GL_TEXTURE0+6+1)
 			glBindTexture(GL_TEXTURE_2D, spotlight_shadowmap)
 			program.set_uniform(pbr_program, 'lights[1].matrix', spotlight.projection * spotlight.view)
-			program.set_uniform(pbr_program, 'lights[1].shadowMap', 6+1)
+			program.set_uniform(pbr_program, 'lights[1].shadowIdx', 1)
+			program.set_uniform(pbr_program, 'shadowMaps[1]', 6+1)
 
 			## pointlight
 			program.set_uniform(pbr_program, "lights[2].type", 2)
 			program.set_uniform(pbr_program, "lights[2].position", pointlight.position)
 			program.set_uniform(pbr_program, "lights[2].color", pointlight.color)
-			# glActiveTexture(GL_TEXTURE0+6+1)
-			# glBindTexture(GL_TEXTURE_2D, spotlight_shadowmap)
-			# light_projection = glm.perspective(glm.radians(spotlight['fov']*2), 1.0,0.1,13.0)
-			# light_view = glm.lookAt(spotlight['position'], spotlight['position']+spotlight['direction'], (0,1,0))
-			# program.set_uniform(pbr_program, 'lights[1].matrix', light_projection * light_view)
-			# program.set_uniform(pbr_program, 'lights[1].shadowMap', 6+1)
+			glActiveTexture(GL_TEXTURE0+6+2)
+			glBindTexture(GL_TEXTURE_CUBE_MAP, pointlight_shadowcube)
 
-
-	
+			program.set_uniform(pbr_program, 'lights[2].farPlane', pointlight.far)
+			program.set_uniform(pbr_program, 'lights[2].shadowIdx', 0)
+			program.set_uniform(pbr_program, 'shadowCubes[0]', 6+2)
 
 			# draw quad
 			imdraw.quad(pbr_program)
@@ -764,7 +716,7 @@ with window:
 			imdraw.quad(prog)
 
 		# blur highlights
-		blur_iterations = 10
+		blur_iterations = 4
 		horizontal=True
 		first_iteration=True
 		with program.use(blur_program):
@@ -804,7 +756,7 @@ with window:
 			glBindTexture(GL_TEXTURE_2D, bloom_blur_texs[0])
 
 			program.set_uniform(prog, 'screenTexture', 0)
-			# program.set_uniform(prog, 'bloomBlur', 1)
+			program.set_uniform(prog, 'bloomBlur', 1)
 			program.set_uniform(prog, 'exposure', -1.0)
 			program.set_uniform(prog, 'gamma', 2.2)
 
@@ -845,6 +797,7 @@ with window:
 			camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
 			program.set_uniform(skybox_program, 'cameraPos', camera_pos)
 			program.set_uniform(skybox_program, 'skybox', 0)
+			program.set_uniform(skybox_program, 'groundProjection', True)
 			glActiveTexture(GL_TEXTURE0+0)
 			glBindTexture(GL_TEXTURE_CUBE_MAP, env_cubemap)
 			imdraw.cube(skybox_program, flip=True)

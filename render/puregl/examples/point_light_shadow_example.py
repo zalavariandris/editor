@@ -50,8 +50,8 @@ with window:
 
 		uniform samplerCube depthShadowCubemap;
 
-		float PointShadowCalculation(vec3 L){
-			float closestDepth = texture(depthShadowCubemap, normalize(L)).r;
+		float PointShadowCalculation(vec3 L, samplerCube shadowCubemap, float farPlane){
+			float closestDepth = texture(shadowCubemap, normalize(L)).r;
 			closestDepth*=farPlane;
 
 			float currentDepth = length(L);
@@ -70,7 +70,7 @@ with window:
 			float luminance = 10*max(dot(L, N), 0.0) / (distance*distance);
 
 			// apply shadow
-			float shadow = PointShadowCalculation(FragPos-lightPos);
+			float shadow = PointShadowCalculation(FragPos-lightPos, depthShadowCubemap, farPlane);
 			luminance*=1-shadow;
 
 			// create surface color

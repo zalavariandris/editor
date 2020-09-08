@@ -3,33 +3,38 @@ out vec4 color;
 in vec3 vUvw;
 uniform vec3 cameraPos;
 uniform samplerCube skybox;
+uniform bool groundProjection;
 
 void main(){
-	vec3 Position = cameraPos;
-	const vec3 GroundCenter = vec3(0,0,0);
-	const float GroundRadius = 3; 
-	vec3 Direction = normalize(vUvw);
 	
-	if(Direction.y < 0.0){
-		vec3 OrgDir = Direction;
-		// Compute intersection with virtual ground plane
-		float t = (GroundCenter[1] - Position[1])/Direction[1];
-		vec3 GP = Position + Direction * t;
+	vec3 Direction = normalize(vUvw);
+	if(groundProjection)
+	{
+		vec3 Position = cameraPos;
+		const vec3 GroundCenter = vec3(0,0,0);
+		const float GroundRadius = 3; 
+		
+		if(Direction.y < 0.0){
+			vec3 OrgDir = Direction;
+			// Compute intersection with virtual ground plane
+			float t = (GroundCenter[1] - Position[1])/Direction[1];
+			vec3 GP = Position + Direction * t;
 
-		// Compute virtual projection point rays are projecting from
-		vec3 TP = GroundCenter + vec3(0, GroundRadius,0);
-		// Use direction from that point to the groundplane as the
-		// new virtual direction
-		Direction = normalize(GP-TP);
+			// Compute virtual projection point rays are projecting from
+			vec3 TP = GroundCenter + vec3(0, GroundRadius,0);
+			// Use direction from that point to the groundplane as the
+			// new virtual direction
+			Direction = normalize(GP-TP);
 
-		// Smoothen out the joint a bit....
-		// Thanks to Vlado for suggestion!
-		if (Direction[1] > -0.1)
-		{
-			float fac = 1.0 - Direction[1] * -10.0;
-			fac *= fac;
-			
-			Direction = mix(Direction, OrgDir, fac);
+			// Smoothen out the joint a bit....
+			// Thanks to Vlado for suggestion!
+			if (Direction[1] > -0.1)
+			{
+				float fac = 1.0 - Direction[1] * -10.0;
+				fac *= fac;
+				
+				Direction = mix(Direction, OrgDir, fac);
+			}
 		}
 	}
 	color = texture(skybox, Direction);
