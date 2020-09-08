@@ -11,6 +11,10 @@ width, height = 1024, 768
 model_matrix = np.identity(4)
 window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
+import logging
+logging.basicConfig(filename=None, level=logging.ERROR, format='%(levelname)s:%(module)s.%(funcName)s: %(message)s')
+
+
 with window:
 	glEnable(GL_DEPTH_TEST)
 	glEnable(GL_CULL_FACE)
@@ -69,7 +73,6 @@ with window:
 		for i, sample in enumerate(ssaoKernel):
 			name = "samples[{}]".format(i)
 			location = glGetUniformLocation(ssao_program, name)
-			print(name, location)
 			program.set_uniform(ssao_program, name, sample)
 
 	noise_data = np.random.uniform((-1,-1,0),(1,1,0),(4,4,3))

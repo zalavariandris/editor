@@ -50,8 +50,7 @@ with window:
 
 		uniform samplerCube depthShadowCubemap;
 
-		float PointShadowCalculation(vec3 surfacePos){
-			vec3 L = surfacePos-lightPos;
+		float PointShadowCalculation(vec3 L){
 			float closestDepth = texture(depthShadowCubemap, normalize(L)).r;
 			closestDepth*=farPlane;
 
@@ -71,11 +70,14 @@ with window:
 			float luminance = 10*max(dot(L, N), 0.0) / (distance*distance);
 
 			// apply shadow
-			float shadow = PointShadowCalculation(FragPos);
+			float shadow = PointShadowCalculation(FragPos-lightPos);
 			luminance*=1-shadow;
 
 			// create surface color
 			vec3 color = vec3(luminance);
+
+			// reinhardt tonemapping
+    		color = color / (color+vec3(1.0));
 
 			// gamma correction
 			const float gamma = 2.2;
@@ -87,7 +89,7 @@ with window:
 		"""
 	)
 
-	# Point Shadow Pass
+	# Point Shadow Pass setup
 	# -----------------
 	shadow_width, shadow_height = 512, 512
 	shadow_depth_fbo = glGenFramebuffers(1)
@@ -212,6 +214,8 @@ with window:
 
 			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (0,0.0, 0)))
 			imdraw.plane(prog)
+
+		# imdraw.cubemap(shadow_depth_cubemap, window.projection_matrix,  window.view_matrix)
 
 		window.swap_buffers()
 		GLFWViewer.poll_events()

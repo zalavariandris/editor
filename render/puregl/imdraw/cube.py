@@ -107,8 +107,8 @@ def cube_geo(flip=False):
     return positions, normals, uvs, indices
 
 @functools.lru_cache(maxsize=128)
-def cube_buffer(program, flip=False):
-    logging.debug("create cube buffer for program: {}".format(program))
+def cube_buffer(locations, flip=False):
+    logging.debug("create cube buffer for locaitons: {}".format(locations))
     positions, normals, uvs, indices = cube_geo(flip=flip)
     count = indices.size
 
@@ -119,18 +119,22 @@ def cube_buffer(program, flip=False):
     glBindVertexArray(vao)
     glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
     glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
-    position_location = glGetAttribLocation(program, 'position')
+
+
+    position_location, uv_location, normal_location = locations
+
+    # position_location = glGetAttribLocation(program, 'position')
     glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, buffer_offset(0))
     glEnableVertexAttribArray(position_location)
 
-    uv_location = glGetAttribLocation(program, 'uv')
+    # uv_location = glGetAttribLocation(program, 'uv')
     if uv_location>=0:
         glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
         glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
         glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, buffer_offset(0))
         glEnableVertexAttribArray(uv_location)
 
-    normal_location = glGetAttribLocation(program, 'normal')
+    # normal_location = glGetAttribLocation(program, 'normal')
     if normal_location is not -1:
         glBindBuffer(GL_ARRAY_BUFFER, normal_vbo)
         glBufferData(GL_ARRAY_BUFFER, normals.nbytes, normals, GL_STATIC_DRAW)
@@ -150,7 +154,8 @@ def cube_buffer(program, flip=False):
     return vao, ebo, count
 
 def cube(program, flip=False):
-    vao, ebo, count = cube_buffer(program, flip=flip)
+    locations = tuple(glGetAttribLocation(program, name) for name in ("position", 'uv', 'normal'))
+    vao, ebo, count = cube_buffer(locations, flip=flip)
 
     # draw
     glBindVertexArray(vao)

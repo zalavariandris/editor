@@ -22,7 +22,7 @@ uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
 
 // Lights
-# define NUM_LIGHTS 3
+# define NUM_LIGHTS 1
 uniform Light lights[NUM_LIGHTS];
 in vec2 TexCoords;
 out vec4 FragColor;
@@ -47,17 +47,8 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, samp
 
 	// float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
 	float bias = 0.00001;
-	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-	float shadow = 0.0;
-	for(int x = -1; x <= 1; ++x)
-	{
-	    for(int y = -1; y <= 1; ++y)
-	    {
-	        float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-	        shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
-	    }    
-	}
-	shadow /= 9.0;
+	float pcfDepth = texture(shadowMap, projCoords.xy).r; 
+	float shadow = currentDepth - bias > pcfDepth ? 1.0 : 0.0;
 	return shadow;
 }
 
@@ -127,7 +118,8 @@ void main(){
 		// ----------------------------
 		vec3 L;
 		float attenuation;
-		if(lights[i].type==0){ //Directional
+		if(lights[i].type==0)
+		{ //Directional
 			L = normalize(-lights[i].direction);
 			attenuation = 1.0;
 
@@ -135,14 +127,16 @@ void main(){
 			vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
 			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
 			attenuation*=1-shadow;
-		}else
-		if(lights[i].type==1){ //Spot
+		}
+		else if(lights[i].type==1)
+		{ //Spot
 			L = normalize(lights[i].position - fragPos);
 			float distance = length(lights[i].position - fragPos);
 			attenuation = 1.0 / (distance*distance);
 
 			// spotlight cutoff
-			if(lights[i].cutOff>=0){
+			if(lights[i].cutOff>=0)
+			{
 				float theta = dot(L, normalize(-lights[i].direction));
 				if(theta<lights[i].cutOff){
 					attenuation=0.0;
@@ -153,14 +147,19 @@ void main(){
 			vec4 fragPosLightSpace = lights[i].matrix * vec4(fragPos, 1.0);
 			float shadow = ShadowCalculation(fragPosLightSpace, L, N, lights[i].shadowMap);
 			attenuation*=1-shadow;
-		}else
-		if(lights[i].type==2){ //Omni
+		}
+		else if(lights[i].type==2)
+		{ //Omni
 			L = normalize(lights[i].position - fragPos);
 			float distance = length(lights[i].position - fragPos);
 			attenuation = 1.0 / (distance*distance);
 			
 			// calc shadow
 		}
+		else{
+			continue;
+		}
+
 		vec3 radiance = lights[i].color * attenuation;
 
 
@@ -218,7 +217,7 @@ void main(){
   	
   	// Final lighting
   	// ==============
-    vec3 color = ambient + Lo;
+    vec3 color = ambient*0.0 + Lo;
 
 	// Output
 	// ======
