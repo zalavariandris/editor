@@ -557,23 +557,23 @@ with window:
 			glViewport(0,0,*dirlight_shadowsize)
 			glClear(GL_DEPTH_BUFFER_BIT)
 			
-			program.set_uniform(prog, "projectionMatrix", dirlight.projection)
-			program.set_uniform(prog, "viewMatrix", dirlight.view)
+			program.set_uniform(prog, "projection", dirlight.projection)
+			program.set_uniform(prog, "view", dirlight.view)
 
 			# Draw Scene
 			## draw cube
 			model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.cube(prog)
 
 			## draw sphere
 			model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.sphere(prog)
 
 			## draw groundplane
 			model_matrix = glm.translate(glm.mat4(1), (0,0,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.plane(prog)
 
 		## spotlight
@@ -581,23 +581,23 @@ with window:
 			glViewport(0,0,*spotlight_shadowsize)
 			glClear(GL_DEPTH_BUFFER_BIT)
 			
-			program.set_uniform(prog, "projectionMatrix", spotlight.projection)
-			program.set_uniform(prog, "viewMatrix", spotlight.view)
+			program.set_uniform(prog, "projection", spotlight.projection)
+			program.set_uniform(prog, "view", spotlight.view)
 
 			# Draw Scene
 			## draw cube
 			model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.cube(prog)
 
 			## draw sphere
 			model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.sphere(prog)
 
 			## draw groundplane
 			model_matrix = glm.translate(glm.mat4(1), (0,0,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.plane(prog)
 
 		# shadow depth cubemap pass
@@ -613,17 +613,17 @@ with window:
 			# Draw Scene
 			## draw cube
 			model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.cube(prog)
 
 			## draw sphere
 			model_matrix = glm.translate(glm.mat4(1), (1,0.5,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.sphere(prog)
 
 			## draw groundplane
 			model_matrix = glm.translate(glm.mat4(1), (0,0,0))
-			program.set_uniform(prog, 'modelMatrix', model_matrix)
+			program.set_uniform(prog, 'model', model_matrix)
 			imdraw.plane(prog)
 
 		# Lighting Pass draw
@@ -635,9 +635,9 @@ with window:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
 			# set matrices (this is redundant as we are simple drawing a textured quad on screen)
-			program.set_uniform(pbr_program, "projectionMatrix", np.eye(4))
-			program.set_uniform(pbr_program, "viewMatrix", np.eye(4))
-			program.set_uniform(pbr_program, "modelMatrix", np.eye(4))
+			program.set_uniform(pbr_program, "projection", np.eye(4))
+			program.set_uniform(pbr_program, "view", np.eye(4))
+			program.set_uniform(pbr_program, "model", np.eye(4))
 
 			camera_pos = glm.inverse(window.view_matrix)[3].xyz
 			program.set_uniform(pbr_program, 'cameraPos', camera_pos)
@@ -718,9 +718,9 @@ with window:
 			glDepthMask(GL_FALSE)
 			
 			with program.use(skybox_program):
-				program.set_uniform(skybox_program, 'projectionMatrix', window.projection_matrix)
+				program.set_uniform(skybox_program, 'projection', window.projection_matrix)
 				sky_view = glm.mat4(glm.mat3(window.view_matrix)); 
-				program.set_uniform(skybox_program, 'viewMatrix', sky_view)
+				program.set_uniform(skybox_program, 'view', sky_view)
 				camera_pos = glm.transpose(glm.transpose(glm.inverse(window.view_matrix)))[3].xyz
 				program.set_uniform(skybox_program, 'cameraPos', camera_pos)
 				program.set_uniform(skybox_program, 'skybox', 0)
@@ -776,10 +776,6 @@ with window:
 			glViewport(0,0,window.width, window.height)
 			glClearColor(0,0,0,0)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-			program.set_uniform(prog, "projectionMatrix", np.eye(4)) # redundant
-			program.set_uniform(prog, "viewMatrix", np.eye(4))
-			program.set_uniform(prog, "modelMatrix", np.eye(4))
 
 			glActiveTexture(GL_TEXTURE0+0)
 			glBindTexture(GL_TEXTURE_2D, beautyBuffer)

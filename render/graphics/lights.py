@@ -1,4 +1,6 @@
 import glm
+from cameras import OrthographicCamera, PerspectiveCamera
+
 
 class DirectionalLight:
 	def __init__(self, direction, color, position, radius, near, far):
@@ -16,6 +18,11 @@ class DirectionalLight:
 	@property	
 	def view(self):
 		return glm.lookAt(self.position, self.position+self.direction, (0,1,0))
+
+	@property
+	def camera(self):
+		tr = glm.lookAt(self.position, self.position+self.direction, (0,1,0))
+		return OrthographicCamera(tr, self.radius*2, self.radius*2, self.near, self.far)
 
 
 class Spotlight:
@@ -39,6 +46,11 @@ class Spotlight:
 	@property
 	def cut_off(self):
 		return glm.cos(glm.radians(self.fov/2))
+
+	@property
+	def camera(self):
+		tr = glm.lookAt(self.position, self.position+self.direction, (0,1,0))
+		return PerspectiveCamera(tr, self.fov, 1.0, self.near, self.far)
 
 
 class Pointlight:
@@ -66,3 +78,4 @@ class Pointlight:
 
 		shadowTransforms = np.array([np.array(m) for m in shadowTransforms])
 		return shadowTransforms
+

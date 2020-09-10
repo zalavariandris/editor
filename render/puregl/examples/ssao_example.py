@@ -124,14 +124,14 @@ with window:
 			glViewport(0, 0, window.width, window.height)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 			with program.use(ssao_geometry_program):
-				program.set_uniform(ssao_geometry_program, 'projectionMatrix', window.projection_matrix)
-				program.set_uniform(ssao_geometry_program, 'viewMatrix', window.view_matrix)
+				program.set_uniform(ssao_geometry_program, 'projection', window.projection_matrix)
+				program.set_uniform(ssao_geometry_program, 'view', window.view_matrix)
 
 				# draw cube
 				translation = glm.translate(glm.mat4(1), (0,0.5,0))
 				rotation = glm.rotate(glm.mat4(1), 0, (0,1,0))
 				scale = glm.scale(glm.mat4(1), (1,1,1))
-				program.set_uniform(ssao_geometry_program, 'modelMatrix', translation*rotation*scale)
+				program.set_uniform(ssao_geometry_program, 'model', translation*rotation*scale)
 				program.set_uniform(ssao_geometry_program, 'albedo', (0.2,0.8,0.8))
 				imdraw.sphere(ssao_geometry_program)
 
@@ -139,7 +139,7 @@ with window:
 				translation = glm.translate(glm.mat4(1), (0,2.5,0))
 				rotation = glm.rotate(glm.mat4(1), 0, (0,1,0))
 				scale = glm.scale(glm.mat4(1), (10,5,10))
-				program.set_uniform(ssao_geometry_program, 'modelMatrix', translation*rotation*scale)
+				program.set_uniform(ssao_geometry_program, 'model', translation*rotation*scale)
 				program.set_uniform(ssao_geometry_program, 'albedo', (0.2,0.3,0.4))
 				imdraw.cube(ssao_geometry_program, flip=True)
 
@@ -148,7 +148,7 @@ with window:
 
 		with fbo.bind(ssao_fbo):
 			with program.use(ssao_program):
-				program.set_uniform(ssao_program, 'projectionMatrix', window.projection_matrix)
+				program.set_uniform(ssao_program, 'projection', window.projection_matrix)
 				program.set_uniform(ssao_program, 'viewProjectionMatrix', window.projection_matrix*window.view_matrix)
 
 				glActiveTexture(GL_TEXTURE0+0)

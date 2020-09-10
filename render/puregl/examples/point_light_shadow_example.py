@@ -21,9 +21,9 @@ with window:
 	lambert_program = program.create(
 		"""
 		#version 330 core
-		uniform mat4 projectionMatrix;
-		uniform mat4 viewMatrix;
-		uniform mat4 modelMatrix;
+		uniform mat4 projection;
+		uniform mat4 view;
+		uniform mat4 model;
 		uniform float farPlane;
 
 		layout (location = 0) in vec3 position;
@@ -34,8 +34,8 @@ with window:
 
 		void main(){
 			Normal = normal;
-			FragPos = (modelMatrix * vec4(position, 1.0)).xyz;
-			gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+			FragPos = (model * vec4(position, 1.0)).xyz;
+			gl_Position = projection * view * model * vec4(position, 1.0);
 		}
 		""",
 
@@ -175,16 +175,16 @@ with window:
 			program.set_uniform(prog, 'lightPos', lightPos)
 
 			# draw scene
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (-1,0.5, -1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (-1,0.5, -1)))
 			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (1,0.5, -1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, -1)))
 			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (1,0.5, 1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, 1)))
 			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (-1,0.5, 1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (-1,0.5, 1)))
 			imdraw.cube(prog)
 
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (0,0.0, 0)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (0,0.0, 0)))
 			imdraw.plane(prog)
 
 		# Render lambert pass
@@ -192,9 +192,9 @@ with window:
 		glViewport(0, 0, window.width, window.height)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		with program.use(lambert_program) as prog:
-			program.set_uniform(prog, 'projectionMatrix', window.projection_matrix)
+			program.set_uniform(prog, 'projection', window.projection_matrix)
 
-			program.set_uniform(prog, 'viewMatrix', window.view_matrix)
+			program.set_uniform(prog, 'view', window.view_matrix)
 			program.set_uniform(prog, 'farPlane', far_plane)
 			program.set_uniform(prog, 'lightPos', lightPos)
 			
@@ -203,16 +203,16 @@ with window:
 			program.set_uniform(prog, 'depthShadowCubemap', 1)
 
 			# draw scene
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (-1,0.5, -1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (-1,0.5, -1)))
 			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (1,0.5, -1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, -1)))
 			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (1,0.5, 1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, 1)))
 			imdraw.cube(prog)
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (-1,0.5, 1)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (-1,0.5, 1)))
 			imdraw.cube(prog)
 
-			program.set_uniform(prog, 'modelMatrix', glm.translate(glm.mat4(1), (0,0.0, 0)))
+			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (0,0.0, 0)))
 			imdraw.plane(prog)
 
 		# imdraw.cubemap(shadow_depth_cubemap, window.projection_matrix,  window.view_matrix)

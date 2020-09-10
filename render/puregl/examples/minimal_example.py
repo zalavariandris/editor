@@ -20,14 +20,14 @@ with window:
 	prog = program.create(
 		"""
 		#version 330 core
-		uniform mat4 projectionMatrix;
-		uniform mat4 viewMatrix;
-		uniform mat4 modelMatrix;
+		uniform mat4 projection;
+		uniform mat4 view;
+		uniform mat4 model;
 
 		layout (location = 0) in vec3 position;
 
 		void main(){
-			gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+			gl_Position = projection * view * model * vec4(position, 1.0);
 		}
 		""", 
 		"""
@@ -43,9 +43,9 @@ with window:
 		glViewport(0, 0, window.width, window.height)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		with program.use(prog):
-			program.set_uniform(prog, 'projectionMatrix', window.projection_matrix)
-			program.set_uniform(prog, 'viewMatrix', window.view_matrix)
-			program.set_uniform(prog, 'modelMatrix', np.eye(4))
+			program.set_uniform(prog, 'projection', window.projection_matrix)
+			program.set_uniform(prog, 'view', window.view_matrix)
+			program.set_uniform(prog, 'model', np.eye(4))
 			imdraw.cube(prog)
 
 			# draw grid
