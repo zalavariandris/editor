@@ -26,15 +26,12 @@ spotlight = Spotlight(position=glm.vec3(-2, 5.1, -10),
 	                  near=0.1,
 	                  far=13.0)
 
-pointlight = Pointlight(position=glm.vec3(5, 2, 0.5),
-	                    color=glm.vec3(1, 0.7, 0.1)*30,
+pointlight = Pointlight(position=glm.vec3(5, 2, 4),
+	                    color=glm.vec3(1, 0.7, 0.1)*10,
 	                    near=1.0,
 	                    far=8.0)
 
-def draw_scene(prog, projection, view):
-	program.set_uniform(prog, "projection", projection)
-	program.set_uniform(prog, "view", view)
-
+def draw_scene(prog):
 	# draw cube
 	model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))
 	program.set_uniform(prog, 'model', model_matrix)
@@ -99,13 +96,14 @@ class GeometryPass:
 			glEnable(GL_DEPTH_TEST)
 		else:
 			glDisable(GL_DEPTH_TEST)
-
 		with fbo.bind(self.gBuffer), program.use(self.geometry_program) as prog:
 			glViewport(0,0, self.width, self.height)
 			glClearColor(0,0,0,0)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-				
-			draw_scene(prog, self.camera.projection, self.camera.view)
+			
+			program.set_uniform(prog, "projection", self.camera.projection)
+			program.set_uniform(prog, "view", self.camera.view)
+			draw_scene(prog)
 
 
 class LightingPass:
@@ -209,6 +207,7 @@ class LightingPass:
 				for(int i=0; i<NUM_LIGHTS; ++i)
 				{
 					vec3 L=vec3(0);
+
 					float attenuation=1.0;
 					if(lights[i].type==0)
 					{
@@ -245,16 +244,14 @@ class LightingPass:
 						float distance = length(lights[i].position - surfacePos);
 						attenuation = 1.0 / (distance*distance);
 
-						// // calc shadow
-						//float shadow = PointShadowCalculation(lights[i].position, surfacePos, shadowCubes[0], lights[i].farPlane);
-						//attenuation*=1-shadow;
+						// calc shadow
+						float shadow = PointShadowCalculation(lights[i].position, surfacePos, shadowCubes[0], lights[i].farPlane);
+						attenuation*=1-shadow;
 					}
 
 					vec3 radiance = lights[i].color * attenuation;
 					
-
-
-					
+					// BRDF
 					float diff = max(dot(N, L), 0.0);
 					Lo+=diff*radiance;
 				}
@@ -325,7 +322,7 @@ class LightingPass:
 			program.set_uniform(self.prog, "gNormal", 1)
 
 			shadowMapIdx, shadowCubeIdx = 0, 0
-			for i, (shadowmap, light) in enumerate(zip(self.shadowmaps, self.lights)):
+			for i, light in enumerate(self.lights):
 				if isinstance(light, DirectionalLight):
 					program.set_uniform(self.prog, "lights[{}].type".format(i), 0)
 					program.set_uniform(self.prog, "lights[{}].color".format(i), light.color)
@@ -333,13 +330,13 @@ class LightingPass:
 					program.set_uniform(self.prog, "lights[{}].direction".format(i), light.direction)
 					program.set_uniform(self.prog, "lights[{}].shadowIdx".format(i), shadowMapIdx)
 					
-
+					shadow = self.shadows[i]
+					
 					glActiveTexture(GL_TEXTURE0+2+i)
-					glBindTexture(GL_TEXTURE_2D, shadowmap)
+					glBindTexture(GL_TEXTURE_2D, shadow.texture)
 					program.set_uniform(self.prog, "lights[{}].matrix".format(i), light.camera.projection * light.camera.view)
-					program.set_uniform(self.prog, "shadowMaps[{}]".format(i), 2+i)
-
-					shadowMapIdx+=2
+					program.set_uniform(self.prog, "shadowMaps[{}]".format(shadowMapIdx), 2+i)
+					shadowMapIdx+=1
 
 				elif isinstance(light, Spotlight):
 					program.set_uniform(self.prog, "lights[{}].type".format(i), 1)
@@ -350,11 +347,27 @@ class LightingPass:
 					program.set_uniform(self.prog, "lights[{}].shadowIdx".format(i), i)
 					program.set_uniform(self.prog, "lights[{}].cutOff".format(i), light.cut_off)
 
+					shadow = self.shadows[i]
 					glActiveTexture(GL_TEXTURE0+2+i)
-					glBindTexture(GL_TEXTURE_2D, shadowmap)
+					glBindTexture(GL_TEXTURE_2D, shadow.texture)
 					program.set_uniform(self.prog, "lights[{}].matrix".format(i), light.camera.projection * light.camera.view)
-					program.set_uniform(self.prog, "shadowMaps[{}]".format(i), 2+i)
+					program.set_uniform(self.prog, "shadowMaps[{}]".format(shadowMapIdx), 2+i)
+					shadowMapIdx+=1
 
+				elif isinstance(light, Pointlight):
+					program.set_uniform(self.prog, "lights[{}].type".format(i), 2)
+					program.set_uniform(self.prog, "lights[{}].color".format(i), light.color)
+
+					program.set_uniform(self.prog, "lights[{}].position".format(i), light.position)
+
+
+					shadow = self.shadows[i]
+					glActiveTexture(GL_TEXTURE0+2+i)
+					glBindTexture(GL_TEXTURE_CUBE_MAP, shadow.cubemap)
+					program.set_uniform(self.prog, "lights[{}].shadowIdx".format(i), shadowCubeIdx)
+					program.set_uniform(self.prog, "lights[{}].farPlane".format(i), float(shadow.far))
+					program.set_uniform(self.prog, "shadowCubes[{}]".format(shadowCubeIdx), 2+i)
+					shadowCubeIdx+=1
 
 
 
@@ -423,9 +436,10 @@ class DepthPass:
 
 			# configure shaders
 
-
 			# draw scene
-			draw_scene(self.prog, self.camera.projection, self.camera.view)
+			program.set_uniform(self.prog, "projection", self.camera.projection)
+			program.set_uniform(self.prog, "view", self.camera.view)
+			draw_scene(self.prog)
 
 
 class EnvironmentPass:
@@ -437,6 +451,79 @@ class EnvironmentPass:
 
 	def draw(self):
 		pass
+
+
+class CubeDepthPass:
+	def __init__(self, width, height, depth_test, cull_face, near, far):
+		self.width = width
+		self.height = height
+		self.depth_test = depth_test
+		self.cull_face = cull_face
+		self.near = near
+		self.far = far
+
+	@property
+	def projection(self):
+		aspect = 1.0
+		return glm.perspective(glm.radians(90.0), aspect, self.near, self.far)
+
+	@property
+	def views(self):
+		views = []
+		views.append(glm.lookAt(self.position, self.position + glm.vec3( 1, 0, 0), glm.vec3(0,-1, 0)))
+		views.append(glm.lookAt(self.position, self.position + glm.vec3(-1, 0, 0), glm.vec3(0,-1, 0)))
+		views.append(glm.lookAt(self.position, self.position + glm.vec3( 0, 1, 0), glm.vec3(0, 0, 1)))
+		views.append(glm.lookAt(self.position, self.position + glm.vec3( 0,-1, 0), glm.vec3(0, 0,-1)))
+		views.append(glm.lookAt(self.position, self.position + glm.vec3( 0, 0, 1), glm.vec3(0,-1, 0)))
+		views.append(glm.lookAt(self.position, self.position + glm.vec3( 0, 0,-1), glm.vec3(0,-1, 0)))
+
+		views = np.array([np.array(m) for m in views])
+		return views
+	
+	def setup(self):
+		# create program
+		# --------------
+		self.prog = program.create(*glsl.read("point_shadow"))
+
+		# create depth cubemap texture
+		self.cubemap = glGenTextures(1)
+		glActiveTexture(GL_TEXTURE0+6+2)
+		glBindTexture(GL_TEXTURE_CUBE_MAP, self.cubemap)
+
+		for i in range(6):
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL_DEPTH_COMPONENT,
+				self.width, self.height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, None)
+
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
+		
+		# create fbo
+		self.fbo = glGenFramebuffers(1)
+		with fbo.bind(self.fbo):
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, self.cubemap, 0)
+			glDrawBuffer(GL_NONE)
+			glReadBuffer(GL_NONE)
+			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+
+	def draw(self):
+		with fbo.bind(self.fbo), program.use(self.prog):
+			# set viewpot
+			glViewport(0,0,self.width, self.height)
+
+			# clear fbo
+			glClear(GL_DEPTH_BUFFER_BIT)
+
+			# configure shader
+			for i in range(6):
+				program.set_uniform(self.prog, "shadowMatrices[{}]".format(i), self.projection*self.views[i])
+			program.set_uniform(self.prog, 'farPlane', float(self.far))
+			program.set_uniform(self.prog, 'lightPos', self.position)
+
+			# draw scene
+			draw_scene(self.prog)
 
 
 class Viewer:
@@ -457,82 +544,91 @@ class Viewer:
 			self.width, self.height,
 			depth_test=False,
 			cull_face=GL_BACK,
-			lights=[dirlight, spotlight]
+			lights=[dirlight, spotlight, pointlight]
 		)
 
 		self.shadowpasses = []
 		for light in self.lighting_pass.lights:
-			self.shadowpasses.append( DepthPass(1024,1024, depth_test=True, cull_face=GL_FRONT) )
+			if isinstance(light, (DirectionalLight, Spotlight)):
+				self.shadowpasses.append( DepthPass(1024, 1024, depth_test=True, cull_face=GL_FRONT) )
+			elif isinstance(light, Pointlight):
+				self.shadowpasses.append( CubeDepthPass(512, 512, depth_test=True, cull_face=GL_FRONT, near=1, far=15) )
 		
-	def setup(self):
-		with self.window:
-			
-			glEnable(GL_PROGRAM_POINT_SIZE)
+	def setup(self):	
+		glEnable(GL_PROGRAM_POINT_SIZE)
 
-			# Geometry Pass
-			# -------------
-			self.geometry_pass.setup()
-			for shadowpass in self.shadowpasses:
-				shadowpass.setup()
-			self.lighting_pass.setup()
+		# Geometry Pass
+		# -------------
+		self.geometry_pass.setup()
+		for shadowpass in self.shadowpasses:
+			shadowpass.setup()
+		self.lighting_pass.setup()
 
 	def resize(self):
 		with self.window:
 			pass
 
 	def draw(self):
+		# animate lights
 		import math, time
 		spotlight.position = glm.vec3(math.cos(time.time()*3)*4, 0.3, -4)
 		spotlight.direction = -spotlight.position
+
+		pointlight.position = glm.vec3(math.cos(time.time())*4, 4, math.sin(time.time())*4)
 
 		# update camera 
 		self.camera.transform = glm.inverse(self.window.view_matrix)
 
 		GLFWViewer.poll_events()
-		with self.window as window:
-			# Render passes
-			# -------------
-			self.geometry_pass.camera = self.camera #window.projection_matrix, window.view_matrix
-			self.geometry_pass.draw()
+		# Render passes
+		# -------------
+		self.geometry_pass.camera = self.camera #window.projection_matrix, window.view_matrix
+		self.geometry_pass.draw()
 
-			for shadowpass, light in zip(self.shadowpasses, self.lighting_pass.lights):
+		for shadowpass, light in zip(self.shadowpasses, self.lighting_pass.lights):
+			if isinstance(light, (DirectionalLight, Spotlight)):
 				shadowpass.camera = light.camera
-			for shadowpass in self.shadowpasses:
+				shadowpass.draw()
+			elif isinstance(light, Pointlight):
+				shadowpass.position = light.position
 				shadowpass.draw()
 
-			self.lighting_pass.gPosition = self.geometry_pass.gPosition
-			self.lighting_pass.gNormal = self.geometry_pass.gNormal
-			self.lighting_pass.shadowmaps = [shadowpass.texture for shadowpass in self.shadowpasses]
-			self.lighting_pass.draw()
+		self.lighting_pass.gPosition = self.geometry_pass.gPosition
+		self.lighting_pass.gNormal = self.geometry_pass.gNormal
+		self.lighting_pass.shadows = self.shadowpasses
+		self.lighting_pass.draw()
 
-			# Render to screen
-			# ----------------			
-			glViewport(0,0, window.width, window.height)
-			glClearColor(0,0,0,0)
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-			glDisable(GL_DEPTH_TEST)
+		# Render to screen
+		# ----------------			
+		glViewport(0,0, self.width, self.height)
+		glClearColor(0,0,0,0)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glDisable(GL_DEPTH_TEST)
 
-			# draw to screen
-			imdraw.texture(self.lighting_pass.beauty, (0, 0, self.window.width, self.window.height))
+		# draw to screen
+		imdraw.texture(self.lighting_pass.beauty, (0, 0, self.width, self.height))
 
-			# debug
-			imdraw.texture(self.geometry_pass.gPosition,       (  0,   0, 90, 90))
-			imdraw.texture(self.geometry_pass.gNormal,         (100,   0, 90, 90))
-			imdraw.texture(self.geometry_pass.gAlbedoSpecular, (200,   0, 90, 90), shuffle=(0,1,2,-1))
-			imdraw.texture(self.geometry_pass.gAlbedoSpecular, (300,   0, 90, 90), shuffle=(3,3,3,-1))
+		# debug
+		imdraw.texture(self.geometry_pass.gPosition,       (  0,   0, 90, 90))
+		imdraw.texture(self.geometry_pass.gNormal,         (100,   0, 90, 90))
+		imdraw.texture(self.geometry_pass.gAlbedoSpecular, (200,   0, 90, 90), shuffle=(0,1,2,-1))
+		imdraw.texture(self.geometry_pass.gAlbedoSpecular, (300,   0, 90, 90), shuffle=(3,3,3,-1))
 
-			for i, shadowpass in enumerate(self.shadowpasses):
+		for i, shadowpass in enumerate(self.shadowpasses):
+			if isinstance(shadowpass, (DepthPass)):
 				imdraw.texture(shadowpass.texture,       (  i*100, 100, 90, 90), shuffle=(0,0,0,-1))
+			elif isinstance(shadowpass, CubeDepthPass):
+				imdraw.cubemap(shadowpass.cubemap, (i*100, 100, 90, 90), self.window.projection_matrix, self.window.view_matrix)
 
-			# swap buffers
-			# ------------
-			window.swap_buffers()
+		# swap buffers
+		# ------------
+		self.window.swap_buffers()
 		
 	def start(self):
-		self.setup()
-		
-		while not self.window.should_close():
-			self.draw()
+		with self.window:
+			self.setup()
+			while not self.window.should_close():
+				self.draw()
 
 
 if __name__ == "__main__":

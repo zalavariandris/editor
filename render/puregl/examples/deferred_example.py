@@ -13,7 +13,6 @@ window = GLFWViewer(width, height, (0.6, 0.7, 0.7, 1.0))
 
 # Setup Scene
 # ============
-
 class DirectionalLight:
 	def __init__(self, direction, color, position, radius, near, far):
 		self.direction = direction
@@ -140,7 +139,7 @@ with window:
 	depth_program = program.create(*glsl.read("simple_depth"))
 	
 	## dirlight
-	dirlight_fbo = glGenFramebuffers(1)
+	
 	dirlight_shadowmap = glGenTextures(1)
 	dirlight_shadowsize = 1024, 1024
 
@@ -156,6 +155,7 @@ with window:
 	
 	glBindTexture(GL_TEXTURE_2D, 0)
 
+	dirlight_fbo = glGenFramebuffers(1)
 	with fbo.bind(dirlight_fbo):
 		# dont render color data
 		glDrawBuffer(GL_NONE)
@@ -196,7 +196,6 @@ with window:
 		
 	# Point Shadow Pass setup
 	# -----------------
-	pointlight_shadowfbo = glGenFramebuffers(1)
 	pointlight_shadowsize = 1024, 1024
 	# create depth cubemap texture
 	pointlight_shadowcube = glGenTextures(1)
@@ -214,17 +213,17 @@ with window:
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
 	
 
-	# attach cubemap to fbo depth attachment
-	glBindFramebuffer(GL_FRAMEBUFFER, pointlight_shadowfbo);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pointlight_shadowcube, 0)
-	glDrawBuffer(GL_NONE)
-	glReadBuffer(GL_NONE)
-	assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
-	glBindFramebuffer(GL_FRAMEBUFFER, 0)
+	# create fbo
+	pointlight_shadowfbo = glGenFramebuffers(1)
+	with fbo.bind(pointlight_shadowfbo):
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pointlight_shadowcube, 0)
+		glDrawBuffer(GL_NONE)
+		glReadBuffer(GL_NONE)
+		assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+
 
 	# create shader
 	point_shadow_program = program.create(*glsl.read("point_shadow"))
-
 
 	# Environment pass
 	# ----------------

@@ -6,7 +6,7 @@ from . import cube
 from .. import program
 
 
-def cubemap(tex, projection, view):
+def cubemap(tex, rect, projection, view):
 	prog = program.create(
 		"""
 		#version 330 core
@@ -33,6 +33,7 @@ def cubemap(tex, projection, view):
 		}
 		""")
 
+	glViewport(*rect)
 	with program.use(prog):
 		glActiveTexture(GL_TEXTURE0+0)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex)
