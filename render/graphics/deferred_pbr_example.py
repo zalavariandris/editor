@@ -442,16 +442,6 @@ class DepthPass:
 			draw_scene(self.prog)
 
 
-class EnvironmentPass:
-	def __init__(self):
-		pass
-
-	def setup(self):
-		pass
-
-	def draw(self):
-		pass
-
 
 class CubeDepthPass:
 	def __init__(self, width, height, depth_test, cull_face, near, far):
@@ -486,6 +476,7 @@ class CubeDepthPass:
 		self.prog = program.create(*glsl.read("point_shadow"))
 
 		# create depth cubemap texture
+		# ----------------------------
 		self.cubemap = glGenTextures(1)
 		glActiveTexture(GL_TEXTURE0+6+2)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, self.cubemap)
@@ -526,6 +517,102 @@ class CubeDepthPass:
 			draw_scene(self.prog)
 
 
+class EnvironmentPass:
+	def __init__(self, image):
+		self.width = 512
+		self.height = 512
+		self.depth_test = False
+		self.cull_face = None
+		self.image = image
+
+	def setup(self):
+		# Crate program
+		# -------------
+		self.prog = program.create(*glsl.read('cubemap.vs', 'equirectangular_to_cubemap.fs'))
+	
+		# Create textures
+		# ---------------
+		w, h, c = self.image.shape
+		self.environment_tex = glGenTextures(1)
+		glBindTexture(GL_TEXTURE_2D, self.environment_tex)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, self.width, self.height, 0, GL_RGB, GL_FLOAT, self.image)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+		# capture environment to cubemap
+		self.cubemap = glGenTextures(1)
+		glBindTexture(GL_TEXTURE_CUBE_MAP, self.cubemap)
+		for i in range(6):
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, 
+				GL_RGB32F, self.width, self.height, 0, GL_RGB, GL_FLOAT, None)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
+
+		# setup cubemap projections
+		self.projection = glm.perspective(glm.radians(90), 1.0,0.1,10.0)
+		self.views = [
+			glm.lookAt((0, 0, 0), ( 1,  0,  0), (0, -1,  0)),
+			glm.lookAt((0, 0, 0), (-1,  0,  0), (0, -1,  0)),
+			glm.lookAt((0, 0, 0), ( 0,  1,  0), (0,  0,  1)),
+			glm.lookAt((0, 0, 0), ( 0, -1,  0), (0,  0, -1)),
+			glm.lookAt((0, 0, 0), ( 0,  0,  1), (0, -1,  0)),
+			glm.lookAt((0, 0, 0), ( 0,  0, -1), (0, -1,  0))
+		]
+
+		# create depth+stencil RBO
+		rbo = glGenRenderbuffers(1)
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo)
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, self.width, self.height)
+		glBindRenderbuffer(GL_RENDERBUFFER, 0)
+
+		# Create fbo
+		# ----------
+		self.fbo = glGenRenderbuffers(1)
+		with fbo.bind(self.fbo):
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, 
+				GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo)
+		
+
+	def draw(self):
+		if self.cull_face:
+			glEnable(GL_CULL_FACE)
+			glCullFace(self.cull_face)
+		else:
+			glDisable(GL_CULL_FACE)
+		if self.depth_test:
+			glEnable(GL_DEPTH_TEST)
+		else:
+			glDisable(GL_DEPTH_TEST)
+		# set viewport
+		glViewport(0,0,self.width, self.height)
+
+		# draw cube
+		glActiveTexture(GL_TEXTURE0)
+		glBindTexture(GL_TEXTURE_2D, self.environment_tex)
+		with program.use(self.prog):
+			program.set_uniform(self.prog, 'equirectangularMap', 0)
+			program.set_uniform(self.prog, "projectionMatrix", self.projection)
+
+			with fbo.bind(self.fbo):
+				for i in range(6):
+					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, self.cubemap, 0)	
+					program.set_uniform(self.prog, "viewMatrix", self.views[i])
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+					imdraw.cube(self.prog, flip=True)
+
+
+
+
+class IBLPass:
+	pass
+
+
 class Viewer:
 	def __init__(self):
 		self.width = 1024
@@ -554,6 +641,9 @@ class Viewer:
 			elif isinstance(light, Pointlight):
 				self.shadowpasses.append( CubeDepthPass(512, 512, depth_test=True, cull_face=GL_FRONT, near=1, far=15) )
 		
+		environment_image = assets.imread('hdri/Tropical_Beach_3k.hdr')
+		self.environmentpass = EnvironmentPass(environment_image)
+
 	def setup(self):	
 		glEnable(GL_PROGRAM_POINT_SIZE)
 
@@ -562,6 +652,8 @@ class Viewer:
 		self.geometry_pass.setup()
 		for shadowpass in self.shadowpasses:
 			shadowpass.setup()
+		self.environmentpass.setup()
+		self.environmentpass.draw()
 		self.lighting_pass.setup()
 
 	def resize(self):
@@ -569,22 +661,21 @@ class Viewer:
 			pass
 
 	def draw(self):
-		# animate lights
+		# Animate
+		# -------
 		import math, time
 		spotlight.position = glm.vec3(math.cos(time.time()*3)*4, 0.3, -4)
 		spotlight.direction = -spotlight.position
-
 		pointlight.position = glm.vec3(math.cos(time.time())*4, 4, math.sin(time.time())*4)
-
-		# update camera 
 		self.camera.transform = glm.inverse(self.window.view_matrix)
 
-		GLFWViewer.poll_events()
 		# Render passes
 		# -------------
+		## Geometry
 		self.geometry_pass.camera = self.camera #window.projection_matrix, window.view_matrix
 		self.geometry_pass.draw()
 
+		## Shadowmaps
 		for shadowpass, light in zip(self.shadowpasses, self.lighting_pass.lights):
 			if isinstance(light, (DirectionalLight, Spotlight)):
 				shadowpass.camera = light.camera
@@ -593,6 +684,7 @@ class Viewer:
 				shadowpass.position = light.position
 				shadowpass.draw()
 
+		## Lighting
 		self.lighting_pass.gPosition = self.geometry_pass.gPosition
 		self.lighting_pass.gNormal = self.geometry_pass.gNormal
 		self.lighting_pass.shadows = self.shadowpasses
@@ -620,9 +712,11 @@ class Viewer:
 			elif isinstance(shadowpass, CubeDepthPass):
 				imdraw.cubemap(shadowpass.cubemap, (i*100, 100, 90, 90), self.window.projection_matrix, self.window.view_matrix)
 
+		imdraw.cubemap(self.environmentpass.cubemap, (0, 200, 90, 90), self.window.projection_matrix, self.window.view_matrix)
 		# swap buffers
 		# ------------
 		self.window.swap_buffers()
+		GLFWViewer.poll_events()
 		
 	def start(self):
 		with self.window:
