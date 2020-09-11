@@ -28,8 +28,8 @@ def cubemap(tex, rect, projection, view):
 		uniform samplerCube cubeMap;
 		void main(){
 			vec3 normal = normalize(FragPos);
-			vec4 color = texture(cubeMap, normal);
-			FragColor = vec4(color.rgb, 1.0);
+			vec3 color = texture(cubeMap, normal).rgb;
+			FragColor = vec4(color, 1.0);
 		}
 		""")
 
@@ -39,7 +39,7 @@ def cubemap(tex, rect, projection, view):
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex)
 		program.set_uniform(prog, "projectionMatrix", projection)
 		program.set_uniform(prog, "viewMatrix", view)
-		
 		program.set_uniform(prog, "modelMatrix", glm.scale(glm.mat4(1), (1.1, 1.1, 1.1)))
+		program.set_uniform(prog, "cubeMap", 0)
 		cube(prog)
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0)

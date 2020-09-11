@@ -14,7 +14,7 @@ class OrthographicCamera:
 
 	@property
 	def view(self):
-		return self.transform
+		return glm.inverse(self.transform)
 	
 class PerspectiveCamera:
 	def __init__(self, transform, fovy, aspect, near, far):

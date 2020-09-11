@@ -1,5 +1,5 @@
 import glm
-from cameras import OrthographicCamera, PerspectiveCamera
+from .cameras import OrthographicCamera, PerspectiveCamera
 
 
 class DirectionalLight:
@@ -13,7 +13,7 @@ class DirectionalLight:
 
 	@property
 	def projection(self):
-		return glm.ortho(-self.radius,self.radius,-self.radius,self.radius, self.near, self.far)
+		return glm.ortho(-5,5,-5,5, self.near, self.far)
 			
 	@property	
 	def view(self):
@@ -22,7 +22,7 @@ class DirectionalLight:
 	@property
 	def camera(self):
 		tr = glm.lookAt(self.position, self.position+self.direction, (0,1,0))
-		return OrthographicCamera(tr, self.radius*2, self.radius*2, self.near, self.far)
+		return OrthographicCamera(glm.inverse(tr), self.radius*2, self.radius*2, self.near, self.far)
 
 
 class Spotlight:
@@ -35,6 +35,10 @@ class Spotlight:
 		self.far = far
 
 	@property
+	def cut_off(self):
+		return glm.cos(glm.radians(self.fov/2))
+
+	@property
 	def projection(self):
 		aspect = 1.0
 		return glm.perspective(glm.radians(self.fov), aspect,self.near,self.far)
@@ -44,13 +48,9 @@ class Spotlight:
 		return glm.lookAt(self.position, self.position+self.direction, (0,1,0))
 
 	@property
-	def cut_off(self):
-		return glm.cos(glm.radians(self.fov/2))
-
-	@property
 	def camera(self):
 		tr = glm.lookAt(self.position, self.position+self.direction, (0,1,0))
-		return PerspectiveCamera(tr, self.fov, 1.0, self.near, self.far)
+		return PerspectiveCamera(glm.inverse(tr), self.fov, 1.0, self.near, self.far)
 
 
 class Pointlight:

@@ -299,13 +299,13 @@ with window:
 	## setup skybox drawing
 	skybox_program = program.create(*glsl.read('skybox'))
 
-	# IBL pass
-	# --------
+	# IBL pass setup
+	# --------------
 	## Create irradiance cubemap for diffuse IBL
 	irradiance_program = program.create(*glsl.read('cubemap.vs', 'irradiance_convolution.fs'))
 
 	irradiance_map = glGenTextures(1)
-	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_map)
 	for i in range(6):
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, 32, 32, 0, GL_RGB, GL_FLOAT, None)
 
@@ -522,6 +522,7 @@ with window:
 		# Geometry Pass
 		# -------------
 		glCullFace(GL_BACK)
+		glEnable(GL_DEPTH_TEST)
 		with fbo.bind(gBuffer), program.use(geometry_program) as prog:
 			glViewport(0,0, window.width, window.height);
 			glClearColor(0,0,0,0)
@@ -548,10 +549,11 @@ with window:
 
 		# Shadowmap Pass draw
 		# -------------------
-		glCullFace(GL_FRONT)
 		import math, time
 
 		## dirlight
+		glCullFace(GL_FRONT)
+		glEnable(GL_DEPTH_TEST)
 		with fbo.bind(dirlight_fbo), program.use(depth_program) as prog:
 			glViewport(0,0,*dirlight_shadowsize)
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -576,6 +578,8 @@ with window:
 			imdraw.plane(prog)
 
 		## spotlight
+		glCullFace(GL_FRONT)
+		glEnable(GL_DEPTH_TEST)
 		with fbo.bind(spotlight_fbo), program.use(depth_program) as prog:
 			glViewport(0,0,*spotlight_shadowsize)
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -601,6 +605,8 @@ with window:
 
 		# shadow depth cubemap pass
 		# -------------------------
+		glCullFace(GL_FRONT)
+		glEnable(GL_DEPTH_TEST)
 		with fbo.bind(pointlight_shadowfbo), program.use(point_shadow_program) as prog:
 			glViewport(0, 0, *pointlight_shadowsize);
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -628,6 +634,7 @@ with window:
 		# Lighting Pass draw
 		# ------------------
 		glCullFace(GL_BACK)
+		glEnable(GL_DEPTH_TEST)
 		with fbo.bind(pbr_fbo), program.use(pbr_program):
 			glViewport(0,0,window.width, window.height)
 			# glClearColor(0,0,0,0)
@@ -709,6 +716,9 @@ with window:
 		  0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST
 		);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glCullFace(GL_BACK)
+		glEnable(GL_DEPTH_TEST)
 		with fbo.bind(pbr_fbo):
 			# Environment Pass
 			# ----------------
@@ -733,6 +743,8 @@ with window:
 		# Bloom pass
 		# ----------
 		# cutoff highlights
+		glCullFace(GL_BACK)
+		glDisable(GL_DEPTH_TEST)
 		with fbo.bind(highlights_fbo), program.use(highlights_program) as prog:
 			glViewport(0,0,window.width, window.height)
 			glClearColor(0,0,0,0)
@@ -746,6 +758,8 @@ with window:
 			imdraw.quad(prog)
 
 		# blur highlights
+		glCullFace(GL_BACK)
+		glDisable(GL_DEPTH_TEST)
 		blur_iterations = 4
 		horizontal=True
 		first_iteration=True
@@ -771,6 +785,8 @@ with window:
 
 		# Tonemapping pass
 		# ----------------
+		glCullFace(GL_BACK)
+		glDisable(GL_DEPTH_TEST)
 		with fbo.bind(tonemapping_fbo), program.use(tonemapping_program) as prog:
 			glViewport(0,0,window.width, window.height)
 			glClearColor(0,0,0,0)
@@ -794,6 +810,8 @@ with window:
 		glViewport(0,0,window.width,window.height);
 		glClearColor(*window._clear_color)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glCullFace(GL_BACK)
+		glDisable(GL_DEPTH_TEST)
 
 		# display composite
 		imdraw.texture(tonemapping_color, (0, 0, window.width, window.height))
@@ -811,7 +829,8 @@ with window:
 		imdraw.texture(dirlight_shadowmap,  (  0, 200, 90, 90), shuffle=(0,0,0,-1))
 		imdraw.texture(spotlight_shadowmap, (100, 200, 90, 90), shuffle=(0,0,0,-1))
 
-		imdraw.cubemap(env_cubemap, (0, 300, 90, 90), window.projection_matrix, window.view_matrix)
+		imdraw.texture(environment_tex, (0, 200, 90, 90), shuffle=(0,1,2,-1))
+		imdraw.cubemap(env_cubemap, (100, 300, 90, 90), window.projection_matrix, window.view_matrix)
 		
 
 		window.swap_buffers()
