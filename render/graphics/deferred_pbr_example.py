@@ -535,11 +535,12 @@ class EnvironmentPass:
 		w, h, c = self.image.shape
 		self.environment_tex = glGenTextures(1)
 		glBindTexture(GL_TEXTURE_2D, self.environment_tex)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, self.width, self.height, 0, GL_RGB, GL_FLOAT, self.image)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, w, h, 0, GL_RGB, GL_FLOAT, self.image)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glBindTexture(GL_TEXTURE_2D, 0)
 
 		# capture environment to cubemap
 		self.cubemap = glGenTextures(1)
@@ -577,6 +578,9 @@ class EnvironmentPass:
 		with fbo.bind(self.fbo):
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, 
 				GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo)
+
+			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+
 		
 
 	def draw(self):
@@ -589,6 +593,7 @@ class EnvironmentPass:
 			glEnable(GL_DEPTH_TEST)
 		else:
 			glDisable(GL_DEPTH_TEST)
+
 		# set viewport
 		glViewport(0,0,self.width, self.height)
 
@@ -600,11 +605,13 @@ class EnvironmentPass:
 			program.set_uniform(self.prog, "projectionMatrix", self.projection)
 
 			with fbo.bind(self.fbo):
+				
 				for i in range(6):
 					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, self.cubemap, 0)	
 					program.set_uniform(self.prog, "viewMatrix", self.views[i])
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-					imdraw.cube(self.prog, flip=True)
+					imdraw.cube(self.prog, flip=False)
+		glBindTexture(GL_TEXTURE_2D, 0)
 
 
 
@@ -642,7 +649,8 @@ class Viewer:
 				self.shadowpasses.append( CubeDepthPass(512, 512, depth_test=True, cull_face=GL_FRONT, near=1, far=15) )
 		
 		environment_image = assets.imread('hdri/Tropical_Beach_3k.hdr')
-		self.environmentpass = EnvironmentPass(environment_image)
+		print(environment_image)
+		self.environment_pass = EnvironmentPass(environment_image)
 
 	def setup(self):	
 		glEnable(GL_PROGRAM_POINT_SIZE)
@@ -652,8 +660,8 @@ class Viewer:
 		self.geometry_pass.setup()
 		for shadowpass in self.shadowpasses:
 			shadowpass.setup()
-		self.environmentpass.setup()
-		self.environmentpass.draw()
+		self.environment_pass.setup()
+		self.environment_pass.draw()
 		self.lighting_pass.setup()
 
 	def resize(self):
@@ -712,7 +720,7 @@ class Viewer:
 			elif isinstance(shadowpass, CubeDepthPass):
 				imdraw.cubemap(shadowpass.cubemap, (i*100, 100, 90, 90), self.window.projection_matrix, self.window.view_matrix)
 
-		imdraw.cubemap(self.environmentpass.cubemap, (0, 200, 90, 90), self.window.projection_matrix, self.window.view_matrix)
+		imdraw.cubemap(self.environment_pass.cubemap, (0, 200, 90, 90), self.window.projection_matrix, self.window.view_matrix)
 		# swap buffers
 		# ------------
 		self.window.swap_buffers()

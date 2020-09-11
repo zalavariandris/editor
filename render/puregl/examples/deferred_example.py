@@ -196,6 +196,7 @@ with window:
 		
 	# Point Shadow Pass setup
 	# -----------------
+	pointlight_shadowfbo = glGenFramebuffers(1)
 	pointlight_shadowsize = 1024, 1024
 	# create depth cubemap texture
 	pointlight_shadowcube = glGenTextures(1)
@@ -213,8 +214,7 @@ with window:
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
 	
 
-	# create fbo
-	pointlight_shadowfbo = glGenFramebuffers(1)
+	# attach cubemap to fbo depth attachment
 	with fbo.bind(pointlight_shadowfbo):
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, pointlight_shadowcube, 0)
 		glDrawBuffer(GL_NONE)
@@ -810,6 +810,9 @@ with window:
 
 		imdraw.texture(dirlight_shadowmap,  (  0, 200, 90, 90), shuffle=(0,0,0,-1))
 		imdraw.texture(spotlight_shadowmap, (100, 200, 90, 90), shuffle=(0,0,0,-1))
+
+		imdraw.cubemap(env_cubemap, (0, 300, 90, 90), window.projection_matrix, window.view_matrix)
+		
 
 		window.swap_buffers()
 		GLFWViewer.poll_events()
