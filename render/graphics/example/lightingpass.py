@@ -5,6 +5,7 @@ from editor.render.puregl import imdraw, program, texture, fbo
 from renderpass import RenderPass
 from editor.render.graphics.lights import DirectionalLight, Spotlight, Pointlight
 
+
 class LightingPass(RenderPass):
 	def __init__(self, width, height, lights):
 		super().__init__(width, height, depth_test=False, cull_face=GL_BACK)
@@ -16,6 +17,8 @@ class LightingPass(RenderPass):
 		self.gPosition = None
 		self.gNormal = None
 		self.gAlbedoSpecular = None
+		self.gRoughness = None
+		self.gMetallic = None
 		self.irradiance = None
 		self.prefilter = None
 		self.brdf = None
@@ -97,27 +100,27 @@ class LightingPass(RenderPass):
 
 			glActiveTexture(GL_TEXTURE0+3)
 			glBindTexture(GL_TEXTURE_2D, self.gRoughness)
-			program.set_uniform(self.prog, "gRoughness", 2)
+			program.set_uniform(self.prog, "gRoughness", 3)
 
 			glActiveTexture(GL_TEXTURE0+4)
 			glBindTexture(GL_TEXTURE_2D, self.gMetallic)
-			program.set_uniform(self.prog, "gMetallic", 2)
+			program.set_uniform(self.prog, "gMetallic", 4)
 
 			glActiveTexture(GL_TEXTURE0+5)
 			glBindTexture(GL_TEXTURE_2D, self.gEmissive)
-			program.set_uniform(self.prog, "gEmissive", 2)
+			program.set_uniform(self.prog, "gEmissive", 5)
 
 			glActiveTexture(GL_TEXTURE0+6)
 			glBindTexture(GL_TEXTURE_CUBE_MAP, self.irradiance)
-			program.set_uniform(self.prog, "irradianceMap", 3)
+			program.set_uniform(self.prog, "irradianceMap", 6)
 
 			glActiveTexture(GL_TEXTURE0+7)
 			glBindTexture(GL_TEXTURE_CUBE_MAP, self.prefilter)
-			program.set_uniform(self.prog, "prefilterMap", 4)
+			program.set_uniform(self.prog, "prefilterMap", 7)
 
 			glActiveTexture(GL_TEXTURE0+8)
 			glBindTexture(GL_TEXTURE_2D, self.brdf)
-			program.set_uniform(self.prog, "brdfLUT", 5)
+			program.set_uniform(self.prog, "brdfLUT", 8)
 
 
 			shadowMapIdx, shadowCubeIdx = 0, 0

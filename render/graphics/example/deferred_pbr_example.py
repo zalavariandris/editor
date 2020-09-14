@@ -41,6 +41,103 @@ pointlight = Pointlight(position=glm.vec3(5, 2, 4),
                         near=1.0,
                         far=8.0)
 
+from editor.render import puregl
+class Geometry:
+    def __init__(self, positions, normals, uvs, indices):
+        self._positions = positions
+        self._normals = normals
+        self._uvs = uvs
+        self._indices = indices
+
+    @property
+    def positions(self):
+        return self._positions
+
+    @property
+    def uvs(self):
+        return self._uvs
+
+    @property
+    def normals(self):
+        return self._normals
+
+    @property
+    def indices(self):
+        return self._indices
+
+    @classmethod
+    def cube(cls):
+        positions, normals, uvs, indices = puregl.geo.cube()
+        return cls(positions, normals, uvs, indices)
+
+    @classmethod
+    def sphere(cls):
+        positions, normals, uvs, indices = puregl.geo.sphere()
+        return cls(positions, normals, uvs, indices)
+
+    @classmethod
+    def plane(cls):
+        positions, normals, uvs, indices = puregl.geo.plane()
+        return cls(positions, normals, uvs, indices)
+
+
+class Mesh:
+    def __init__(self, transform, material, geometry):
+        self._transform = transform
+        self._material = material
+        self._geometry = geometry
+
+        self.buffers = ()
+
+    @property
+    def transform(self):
+        return self._transform
+
+    @property
+    def material(self):
+        return self._material
+
+    @property
+    def geometry(self):
+        return self._geometry
+
+
+class Material:
+    def __init__(self, albedo, roughness, metallic, ao=1.0):
+        self._albedo = albedo
+        self._roughness = roughness
+        self._metallic = metallic
+        self._ao = ao
+
+    @property
+    def albedo(self):
+        return self._albedo
+
+    @property
+    def roughness(self):
+        return self._roughness
+
+    @property
+    def metallic(self):
+        return self._metallic
+
+    @property
+    def ao(self):
+        return self._ao
+
+
+class Scene:
+    def __init__(self, children=[]):
+        self._children = children
+
+    def add_child(self, child: Mesh) -> None:
+        assert isinstance(child, Mesh)
+        self._children.append(child)
+
+    @property
+    def children(self) -> [Mesh]:
+        return self._children
+
 
 class Viewer:
     def __init__(self, scene):
@@ -63,16 +160,119 @@ class Viewer:
         self.brdf_pass = BRDFPass(512, 512)
         self.tonemapping_pass = TonemappingPass(self.width, self.height)
 
-        self.geometry_pass = GeometryPass(self.width, self.height, self.draw_scene)
+
+        self.geometry_pass = GeometryPass(self.width, self.height, self.draw_scene_for_geometry)
+        dirlight.shadowpass = DepthPass(1024, 1024, GL_FRONT, self.draw_scene_for_shadows)
+        spotlight.shadowpass = DepthPass(1024, 1024, GL_FRONT, self.draw_scene_for_shadows)
+        pointlight.shadowpass = CubeDepthPass(512, 512, GL_FRONT, near=1, far=15, draw_scene=self.draw_scene_for_shadows)
+
         self.lighting_pass = LightingPass(self.width, self.height, lights=[dirlight, spotlight, pointlight])
 
-        dirlight.shadowpass = DepthPass(1024, 1024, GL_FRONT, self.draw_scene)
-        spotlight.shadowpass = DepthPass(1024, 1024, GL_FRONT, self.draw_scene)
-        pointlight.shadowpass = CubeDepthPass(512, 512, GL_FRONT, near=1, far=15, draw_scene=self.draw_scene)
+    def get_geometry_buffer(self, mesh):
+        try:
+            geometry_buffers = self._geometry_buffers
+        except AttributeError:
+            geometry_buffers = dict()
+            self._geometry_buffers = geometry_buffers
+
+        try:
+            geo_buffer = geometry_buffers[mesh]
+        except KeyError:
+            logging.debug("create goemetry buffer for {}".format(mesh))
+            positions = mesh.geometry.positions
+            normals = mesh.geometry.normals
+            uvs = mesh.geometry.uvs
+            indices = mesh.geometry.indices
+
+            # create vertex buffers
+            pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3)
+
+            glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
+            glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
+            glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
+            glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
+            glBindBuffer(GL_ARRAY_BUFFER, normal_vbo)
+            glBufferData(GL_ARRAY_BUFFER, normals.nbytes, normals, GL_STATIC_DRAW)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+            # create vertex array
+            vao = glGenVertexArrays(1)
+
+            # create element buffer
+            ebo = glGenBuffers(1)
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+
+            # link buffer to geometry
+            geo_buffer = (vao, ebo, pos_vbo, uv_vbo, normal_vbo, indices.size)
+            geometry_buffers[mesh] = geo_buffer
+
+        return geo_buffer
+
+
+    def draw_scene_for_geometry(self, prog):
+        import ctypes
+        for child in self.scene.children:
+            # set uniforms
+            program.set_uniform(prog, 'model', child.transform)
+            program.set_uniform(prog, 'albedo', child.material.albedo)
+            program.set_uniform(prog, 'roughness', child.material.roughness)
+            program.set_uniform(prog, 'metallic', child.material.metallic)
+
+            # set attributes
+            vao, ebo, pos_vbo, uv_vbo, normal_vbo, count = self.get_geometry_buffer(child)
+            glBindVertexArray(vao)
+            position_location = glGetAttribLocation(prog, 'position')
+            glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
+            glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(position_location)
+
+            uv_location = glGetAttribLocation(prog, 'uv')
+            if uv_location is not -1:
+                glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
+                glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, ctypes.c_void_p(0))
+                glEnableVertexAttribArray(uv_location)
+
+            normal_location = glGetAttribLocation(prog, 'normal')
+            if normal_location is not -1:
+                glBindBuffer(GL_ARRAY_BUFFER, normal_vbo)
+                glVertexAttribPointer(normal_location, 3, GL_FLOAT, False, 0, ctypes.c_void_p(0))
+                glEnableVertexAttribArray(normal_location)
+
+            # draw geometry
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+            glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+
+            # cleanup bindings
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            glBindVertexArray(0)
+
+    def draw_scene_for_shadows(self, prog):
+        for child in self.scene.children:
+            # set uniforms
+            program.set_uniform(prog, 'model', child.transform)
+
+            # set attributes
+            vao, ebo, pos_vbo, uv_vbo, normal_vbo, count = self.get_geometry_buffer(child)
+            glBindVertexArray(vao)
+            position_location = glGetAttribLocation(prog, 'position')
+            glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
+            glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(position_location)
+
+            # draw geometry
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+            glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+
+            # cleanup bindings
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            glBindVertexArray(0)
 
     def setup(self):
-        # glEnable(GL_PROGRAM_POINT_SIZE)
-
+        logging.debug("setup viewer")
         # Render passes
         # -------------
 
@@ -143,13 +343,6 @@ class Viewer:
     def resize(self):
         with self.window:
             pass
-
-    def draw_scene(self, prog):
-        for child in self.scene.children:
-            program.set_uniform(prog, 'albedo', child['material']['albedo'])
-            program.set_uniform(prog, 'model', child['transform'])
-            program.set_uniform(prog, 'model', child['transform'])
-            child['geometry'](prog)
 
     def render(self):
         # Animate
@@ -270,63 +463,31 @@ class Viewer:
                 self.render()
 
 
-class Scene:
-    def draw(self, prog):
-        # draw cube
-        model_matrix = glm.translate(glm.mat4(1), (-1, 0.5, 0))
-        program.set_uniform(prog, 'model', model_matrix)
-        program.set_uniform(prog, 'albedo', glm.vec3(0.9, 0.1, 0))
-        program.set_uniform(prog, 'roughness', 0.1)
-        program.set_uniform(prog, 'metalness', 0.0)
-
-        imdraw.cube(prog)
-
-        # draw sphere
-        model_matrix = glm.translate(glm.mat4(1), (1, 0.5, 0))
-        program.set_uniform(prog, 'model', model_matrix)
-        imdraw.sphere(prog)
-
-        # draw ground-plane
-        model_matrix = glm.translate(glm.mat4(1), (0, 0.0, 0))
-        program.set_uniform(prog, 'model', model_matrix)
-        imdraw.plane(prog)
-
-    @property
-    def children(self):
-        return [
-            {
-                'transform': glm.translate(glm.mat4(1), (-1, 0.5, 0)),
-                'material': {
-                    'albedo': glm.vec3(0.9, 0.3, 0),
-                    'roughness': 0.3,
-                    'metallic': 0.0,
-                    'ao': 1.0
-                },
-                'geometry': imdraw.cube
-            },
-            {
-                'transform': glm.translate(glm.mat4(1), (1, 0.5, 0)),
-                'material': {
-                    'albedo': glm.vec3(0.0, 0.7, 0.9),
-                    'roughness': 0.3,
-                    'metallic': 1.0,
-                    'ao': 1.0
-                },
-                'geometry': imdraw.sphere
-            },
-            {
-                'transform': glm.translate(glm.mat4(1), (0, 0.0, 0)),
-                'material': {
-                    'albedo': glm.vec3(0.5),
-                    'roughness': 0.3,
-                    'metallic': 0.0,
-                    'ao': 1.0
-                },
-                'geometry': imdraw.plane
-            }
-        ]
-
-
 if __name__ == "__main__":
-    viewer = Viewer(scene=Scene())
+    scene = Scene()
+    cube = Mesh(transform=glm.translate(glm.mat4(1), (-1, 0.5, 0)),
+                material=Material(albedo=glm.vec3(0.9, 0.04, 0.04),
+                                  roughness=0.6,
+                                  metallic=0.0,
+                                  ao=1.0),
+                geometry=Geometry.cube())
+
+    sphere = Mesh(transform=glm.translate(glm.mat4(1), (1, 0.5, 0)),
+                  material=Material(albedo=glm.vec3(0.04, 0.7, 0.9),
+                                    roughness=0.2,
+                                    metallic=1.0,
+                                    ao=1.0),
+                  geometry=Geometry.sphere())
+
+    plane = Mesh(transform=glm.translate(glm.mat4(1), (0, 0.0, 0)),
+                 material=Material(albedo=glm.vec3(0.5),
+                                   roughness=0.3,
+                                   metallic=0.0,
+                                   ao=1.0),
+                 geometry=Geometry.plane())
+
+    scene.add_child(cube)
+    scene.add_child(sphere)
+    scene.add_child(plane)
+    viewer = Viewer(scene=scene)
     viewer.start()

@@ -4,43 +4,12 @@ from .helpers import buffer_offset
 
 import logging
 import functools
-
-
-@functools.lru_cache(maxsize=128)
-def plane_geo():
-    logging.debug("create plane geo")
-    positions = np.array(
-        [(-1.0, 0.0, +1.0),
-         (+1.0, 0.0, +1.0),
-         (-1.0, 0.0, -1.0),
-         (+1.0, 0.0, -1.0)],
-        dtype=np.float32
-    )
-    positions *= (3, 1, 3)
-    # positions = np.flip(positions)
-
-    uvs = np.array(
-        [(0.0, 1.0),
-         (1.0, 1.0),
-         (0.0, 0.0),
-         (1.0, 0.0)],
-        dtype=np.float32
-    )
-
-    normals = np.array(
-        [(0.0, 1.0, 0.0),
-         (0.0, 1.0, 0.0),
-         (0.0, 1.0, 0.0),
-         (0.0, 1.0, 0.0)],
-        dtype=np.float32
-    )
-
-    return positions, uvs, normals
+from .. import geo
 
 
 @functools.lru_cache(maxsize=128)
 def create_buffer(program):
-    positions, uvs, normals = plane_geo()
+    positions, uvs, normals, indices = geo.plane()
     logging.debug("create plane buffer")
     # setup VAO
     vao = glGenVertexArrays(1)
@@ -55,7 +24,7 @@ def create_buffer(program):
     glEnableVertexAttribArray(position_location)
 
     uv_location = glGetAttribLocation(program, 'uv')
-    if uv_location>=0:
+    if uv_location >= 0:
         glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
         glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
         glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, buffer_offset(0))
@@ -75,7 +44,6 @@ def create_buffer(program):
 
 
 def plane(program):
-    positions, uvs, normals = plane_geo()
     vao = create_buffer(program)
 
     glBindVertexArray(vao)

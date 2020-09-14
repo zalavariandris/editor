@@ -180,7 +180,7 @@ with window:
 			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, -1)))
 			imdraw.cube(prog)
 			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, 1)))
-			imdraw.cube(prog)
+			imdraw.sphere(prog)
 			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (-1,0.5, 1)))
 			imdraw.cube(prog)
 
@@ -208,7 +208,7 @@ with window:
 			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, -1)))
 			imdraw.cube(prog)
 			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (1,0.5, 1)))
-			imdraw.cube(prog)
+			imdraw.sphere(prog)
 			program.set_uniform(prog, 'model', glm.translate(glm.mat4(1), (-1,0.5, 1)))
 			imdraw.cube(prog)
 
