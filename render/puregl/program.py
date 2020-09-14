@@ -5,17 +5,18 @@ from editor.utils import memoize
 import logging
 import functools
 
+
 @functools.lru_cache(maxsize=None)
 def create(vs, fs, gs=None):
 	logging.debug('create program')
-	# create certex shader
+	# create vertex shader
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER)
 	glShaderSource(vertex_shader, vs)
 	glCompileShader(vertex_shader)
 	if glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH): # compilation error check
 		raise Exception(glGetShaderInfoLog(vertex_shader))
 
-	#create fragment shader
+	# create fragment shader
 	fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
 	glShaderSource(fragment_shader, fs)
 	glCompileShader(fragment_shader)
@@ -42,6 +43,7 @@ def create(vs, fs, gs=None):
 
 	return program
 
+
 def set_uniform(program, name, value):
 	import glm
 	import numpy as np
@@ -66,21 +68,21 @@ def set_uniform(program, name, value):
 		glUniform3f(location, value.x, value.y, value.z)
 
 	elif isinstance(value, tuple):
-		if len(value)==3:
+		if len(value) == 3:
 			glUniform3f(location, value[0], value[1], value[2])
 
 	elif isinstance(value, bool):
-			glUniform1i(location, value)
+		glUniform1i(location, value)
 	elif isinstance(value, int):
-			glUniform1i(location, value)
+		glUniform1i(location, value)
 	elif isinstance(value, float):
-			glUniform1f(location, value)
+		glUniform1f(location, value)
 	else:
 		raise NotImplementedError(type(value))
 
 
 @contextmanager
 def use(prog):
-	glUseProgram(prog) #FIXME: push pip current program
+	glUseProgram(prog)  # FIXME: push pip current program
 	yield prog
 	glUseProgram(0)

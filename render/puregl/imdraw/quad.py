@@ -5,28 +5,28 @@ from .helpers import buffer_offset
 import logging
 import functools
 
+
 @functools.lru_cache(maxsize=128)
 def quad_geo():
     logging.debug("create quad geo")
     positions = np.array(
-        # positions        # texture Coords
-        [(-1.0, 1.0, 0.0),
-        (-1.0,  -1.0, 0.0),
-        ( 1.0,  1.0, 0.0),
-        ( 1.0,  -1.0, 0.0)],
+        [(-1.0, +1.0, 0.0),
+         (-1.0, -1.0, 0.0),
+         (+1.0, +1.0, 0.0),
+         (+1.0, -1.0, 0.0)],
         dtype=np.float32
     )
 
     uvs = np.array(
-        # positions        # texture Coords
         [(0.0, 1.0),
-        (0.0, 0.0),
-        (1.0, 1.0),
-        (1.0, 0.0)],
+         (0.0, 0.0),
+         (1.0, 1.0),
+         (1.0, 0.0)],
         dtype=np.float32
     )
 
     return positions, uvs
+
 
 @functools.lru_cache(maxsize=128)
 def create_buffer(program):
@@ -36,11 +36,11 @@ def create_buffer(program):
     # setup VAO
     vao = glGenVertexArrays(1)
 
-    pos_vbo, uv_vbo = glGenBuffers(2) # FIXME: use single vbo for positions and vertices
+    pos_vbo, uv_vbo = glGenBuffers(2)  # FIXME: use single vbo for positions and vertices
     glBindVertexArray(vao)
 
     position_location = glGetAttribLocation(program, 'position')
-    if position_location>=0:
+    if position_location >= 0:
         glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
         glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
         glVertexAttribPointer(position_location, 3, GL_FLOAT, False, 0, buffer_offset(0))
@@ -59,10 +59,10 @@ def create_buffer(program):
     else:
         logging.warning("no 'uv' attribute")
 
-    
     glBindVertexArray(0)
 
     return vao
+
 
 def quad(program):
     vao = create_buffer(program)

@@ -5,39 +5,38 @@ from .helpers import buffer_offset
 import logging
 import functools
 
+
 @functools.lru_cache(maxsize=128)
 def plane_geo():
     logging.debug("create plane geo")
     positions = np.array(
-        # positions        # texture Coords
-        [(-1.0, 0.0, 1.0),
-        ( 1.0,  0.0, 1.0),
-        (-1.0,  0.0, -1.0),
-        ( 1.0,  0.0, -1.0)],
+        [(-1.0, 0.0, +1.0),
+         (+1.0, 0.0, +1.0),
+         (-1.0, 0.0, -1.0),
+         (+1.0, 0.0, -1.0)],
         dtype=np.float32
     )
-    positions*=(3, 1, 3)
+    positions *= (3, 1, 3)
     # positions = np.flip(positions)
 
     uvs = np.array(
-        # positions        # texture Coords
         [(0.0, 1.0),
-        (1.0, 1.0),
-        (0.0, 0.0),
-        (1.0, 0.0)],
+         (1.0, 1.0),
+         (0.0, 0.0),
+         (1.0, 0.0)],
         dtype=np.float32
     )
 
     normals = np.array(
-        # positions        # texture Coords
         [(0.0, 1.0, 0.0),
-        (0.0, 1.0, 0.0),
-        (0.0, 1.0, 0.0),
-        (0.0, 1.0, 0.0)],
+         (0.0, 1.0, 0.0),
+         (0.0, 1.0, 0.0),
+         (0.0, 1.0, 0.0)],
         dtype=np.float32
     )
 
     return positions, uvs, normals
+
 
 @functools.lru_cache(maxsize=128)
 def create_buffer(program):
@@ -46,7 +45,7 @@ def create_buffer(program):
     # setup VAO
     vao = glGenVertexArrays(1)
 
-    pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3) # FIXME: use single vbo for positions and vertices
+    pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3)  # FIXME: use single vbo for positions and vertices
     glBindVertexArray(vao)
 
     position_location = glGetAttribLocation(program, 'position')
@@ -74,10 +73,10 @@ def create_buffer(program):
 
     return vao
 
+
 def plane(program):
     positions, uvs, normals = plane_geo()
     vao = create_buffer(program)
-    
 
     glBindVertexArray(vao)
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)

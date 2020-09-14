@@ -29,14 +29,14 @@ def sphere_geo():
     lengthInv = 1/radius
 
     for i in range(0, stackCount+1):
-        stackAngle = math.pi / 2 - i * stackStep;        # starting from pi/2 to -pi/2
-        xy = radius * math.cos(stackAngle);             # r * cos(u)
-        y = radius * math.sin(stackAngle);              # r * sin(u)
+        stackAngle = math.pi / 2 - i * stackStep        # starting from pi/2 to -pi/2
+        xy = radius * math.cos(stackAngle)              # r * cos(u)
+        y = radius * math.sin(stackAngle)               # r * sin(u)
 
         # add (sectorCount+1) vertices per stack
         # the first and last vertices have same position and normal, but different tex coords
         for j in range(0, sectorCount+1):
-            sectorAngle = j * sectorStep;           # starting from 0 to 2pi
+            sectorAngle = j * sectorStep           # starting from 0 to 2pi
 
             # vertex position (x, y, z)
             x = xy * math.cos(sectorAngle)             # r * cos(u) * cos(v)
@@ -78,18 +78,19 @@ def sphere_geo():
                 indices.append(k2)
                 indices.append(k1 + 1)
                 
-            k1+=1
-            k2+=1
+            k1 += 1
+            k2 += 1
 
     positions = np.array(vertices, dtype=np.float32).reshape( (-1, 3))
     
     magnitudes = np.sqrt((positions ** 2).sum(-1))[..., np.newaxis]
     normals = positions/magnitudes
-    positions-=origin
+    positions -= origin
     uvs = np.array(texCoords, dtype=np.float32).reshape((-1,2))
     indices = np.array(indices, dtype=np.uint)
     count = indices.size
     return positions, normals, uvs, indices, count
+
 
 @functools.lru_cache(maxsize=128)
 def create_buffer(program):
@@ -99,7 +100,7 @@ def create_buffer(program):
     # create VAO
     vao = glGenVertexArrays(1)
     
-    pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3) # FIXME: use single vbo for positions and vertices
+    pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3)  # FIXME: use single vbo for positions and vertices
     glBindVertexArray(vao)
     glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
     glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
@@ -108,7 +109,7 @@ def create_buffer(program):
     glEnableVertexAttribArray(position_location)
 
     uv_location = glGetAttribLocation(program, 'uv')
-    if uv_location>=0:
+    if uv_location >= 0:
         glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
         glBufferData(GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL_STATIC_DRAW)
         glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, buffer_offset(0))

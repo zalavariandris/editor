@@ -6,18 +6,19 @@ from .helpers import buffer_offset
 import functools
 import math
 
-def calculatePositionOnCurve( u, p, q, radius):
-    cu = math.cos( u )
-    su = math.sin( u )
+def calculatePositionOnCurve(u, p, q, radius):
+    cu = math.cos(u)
+    su = math.sin(u)
     quOverP = q / p * u
-    cs = math.cos( quOverP )
+    cs = math.cos(quOverP)
 
     position = glm.vec3(0)
-    position.x = radius * ( 2 + cs ) * 0.5 * cu;
-    position.y = radius * ( 2 + cs ) * su * 0.5;
-    position.z = radius * math.sin( quOverP ) * 0.5
+    position.x = radius * (2 + cs) * 0.5 * cu
+    position.y = radius * (2 + cs) * su * 0.5
+    position.z = radius * math.sin(quOverP) * 0.5
 
     return position
+
 
 @functools.lru_cache(maxsize=128)
 def torusknot_geo(radius, tube, tubularSegments, radialSegments, p, q):
@@ -35,20 +36,20 @@ def torusknot_geo(radius, tube, tubularSegments, radialSegments, p, q):
         u = i / tubularSegments * p * math.pi * 2;
 
         # now we calculate two points. P1 is our current position on the curve, P2 is a little farther ahead.
-        # these points are used to create a special "coordinate space", which is necessary to calculate the correct vertex positions
+        # these points are used to create a special "coordinate space",
+        # which is necessary to calculate the correct vertex positions
 
-        P1 = calculatePositionOnCurve( u, p, q, radius )
-        P2 = calculatePositionOnCurve( u + 0.01, p, q, radius )
+        P1 = calculatePositionOnCurve(u, p, q, radius)
+        P2 = calculatePositionOnCurve(u + 0.01, p, q, radius)
 
         # calculate orthonormal basis
 
         T = P2 - P1
         N = P2 + P1
-        B = glm.cross( T, N )
-        N = glm.cross( B, T )
+        B = glm.cross(T, N)
+        N = glm.cross(B, T)
 
         # normalize B, N. T can be ignored, we don't use it
-
         B = glm.normalize(B)
         N = glm.normalize(N)
 
@@ -75,12 +76,12 @@ def torusknot_geo(radius, tube, tubularSegments, radialSegments, p, q):
 
             normal = glm.normalize(vertex - P1)
 
-            normals.append( normal )
+            normals.append(normal)
 
             # uv
 
-            uvs.append( i / tubularSegments )
-            uvs.append( j / radialSegments )
+            uvs.append(i / tubularSegments)
+            uvs.append(j / radialSegments)
 
 
     # generate indices
@@ -88,21 +89,22 @@ def torusknot_geo(radius, tube, tubularSegments, radialSegments, p, q):
         for i in range(1, radialSegments):
 
             # indices
-            a = ( radialSegments + 1 ) * ( j - 1 ) + ( i - 1 )
-            b = ( radialSegments + 1 ) * j + ( i - 1 )
-            c = ( radialSegments + 1 ) * j + i
-            d = ( radialSegments + 1 ) * ( j - 1 ) + i
+            a = (radialSegments + 1) * (j - 1) + (i - 1)
+            b = (radialSegments + 1) * j + (i - 1)
+            c = (radialSegments + 1) * j + i
+            d = (radialSegments + 1) * (j - 1) + i
 
             # faces
-            indices.append( (a, b, d) )
-            indices.append( (b, c, d) )
+            indices.append((a, b, d))
+            indices.append((b, c, d))
 
     positions = np.array([(p.x, p.y, p.z) for p in vertices]).astype(np.float32)
     normals = np.array([(p.x, p.y, p.z) for p in normals]).astype(np.float32)
-    uvs = np.array(uvs).astype(np.float32).reshape(-1,2)
-    indices = np.array(indices).astype(np.uint).reshape(-1,3)
+    uvs = np.array(uvs).astype(np.float32).reshape(-1, 2)
+    indices = np.array(indices).astype(np.uint).reshape(-1, 3)
 
     return positions, normals, uvs, indices
+
 
 @functools.lru_cache(maxsize=128)
 def create_buffer(locations):
@@ -119,7 +121,6 @@ def create_buffer(locations):
     glBindVertexArray(vao)
     glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
     glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
-
 
     position_location, uv_location, normal_location = locations
 
@@ -153,6 +154,7 @@ def create_buffer(locations):
 
     return vao, ebo, count
 
+
 def torusknot(prog):
     locations = tuple(glGetAttribLocation(prog, name) for name in ("position", 'uv', 'normal'))
     vao, ebo, count = create_buffer(locations)
@@ -163,6 +165,3 @@ def torusknot(prog):
     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
     glBindVertexArray(0)
-
-
-

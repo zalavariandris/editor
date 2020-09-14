@@ -2,9 +2,11 @@ from OpenGL.GL import *
 import numpy as np
 from functools import singledispatch
 
+
 @singledispatch
 def create(*args, **kwargs):
 	raise NotImplementedError
+
 
 @create.register
 def create_with_data(data: np.ndarray, slot, format, min_filter=GL_NEAREST, mag_filter=GL_NEAREST, wrap_s=None, wrap_t=None, border_color=None):
@@ -28,13 +30,12 @@ def create_with_data(data: np.ndarray, slot, format, min_filter=GL_NEAREST, mag_
 		GL_BGR: GL_RGB,
 		GL_DEPTH_COMPONENT: GL_DEPTH_COMPONENT
 	}[format]
-	#FIXME: read internal and formats https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+	# FIXME: read internal and formats https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
 	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, data.shape[1], data.shape[0], 0, format, GL_FLOAT, data)
 	glBindTexture(GL_TEXTURE_2D, 0)
 
 	return tex
 
-import typing
 
 @create.register
 def create_with_size(size: tuple, slot, format, wrap_s=None, wrap_t=None, border_color=None):

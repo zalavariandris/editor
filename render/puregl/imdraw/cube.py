@@ -4,6 +4,7 @@ from .helpers import buffer_offset
 import logging
 import functools
 
+
 @functools.lru_cache(maxsize=128)
 def cube_geo(flip=False):
     logging.debug("create cube geo")
@@ -46,11 +47,12 @@ def cube_geo(flip=False):
     ], dtype=np.float32).reshape((-1,3))
 
     uvs = np.array([
-       # Front
+        # Front
         0,  1,
         1,  1,
         1,  0,  
         0,  0,
+
         # Back
         0,  0,
         0,  1, 
@@ -80,7 +82,7 @@ def cube_geo(flip=False):
         1,  1,
         1,  0,
         0,  0, 
-    ], dtype=np.float32).reshape(-1,2)
+    ], dtype=np.float32).reshape(-1, 2)
 
     normals = np.array([
          0.0,  0.0,  1.0, # Front face
@@ -89,7 +91,7 @@ def cube_geo(flip=False):
          0.0, -1.0,  0.0, # Bottom face
          1.0,  0.0,  0.0, # Right face
         -1.0,  0.0,  0.0, # Left face
-    ], dtype=np.float32).reshape((-1,3)).repeat(4, axis=0)
+    ], dtype=np.float32).reshape((-1, 3)).repeat(4, axis=0)
 
     indices = np.array([
         0,  1,  2,      0,  2,  3,    # front
@@ -98,24 +100,25 @@ def cube_geo(flip=False):
         12, 13, 14,     12, 14, 15,   # bottom
         16, 17, 18,     16, 18, 19,   # right
         20, 21, 22,     20, 22, 23,   # left
-    ], dtype=np.uint).reshape((-1,3))
+    ], dtype=np.uint).reshape((-1, 3))
 
     if flip:
         indices = np.flip(indices)
-        normals*=(-1,-1,-1)
+        normals *= (-1, -1, -1)
 
     return positions, normals, uvs, indices
 
+
 @functools.lru_cache(maxsize=128)
 def cube_buffer(locations, flip=False):
-    logging.debug("create cube buffer for locaitons: {}".format(locations))
+    logging.debug("create cube buffer for locations: {}".format(locations))
     positions, normals, uvs, indices = cube_geo(flip=flip)
     count = indices.size
 
     # setup VAO
     vao = glGenVertexArrays(1)
     
-    pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3) # FIXME: use single vbo for positions and vertices
+    pos_vbo, uv_vbo, normal_vbo = glGenBuffers(3)  # FIXME: use single vbo for positions and vertices
     glBindVertexArray(vao)
     glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
     glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_STATIC_DRAW)
@@ -152,6 +155,7 @@ def cube_buffer(locations, flip=False):
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
     return vao, ebo, count
+
 
 def cube(program, flip=False):
     locations = tuple(glGetAttribLocation(program, name) for name in ("position", 'uv', 'normal'))
