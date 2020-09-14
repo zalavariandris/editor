@@ -5,9 +5,9 @@ from editor.render.window import GLFWViewer
 from editor.render.puregl import imdraw, program, texture, fbo
 from editor.render import glsl
 from editor.render import assets
-from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
-
-from editor.render.graphics.lights import DirectionalLight, Spotlight, Pointlight
+from editor.render.graphics import PerspectiveCamera, OrthographicCamera
+from editor.render.graphics import DirectionalLight, Spotlight, Pointlight
+from editor.render.graphics import Mesh, Scene, Geometry, Material
 
 from geometrypass import GeometryPass
 from depthpass import DepthPass
@@ -41,102 +41,10 @@ pointlight = Pointlight(position=glm.vec3(5, 2, 4),
                         near=1.0,
                         far=8.0)
 
-from editor.render import puregl
-class Geometry:
-    def __init__(self, positions, normals, uvs, indices):
-        self._positions = positions
-        self._normals = normals
-        self._uvs = uvs
-        self._indices = indices
-
-    @property
-    def positions(self):
-        return self._positions
-
-    @property
-    def uvs(self):
-        return self._uvs
-
-    @property
-    def normals(self):
-        return self._normals
-
-    @property
-    def indices(self):
-        return self._indices
-
-    @classmethod
-    def cube(cls):
-        positions, normals, uvs, indices = puregl.geo.cube()
-        return cls(positions, normals, uvs, indices)
-
-    @classmethod
-    def sphere(cls):
-        positions, normals, uvs, indices = puregl.geo.sphere()
-        return cls(positions, normals, uvs, indices)
-
-    @classmethod
-    def plane(cls):
-        positions, normals, uvs, indices = puregl.geo.plane()
-        return cls(positions, normals, uvs, indices)
 
 
-class Mesh:
-    def __init__(self, transform, material, geometry):
-        self._transform = transform
-        self._material = material
-        self._geometry = geometry
-
-        self.buffers = ()
-
-    @property
-    def transform(self):
-        return self._transform
-
-    @property
-    def material(self):
-        return self._material
-
-    @property
-    def geometry(self):
-        return self._geometry
 
 
-class Material:
-    def __init__(self, albedo, roughness, metallic, ao=1.0):
-        self._albedo = albedo
-        self._roughness = roughness
-        self._metallic = metallic
-        self._ao = ao
-
-    @property
-    def albedo(self):
-        return self._albedo
-
-    @property
-    def roughness(self):
-        return self._roughness
-
-    @property
-    def metallic(self):
-        return self._metallic
-
-    @property
-    def ao(self):
-        return self._ao
-
-
-class Scene:
-    def __init__(self, children=[]):
-        self._children = children
-
-    def add_child(self, child: Mesh) -> None:
-        assert isinstance(child, Mesh)
-        self._children.append(child)
-
-    @property
-    def children(self) -> [Mesh]:
-        return self._children
 
 
 class Viewer:
