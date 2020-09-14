@@ -14,7 +14,7 @@ void main(){
 	float m = 2. * sqrt( pow( R.x, 2. ) + pow( R.y, 2. ) + pow( R.z + 1., 2. ) );
 	vec2 vN = R.xy / m + 0.5;
 
-	vec3 color = texture2D( matCap, vN ).rgb;
+	vec3 color = texture( matCap, vN ).rgb;
 
 	FragColor = vec4( color, 1.0);
 }

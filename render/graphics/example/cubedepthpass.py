@@ -60,8 +60,8 @@ class CubeDepthPass(RenderPass):
 			glReadBuffer(GL_NONE)
 			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 
-	def draw(self):
-		super().draw()
+	def render(self):
+		super().render()
 
 		with fbo.bind(self.fbo), program.use(self.prog):
 			# set viewpot
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 	with window:
 		while not window.should_close():
 			cube_depthpass.position = glm.vec3(0,3,0)
-			cube_depthpass.draw()
+			cube_depthpass.render()
 
 			glClearColor(0.3,0.3,0.3,1)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

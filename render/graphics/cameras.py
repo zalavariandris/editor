@@ -9,6 +9,10 @@ class OrthographicCamera:
 		self.far = far
 
 	@property
+	def position(self):
+		return self.transform[3].xyz
+
+	@property
 	def projection(self):
 		return glm.ortho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far)
 
@@ -23,6 +27,10 @@ class PerspectiveCamera:
 		self.aspect = aspect
 		self.near = near
 		self.far = far
+
+	@property
+	def position(self):
+		return self.transform[3].xyz
 
 	@property
 	def projection(self):

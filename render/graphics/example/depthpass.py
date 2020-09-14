@@ -44,15 +44,15 @@ class DepthPass(RenderPass):
 			)
 			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 
-	def draw(self):
-		super().draw()
+	def render(self):
+		super().render()
 
 		with fbo.bind(self.fbo), program.use(self.prog):
 			# set viewport
 			glViewport(0,0, self.width, self.height)
 
 			# clear fbo
-			glClearColor(0,0,0,0)
+			# glClearColor(0,0,0,0)
 			glClear(GL_DEPTH_BUFFER_BIT)
 
 			# configure shaders
@@ -99,10 +99,10 @@ if __name__ == "__main__":
 	with window:
 		while not window.should_close():
 			orthoDepthPass.camera = PerspectiveCamera(glm.inverse(window.view_matrix), glm.radians(60), width/height, 1, 10)
-			orthoDepthPass.draw()
+			orthoDepthPass.render()
 
 			perspDepthPass.camera = OrthographicCamera(glm.inverse(window.view_matrix), 5,5, 0.1, 10)
-			perspDepthPass.draw()
+			perspDepthPass.render()
 
 			glClearColor(0,0,0,1)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

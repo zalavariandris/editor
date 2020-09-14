@@ -104,24 +104,24 @@ class EnvironmentPass(RenderPass):
 
 			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 
-	def draw(self):
+	def render(self):
 		assert self.texture is not None
-		super().draw()
+		super().render()
 		# set viewport
 		glViewport(0,0,self.width, self.height)
 
 		# draw cube
-		glActiveTexture(GL_TEXTURE0+6)
+		glActiveTexture(GL_TEXTURE0)
 		glBindTexture(GL_TEXTURE_2D, self.texture)
 		with program.use(self.prog):
-			program.set_uniform(self.prog, 'equirectangularMap', 6)
+			program.set_uniform(self.prog, 'equirectangularMap', 0)
 			program.set_uniform(self.prog, "projectionMatrix", self.projection)
 
 			with fbo.bind(self.fbo):
 				for i in range(6):
 					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, self.cubemap, 0)	
 					program.set_uniform(self.prog, "viewMatrix", self.views[i])
-					glClearColor(0,0,0,1)
+					# glClearColor(0,0,0,1)
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 					imdraw.cube(self.prog, flip=True)
 		glBindTexture(GL_TEXTURE_2D, 0)
@@ -162,14 +162,13 @@ if __name__ == "__main__":
 	with window:
 		while not window.should_close():
 			envpass.texture = envtex
-			envpass.draw()
+			envpass.render()
 
 			glClearColor(0.3,0.3,0.3,1)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 			glDisable(GL_DEPTH_TEST)
 			imdraw.texture(envtex, (0,0,90, 90), shuffle=(0,1,2,-1))
 			
-			glEnable(GL_DEPTH_TEST)
 			imdraw.cubemap(envpass.cubemap, (0,0,width, height), window.projection_matrix, window.view_matrix)
 
 			window.swap_buffers()

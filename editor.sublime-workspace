@@ -4,12 +4,120 @@
 		"selected_items":
 		[
 			[
-				"GL_DEP",
-				"GL_DEPTH_COMPONENT"
+				"en",
+				"environment_tex"
+			],
+			[
+				"br",
+				"brdfLUT"
+			],
+			[
+				"sampler",
+				"sampler2D"
+			],
+			[
+				"prefi",
+				"prefilterMap"
+			],
+			[
+				"irra",
+				"irradianceMap"
+			],
+			[
+				"sam",
+				"samplerCube"
+			],
+			[
+				"came",
+				"cameraPos"
+			],
+			[
+				"brd",
+				"brdflut"
+			],
+			[
+				"irr",
+				"irradiance_pass"
+			],
+			[
+				"prefilter",
+				"prefilter_pass"
+			],
+			[
+				"light",
+				"lighting_pass"
+			],
+			[
+				"ligh",
+				"lighting_pass"
+			],
+			[
+				"envir",
+				"environment_pass"
+			],
+			[
+				"glGen",
+				"glGenFramebuffers"
+			],
+			[
+				"cube_",
+				"cube_height"
+			],
+			[
+				"e",
+				"environment_image"
+			],
+			[
+				"imag",
+				"environment_image"
+			],
+			[
+				"wi",
+				"width"
+			],
+			[
+				"GL_TE",
+				"GL_TEXTURE_2D"
+			],
+			[
+				"tex",
+				"texture"
+			],
+			[
+				"shado",
+				"shadowcube"
+			],
+			[
+				"shadowM",
+				"shadowMapIdx"
+			],
+			[
+				"shadow",
+				"shadowmap"
+			],
+			[
+				"pr",
+				"projection"
+			],
+			[
+				"shad",
+				"shadowpass"
+			],
+			[
+				"sh",
+				"shadowpass"
 			],
 			[
 				"glBind",
-				"glBindTexture"
+				"glBindFramebuffer"
+			],
+			[
+				"depth",
+				"depth_test"
+			],
+			[
+				"GL_DEP",
+				"GL_DEPTH_COMPONENT"
 			],
 			[
 				"smaple",
@@ -104,24 +212,12 @@
 				"pointlight_shadowmap"
 			],
 			[
-				"shadow",
-				"shadowProj"
-			],
-			[
-				"shad",
-				"shadowTransforms"
-			],
-			[
 				"lig",
 				"light"
 			],
 			[
 				"shaodw_",
 				"shadow_height"
-			],
-			[
-				"light",
-				"lightDistance"
 			],
 			[
 				"glGetShader",
@@ -138,10 +234,6 @@
 			[
 				"glFramebuffer",
 				"glFramebufferTexture2D"
-			],
-			[
-				"shado",
-				"shadow_fbos"
 			],
 			[
 				"GL_DEPTH",
@@ -196,20 +288,12 @@
 				"prefilterMap"
 			],
 			[
-				"irr",
-				"irradiance_map"
-			],
-			[
 				"Fra",
 				"fragPos"
 			],
 			[
 				"fragPos",
 				"fragPosLightSpace"
-			],
-			[
-				"glGen",
-				"glGenTextures"
 			],
 			[
 				"tone",
@@ -230,10 +314,6 @@
 			[
 				"blur",
 				"blur_program"
-			],
-			[
-				"wi",
-				"with"
 			],
 			[
 				"glBin",
@@ -344,10 +424,6 @@
 				"sphere_geo"
 			],
 			[
-				"tex",
-				"texCoords"
-			],
-			[
 				"plane",
 				"plane_geo"
 			],
@@ -366,14 +442,6 @@
 			[
 				"simple_",
 				"simple_depth_fs"
-			],
-			[
-				"depth",
-				"depth_program"
-			],
-			[
-				"pr",
-				"program"
 			],
 			[
 				"pho",
@@ -428,10 +496,6 @@
 				"skybox_tex"
 			],
 			[
-				"GL_TE",
-				"GL_TEXTURE_CUBE_MAP_POSITIVE_X"
-			],
-			[
 				"skybox",
 				"skybox_program"
 			],
@@ -450,89 +514,43 @@
 			[
 				"debu",
 				"debug_quad_depth_fs"
-			],
-			[
-				"debug",
-				"debug_quad_vs"
-			],
-			[
-				"create",
-				"create_program"
-			],
-			[
-				"simple",
-				"simple_depth_fs"
-			],
-			[
-				"phong",
-				"phong_fs"
-			],
-			[
-				"ph",
-				"phong_vs"
-			],
-			[
-				"depth_to_color",
-				"depth_to_color_vertex_source"
-			],
-			[
-				"bind_",
-				"bind_texture"
-			],
-			[
-				"bind_t",
-				"bind_texture_with_data"
-			],
-			[
-				"glB",
-				"glBindTexture"
-			],
-			[
-				"glGe",
-				"glGetUniformLocation"
-			],
-			[
-				"glUni",
-				"glUniformMatrix4fv"
-			],
-			[
-				"fragment",
-				"fragment_source"
-			],
-			[
-				"vertex",
-				"vertex_source"
-			],
-			[
-				"u",
-				"use_program"
-			],
-			[
-				"GL_FRA",
-				"GL_FRAGMENT_SHADER"
-			],
-			[
-				"fbo",
-				"fbo_depth_on_screen"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "render/puregl/examples/deferred_example.py",
+			"file": "render/graphics/example/tonemappingpass.py",
 			"settings":
 			{
-				"buffer_size": 30991,
+				"buffer_size": 97,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "render/graphics/deferred_pbr_example.py",
+			"file": "render/glsl/PBR2.fs",
 			"settings":
 			{
-				"buffer_size": 18420,
+				"buffer_size": 6779,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/graphics/example/iblpass.py",
+			"settings":
+			{
+				"buffer_size": 8973,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/graphics/example/deferred_pbr_example.py",
+			"settings":
+			{
+				"buffer_size": 6893,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -673,29 +691,41 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples"
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl"
 	],
 	"file_history":
 	[
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/ssao.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/texture.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/example/depthpass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/example/cubedepthpass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/PBR2.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/deferred_example.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/example/environmentpass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/example/lightingpass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/cameras.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/deferred_pbr.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/pbr.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/example/iblpass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/API_IDEA.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/cubemap.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/window/glfw_window.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/pbr_example.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/fbo.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/deferred_pbr_example.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/equirectangular_to_cubemap.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/ssao.fs",
 		"/C/Users/andris/anaconda3/lib/site-packages/glfw/__init__.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/viewer.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/ssao_example.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/deferred_pbr.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/point_light_shadow_example.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/cube.py",
 		"/C/Users/andris/anaconda3/lib/site-packages/OpenGL/error.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/program.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/window/glfw_window.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/tonemapping.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/point_shadow.vs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/point_shadow.gs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/point_shadow.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/minimal_example.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/pbr_example.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/cubemap.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/plane.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/points_shadow.gs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/cutoff_highlights.fs",
@@ -703,7 +733,6 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/deferred_pbr.vs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/simple_depth.vs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/pbr.vs",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/pbr.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/gaussianblur.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/texture.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/minimal_example1.py",
@@ -733,7 +762,6 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/pano-converter3.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/skybox.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/skybox.vs",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/texture.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/simple_depth_shader.fs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/__init__.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/debug_quad_depth.fs",
@@ -794,18 +822,7 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor/calculator.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/core/deg1.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/core/__init__.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/patheditor.py",
-		"/C/Users/andris/Desktop/2020 Paks/Grassblade/editor/grassblade_editor.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/DEG/graph.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/nodes.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/appwindow.py",
-		"/C/Users/andris/Desktop/2019 UNKP/Szobeli beszamolo/Notes.md",
-		"/C/Users/andris/Desktop/2019 UNKP/Szobeli beszamolo/traitlet_list-test.py",
-		"/C/Users/andris/Desktop/2019 UNKP/Szobeli beszamolo/ApiRoutes.pl",
-		"/C/Users/andris/Desktop/mask.json",
-		"/C/Users/andris/Documents/IKON/exhibitiondetails-parse.ipynb",
-		"/C/Users/andris/Desktop/2020 Paks/Grassblade/editor.py",
-		"/C/Users/andris/Desktop/2020 Paks/Grassblade/PyGrassblade-glumpy/baseline/warper.py"
+		"/C/Users/andris/Documents/BABPythonModules/editor/widgets/patheditor.py"
 	],
 	"find":
 	{
@@ -813,7 +830,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 580.0,
+		"height": 115.0,
 		"where_history":
 		[
 			""
@@ -824,6 +841,13 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"glClearColor",
+			"32",
+			"GL_TEXTURE_CUBE_MAP_SEAMLESS",
+			"128",
+			"env_cubemap",
+			"lights",
+			"self.lights",
 			"draw_scene",
 			"pointlight",
 			"cutoff",
@@ -988,19 +1012,76 @@
 			[
 				{
 					"buffer": 0,
-					"file": "render/puregl/examples/deferred_example.py",
+					"file": "render/graphics/example/tonemappingpass.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 30991,
+						"buffer_size": 97,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								22911,
-								22923
+								96,
+								96
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "render/glsl/PBR2.fs",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6779,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2768,
+								2768
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/OpenGL Shading Language (GLSL)/GLSL.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 864.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "render/graphics/example/iblpass.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8973,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								7930,
+								7877
 							]
 						],
 						"settings":
@@ -1008,11 +1089,11 @@
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
-						"translation.x": 0.0,
-						"translation.y": 7428.0,
+						"translation.x": 4.0,
+						"translation.y": 2897.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -1022,20 +1103,20 @@
 			"sheets":
 			[
 				{
-					"buffer": 1,
-					"file": "render/graphics/deferred_pbr_example.py",
+					"buffer": 3,
+					"file": "render/graphics/example/deferred_pbr_example.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 18420,
+						"buffer_size": 6893,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								17595,
-								17595
+								4106,
+								4106
 							]
 						],
 						"settings":
@@ -1044,10 +1125,10 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 3293.0,
+						"translation.y": 1521.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 1,
 					"type": "text"
 				}
 			]
@@ -1081,7 +1162,7 @@
 		"cols":
 		[
 			0.0,
-			0.42131147541,
+			0.395322542681,
 			1.0
 		],
 		"rows":
@@ -1111,7 +1192,7 @@
 	"project": "editor.sublime-project",
 	"replace":
 	{
-		"height": 70.0
+		"height": 40.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -1141,7 +1222,7 @@
 		],
 		"width": 0.0
 	},
-	"selected_group": 1,
+	"selected_group": 0,
 	"settings":
 	{
 	},
@@ -1149,7 +1230,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 194.0,
+	"side_bar_width": 269.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

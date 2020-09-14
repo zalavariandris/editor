@@ -10,7 +10,7 @@ class RenderPass:
 	def setup(self):
 		pass
 
-	def draw(self):
+	def render(self):
 		if self.cull_face:
 			glEnable(GL_CULL_FACE)
 			glCullFace(self.cull_face)

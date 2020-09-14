@@ -20,38 +20,38 @@ class Viewer:
 		self.matcap_img = np.flip(self.matcap_img, 0)
 
 	def setup(self):
-		with self.window:
-			glEnable(GL_DEPTH_TEST)
-			glEnable(GL_CULL_FACE)
-			glEnable( GL_PROGRAM_POINT_SIZE )
+		glEnable(GL_DEPTH_TEST)
+		glEnable(GL_CULL_FACE)
+		glEnable( GL_PROGRAM_POINT_SIZE )
 
-			self.prog = program.create(*glsl.read("matcap"))
-			self.matcap_tex = texture.create(self.matcap_img, 0, GL_RGB)
+		self.prog = program.create(*glsl.read("matcap"))
+		self.matcap_tex = texture.create(self.matcap_img, 0, GL_RGB)
 
 	def resize(self):
 		with self.window:
 			pass
 
 	def draw(self):
-		with self.window as window:
-			glViewport(0,0,self.width, self.height)
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-			with program.use(self.prog) as prog:
-				program.set_uniform(prog, 'projectionMatrix', window.projection_matrix)
-				program.set_uniform(prog, 'viewMatrix', window.view_matrix)
-				program.set_uniform(prog, 'modelMatrix', np.eye(4))
-				glBindTexture(GL_TEXTURE_2D, self.matcap_tex)
-				program.set_uniform(prog, 'matCap', 0)
-				imdraw.torusknot(prog)
+		GLFWViewer.poll_events()
+		glViewport(0,0,self.width, self.height)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		with program.use(self.prog) as prog:
+			program.set_uniform(prog, 'projectionMatrix', self.window.projection_matrix)
+			program.set_uniform(prog, 'viewMatrix', self.window.view_matrix)
+			program.set_uniform(prog, 'modelMatrix', np.eye(4))
+			glBindTexture(GL_TEXTURE_2D, self.matcap_tex)
+			program.set_uniform(prog, 'matCap', 0)
+			imdraw.torusknot(prog)
 
-			window.swap_buffers()
-			GLFWViewer.poll_events()
+		self.window.swap_buffers()
+			
 
 	def start(self):
-		self.setup()
-		
-		while not self.window.should_close():
-			self.draw()
+		with self.window:
+			self.setup()
+			
+			while not self.window.should_close():
+				self.draw()
 
 if __name__ == "__main__":
 	viewer = Viewer()
