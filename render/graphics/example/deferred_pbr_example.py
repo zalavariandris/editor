@@ -42,11 +42,6 @@ pointlight = Pointlight(position=glm.vec3(5, 2, 4),
                         far=8.0)
 
 
-
-
-
-
-
 class Viewer:
     def __init__(self, scene):
         # window
@@ -117,7 +112,6 @@ class Viewer:
             geometry_buffers[mesh] = geo_buffer
 
         return geo_buffer
-
 
     def draw_scene_for_geometry(self, prog):
         import ctypes

@@ -1,5 +1,7 @@
+import glm
+
 class Mesh:
-    def __init__(self, transform, material, geometry):
+    def __init__(self, transform: glm.mat4, material, geometry):
         self._transform = transform
         self._material = material
         self._geometry = geometry

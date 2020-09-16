@@ -12,6 +12,10 @@ class OrthographicCamera:
 	def position(self):
 		return self.transform[3].xyz
 
+	@position.setter
+	def position(self, value):
+		self.transform[3].xyz = value
+
 	@property
 	def projection(self):
 		return glm.ortho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far)
@@ -19,7 +23,8 @@ class OrthographicCamera:
 	@property
 	def view(self):
 		return glm.inverse(self.transform)
-	
+
+
 class PerspectiveCamera:
 	def __init__(self, transform, fovy, aspect, near, far):
 		self.transform = transform
@@ -31,6 +36,10 @@ class PerspectiveCamera:
 	@property
 	def position(self):
 		return self.transform[3].xyz
+
+	@position.setter
+	def position(self, value):
+		self.transform[3].xyz = value
 
 	@property
 	def projection(self):

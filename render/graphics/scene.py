@@ -1,4 +1,4 @@
-from .mesh import Mesh
+from . import Mesh
 
 
 class Scene:

@@ -547,18 +547,19 @@
 			}
 		},
 		{
-			"file": "render/window/glfw_window.py",
+			"file": "render/window/pyglet_window.py",
 			"settings":
 			{
-				"buffer_size": 5451,
+				"buffer_size": 937,
+				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "render/window/pyglet_window.py",
+			"file": "render/window/glfw_threaded_viewer.py",
 			"settings":
 			{
-				"buffer_size": 13,
+				"buffer_size": 835,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -859,7 +860,7 @@
 	],
 	"find":
 	{
-		"height": 39.0
+		"height": 22.0
 	},
 	"find_in_files":
 	{
@@ -1142,29 +1143,27 @@
 				},
 				{
 					"buffer": 3,
-					"file": "render/window/glfw_window.py",
-					"semi_transient": true,
+					"file": "render/window/pyglet_window.py",
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5451,
+						"buffer_size": 937,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								5451,
-								5451
+								0,
+								0
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
+							"syntax": "Packages/Python/Python.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 1939.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -1172,24 +1171,26 @@
 				},
 				{
 					"buffer": 4,
-					"file": "render/window/pyglet_window.py",
+					"file": "render/window/glfw_threaded_viewer.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 13,
+						"buffer_size": 835,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								13,
-								13
+								796,
+								796
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Python/Python.sublime-syntax"
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,

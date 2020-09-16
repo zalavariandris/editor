@@ -5,6 +5,7 @@ import functools
 
 @functools.lru_cache(maxsize=128)
 def cube(flip=False):
+    """->positions, normals, uvs, indices"""
     logging.debug("create cube geo")
     positions = np.array([
         # Front face

@@ -8,6 +8,7 @@ from .torusknot import torusknot
 # debug
 from .texture import texture
 from .cubemap import cubemap
+from .grid import grid
 
 
 

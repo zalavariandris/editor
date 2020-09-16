@@ -10,6 +10,10 @@ class Material:
     def albedo(self):
         return self._albedo
 
+    @albedo.setter
+    def albedo(self, value):
+        self._albedo = value
+
     @property
     def roughness(self):
         return self._roughness
