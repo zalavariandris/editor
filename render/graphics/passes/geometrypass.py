@@ -6,7 +6,7 @@ from editor.render import puregl, glsl
 
 class GeometryPass(RenderPass):
     def __init__(self, width, height):
-        super().__init__(width, height, depth_test=True, cull_face=GL_BACK)
+        super().__init__(width, height, depth_test=True, cull_face=GL_BACK, blending=None)
 
     def setup(self):
         # Create textures
@@ -92,14 +92,15 @@ class GeometryPass(RenderPass):
 
                 # material
                 puregl.program.set_uniform(self.program, "albedo", glm.vec3(*child.material.albedo))
+                puregl.program.set_uniform(self.program, "roughness", child.material.roughness)
+                puregl.program.set_uniform(self.program, "metallic", child.material.metallic)
 
                 # geometry
                 child.geometry._draw(self.program)
 
-        return self.gPosition, self.gNormal, self.gAlbedo, self.gRoughness, self.gMetallic, self.gEmissive
+        return self.gPosition, self.gNormal, self.gAlbedo, self.gEmissive, self.gRoughness, self.gMetallic
 
             
-
 if __name__ == "__main__":
     import glm
     from editor.render.graphics.viewer import Viewer
@@ -145,12 +146,12 @@ if __name__ == "__main__":
         gPosition, gNormal, gAlbedo, gEmissive, gRoughness, gMetallic = gBuffer
 
         # debug gBuffer
-        puregl.imdraw.texture(gPosition, (0,0,90, 90))
-        puregl.imdraw.texture(gNormal, (100,0,90, 90))
-        puregl.imdraw.texture(gAlbedo, (200,0,90, 90))
-        puregl.imdraw.texture(gEmissive, (300,0,90, 90))
-        puregl.imdraw.texture(gRoughness, (400,0,90, 90))
-        puregl.imdraw.texture(gMetallic, (500,0,90, 90))
+        puregl.imdraw.texture(gPosition, (0,0,190, 190), shuffle=(0,1,2,-1))
+        puregl.imdraw.texture(gNormal, (200,0,190, 190), shuffle=(0,1,2,-1))
+        puregl.imdraw.texture(gAlbedo, (400,0,190, 190), shuffle=(0,1,2,-1))
+        puregl.imdraw.texture(gEmissive, (600,0,190, 190))
+        puregl.imdraw.texture(gRoughness, (800,0,190, 190), shuffle=(0,0,0,-1))
+        puregl.imdraw.texture(gMetallic, (1000,0,190, 190), shuffle=(0,0,0,-1))
 
 
     # confi viewer
@@ -187,6 +188,9 @@ if __name__ == "__main__":
 
     @viewer.on_draw
     def draw_grid():
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         global prog
         # draw
         with puregl.program.use(prog):
