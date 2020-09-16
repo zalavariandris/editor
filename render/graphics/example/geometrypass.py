@@ -5,6 +5,7 @@ from editor.render.puregl import program, texture, fbo
 from editor.render import glsl
 from renderpass import RenderPass
 
+
 class GeometryPass(RenderPass):
 	def __init__(self, width, height, draw_scene):
 		super().__init__(width, height, depth_test=True, cull_face=GL_BACK)
@@ -22,10 +23,12 @@ class GeometryPass(RenderPass):
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, self.width, self.height, 0, GL_RGBA, GL_FLOAT, None)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glBindTexture(GL_TEXTURE_2D, 0)
+
 			glFramebufferTexture2D(
 				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, tex, 0
 			)
-			glBindTexture(GL_TEXTURE_2D, 0)
+
 
 		# create depth+stencil buffertarget, pname, param
 		rbo = glGenRenderbuffers(1)
@@ -53,11 +56,14 @@ class GeometryPass(RenderPass):
 
 			self.draw_scene(prog)
 
+
 if __name__ == "__main__":
 	import glm
 	from editor.render.window import GLFWViewer
 	from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
 	from editor.render.puregl import imdraw
+
+
 	def draw_scene(prog):
 		# draw cube
 		model_matrix = glm.translate(glm.mat4(1), (-1,0.5,0))

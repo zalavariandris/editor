@@ -3,7 +3,8 @@ from threading import Thread, RLock
 from OpenGL.GL import *
 import functools
 from editor.render.graphics import cameras
-
+from editor.render import puregl
+import glm
 
 class Viewer:
     def __init__(self, width=1280, height=720, title="Graphics Viewer", background_color=(0,0,0,1), floating=False):
@@ -23,7 +24,7 @@ class Viewer:
             'resize': []
         }
         self.camera = cameras.PerspectiveCamera(glm.mat4(1), glm.radians(45), self.width/self.height, 0.1, 30)
-        self.camera.transform = glm.inverse(glm.lookAt(glm.vec3(0, 2, -6), glm.vec3(0,0,0), glm.vec3(0,1,0)))
+        self.camera.transform = glm.inverse(glm.lookAt(glm.vec3(0, 2, -6), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0)))
 
     def _create_window(self):
         # Initialize the library
@@ -44,7 +45,7 @@ class Viewer:
     def _setup_window_events(self):
         # Events
         glfw.set_input_mode(self._handle, glfw.STICKY_KEYS, True)  # FIXME: this migth be ueful later, when implementing keyboard events
-        self._prev_mouse_pos = (-1,-1)
+        self._prev_mouse_pos = (-1, -1)
 
         # mouse
         prev_mouse_pos = (0, 0)
@@ -57,7 +58,7 @@ class Viewer:
 
         @functools.partial(glfw.set_cursor_pos_callback, self._handle)
         def mousemove(handle, x, y):
-            self.mousemove( x-self._prev_mouse_pos[0], y-self._prev_mouse_pos[1])
+            self.mousemove(x-self._prev_mouse_pos[0], y-self._prev_mouse_pos[1])
             self._prev_mouse_pos = x, y
 
         glfw.set_scroll_callback(self._handle, lambda handle, dx, dy: self.scroll(dx, dy))
@@ -65,14 +66,12 @@ class Viewer:
 
     def scroll(self, dx, dy):
         s = 1 + dy / 10
-        print("zoom", s)
-        self.camera.position*=glm.vec3(1/s)
+        self.camera.position *= glm.vec3(1/s)
         for f in self._callbacks['scroll']:
             f(dx, dy)
 
     def mousemove(self, dx, dy):
         if glfw.get_mouse_button(self._handle, 0):
-            print("orbit")
             self.camera.transform = glm.inverse(puregl.transform.orbit(glm.inverse(self.camera.transform), dx * 2, dy * 2))
         for f in self._callbacks['mousemove']:
             f(dx, dy)
@@ -140,6 +139,7 @@ class Viewer:
     def draw(self):
         """by default invokes all on_draw callbacks"""
         for f in self._callbacks['draw']:
+            glViewport(0, 0, self.width, self.height)
             f()
 
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     scene.add_child(plane)
     viewer = Viewer(floating=True)
 
-    # cube
+    # confi viewer
     prog = None
 
     @viewer.on_setup

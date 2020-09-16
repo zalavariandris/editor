@@ -23,9 +23,8 @@ def texture(tex, rect, shuffle=(0, 1, 2, -1)):
 		program.set_uniform(debug_quad_program, 'shuffle.blue',  shuffle[2])
 		program.set_uniform(debug_quad_program, 'shuffle.alpha', shuffle[3])
 
-	glViewport(*rect)
-
 	# draw texture quad
+	glViewport(*rect)
 	with program.use(debug_quad_program):
 		glActiveTexture(GL_TEXTURE0+0)
 		glBindTexture(GL_TEXTURE_2D, tex)

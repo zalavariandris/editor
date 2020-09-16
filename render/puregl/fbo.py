@@ -1,12 +1,20 @@
 from contextlib import contextmanager
 from OpenGL.GL import *
+import numpy as np
 
 
 @contextmanager
-def bind(framebuffer):
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer)
-	yield framebuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, 0)
+def bind(framebuffer, write=None):
+	if write is None:
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer)
+		yield framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0)
+	else:
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer)
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, write)
+		yield framebuffer, write
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
 
 
 STATUS = {

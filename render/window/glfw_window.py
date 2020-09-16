@@ -107,7 +107,6 @@ class GLFWWindow:
     def get_mouse_button(self, button):
         return glfw.get_mouse_button(self._handle, button)
 
-    """ attach event handlers """
     def addEventListener(self, event, function=None):
         """
         Attach an event handlers to events.

@@ -42,6 +42,11 @@ pointlight = Pointlight(position=glm.vec3(5, 2, 4),
                         far=8.0)
 
 
+
+
+
+
+
 class Viewer:
     def __init__(self, scene):
         # window
@@ -113,6 +118,7 @@ class Viewer:
 
         return geo_buffer
 
+
     def draw_scene_for_geometry(self, prog):
         import ctypes
         for child in self.scene.children:
@@ -182,7 +188,8 @@ class Viewer:
         self.geometry_pass.setup()
 
         # environment
-        self.environment_tex = texture.create(self.environment_image, 0, GL_RGB,
+        self.environment_tex = texture.create(self.environment_image, 0,
+                                              format=GL_RGB,
                                               wrap_s=GL_CLAMP_TO_EDGE,
                                               wrap_t=GL_CLAMP_TO_EDGE,
                                               min_filter=GL_LINEAR,
