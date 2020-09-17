@@ -1,6 +1,8 @@
 import glm
-from .cameras import OrthographicCamera, PerspectiveCamera
-
+from .cameras import OrthographicCamera, PerspectiveCamera, Camera360
+from .passes.depthpass import DepthPass
+from .passes.cubedepthpass import CubeDepthPass
+from OpenGL.GL import *
 
 class DirectionalLight:
 	def __init__(self, direction, color, position, radius, near, far):
@@ -10,6 +12,9 @@ class DirectionalLight:
 		self.radius = radius
 		self.near = near
 		self.far = far
+
+		self._shadow_pass = DepthPass(1024, 1024, cull_face=GL_FRONT)
+		self._depth_map = None
 
 	@property
 	def projection(self):
@@ -24,6 +29,14 @@ class DirectionalLight:
 		tr = glm.lookAt(self.position, self.position+self.direction, (0,1,0))
 		return OrthographicCamera(glm.inverse(tr), self.radius*2, self.radius*2, self.near, self.far)
 
+	def _setup_shadows(self):
+		"""setup shadows"""
+		self._shadow_pass.setup()
+
+
+	def _render_shadows(self, scene):
+		"""render shadows"""
+		self._shadow_map = self._shadow_pass.render(scene, self.camera)
 
 class Spotlight:
 	def __init__(self, position, direction, color, fov, near, far):
@@ -33,6 +46,9 @@ class Spotlight:
 		self.fov = fov
 		self.near = near
 		self.far = far
+
+		self._shadow_pass = DepthPass(1024, 1024, cull_face=GL_FRONT)
+		self._depth_map = None
 
 	@property
 	def cut_off(self):
@@ -52,6 +68,16 @@ class Spotlight:
 		tr = glm.lookAt(self.position, self.position+self.direction, (0,1,0))
 		return PerspectiveCamera(glm.inverse(tr), self.fov, 1.0, self.near, self.far)
 
+	def _setup_shadows(self):
+		"""setup shadows"""
+		self._shadow_pass.setup()
+
+
+	def _render_shadows(self, scene):
+		"""render shadows"""
+		self._shadow_map = self._shadow_pass.render(scene, self.camera)
+
+
 
 class Pointlight:
 	def __init__(self, position, color, near, far):
@@ -60,12 +86,14 @@ class Pointlight:
 		self.near = near
 		self.far = far
 
+		self._shadow_pass = CubeDepthPass(1024, 1024, cull_face=GL_FRONT)
+		self._depth_map = None
+
 	@property
 	def projection(self):
 		aspect = 1.0
 		return glm.perspective(glm.radians(90.0), aspect, self.near, self.far)
 	
-
 	@property
 	def views(self):
 		shadowTransforms = []
@@ -78,4 +106,18 @@ class Pointlight:
 
 		shadowTransforms = np.array([np.array(m) for m in shadowTransforms])
 		return shadowTransforms
+
+	@property
+	def camera(self):
+		return Camera360(transform=glm.translate(glm.mat4(1), self.position),
+                         near=self.near, 
+                         far=self.far)
+
+	def _setup_shadows(self):
+		"""setup shadows"""
+		self._shadow_pass.setup()
+
+	def _render_shadows(self, scene):
+		"""render shadows"""
+		self._shadow_map = self._shadow_pass.render(scene, self.camera)
 

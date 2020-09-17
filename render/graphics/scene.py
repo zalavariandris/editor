@@ -20,7 +20,7 @@ class Scene:
 
     @staticmethod
     def test_scene():
-        cube = Mesh(transform=glm.translate(glm.mat4(1), (1, 0.5, 0.0)),
+        cube = Mesh(transform=glm.translate(glm.mat4(1), (1, 0.5, 0.0)) * glm.rotate(glm.mat4(1), glm.radians(30), (0,1,0)),
                     geometry=Geometry(*puregl.geo.cube()),
                     material=Material(albedo=(1, 0, 0),
                                       roughness=0.7,

@@ -5,6 +5,7 @@ from editor.render.graphics import Scene
 from editor.render.graphics.cameras import Camera360
 import numpy as np
 from environmentpass import EnvironmentPass
+import glm
 
 class IrradiancePass(RenderPass):
     def __init__(self, width, height):
@@ -185,6 +186,7 @@ class BRDFPass(RenderPass):
                 puregl.imdraw.quad(self.program)
 
         return self.brdflut
+
 
 if __name__ == "__main__":
     import glm

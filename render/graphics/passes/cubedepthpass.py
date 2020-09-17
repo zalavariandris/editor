@@ -7,8 +7,8 @@ import numpy as np
 
 
 class CubeDepthPass(RenderPass):
-    def __init__(self, width, height):
-        super().__init__(width, height, True, GL_BACK, None)
+    def __init__(self, width, height, cull_face=GL_BACK):
+        super().__init__(width, height, True, cull_face, None)
         self.texture = None
         self.fbo = None
         self.program = None
@@ -72,11 +72,6 @@ class CubeDepthPass(RenderPass):
             for child in scene.children:
                 # transform
                 puregl.program.set_uniform(self.program, "model", child.transform)
-
-                # material
-                puregl.program.set_uniform(self.program, "albedo", glm.vec3(*child.material.albedo))
-                puregl.program.set_uniform(self.program, "roughness", child.material.roughness)
-                puregl.program.set_uniform(self.program, "metallic", child.material.metallic)
 
                 # geometry
                 child.geometry._draw(self.program)

@@ -2,10 +2,11 @@ from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl
 import numpy as np
+import glm
 
 class DepthPass(RenderPass):
-    def __init__(self, width, height):
-        super().__init__(width, height, True, GL_BACK, None)
+    def __init__(self, width, height, cull_face=GL_BACK):
+        super().__init__(width, height, True, cull_face, None)
         self.texture = None
         self.fbo = None
         self.program = None
@@ -81,7 +82,6 @@ class DepthPass(RenderPass):
 
 
 if __name__ == "__main__":
-    import glm
     from editor.render.graphics.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     @viewer.on_setup
     def setup():
         scene._setup()
-        print("setup geometry pass")
+        print("setup depth pass")
         depth_pass.setup()
 
     @viewer.on_draw
