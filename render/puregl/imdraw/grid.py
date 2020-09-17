@@ -1,8 +1,10 @@
 from OpenGL.GL import *
 import numpy as np
+from editor.render.puregl import program
+from editor.render import glsl
 
-
-def grid(prog, size=10.9):
+def grid(projection, view):
+    size = 10
     # create geometry
     positions = []
     offset = int(size)/2
@@ -24,11 +26,32 @@ def grid(prog, size=10.9):
 
     vao = glGenVertexArrays(1)
 
+    # create program
+    prog = program.create(
+        """#version 330 core
+        layout (location=0) in vec3 position;
+        uniform mat4 projection;
+        uniform mat4 view;
+
+        void main(){
+            gl_Position = projection * view * vec4(position, 1.0);
+        }
+        """,
+        """#version 330 core
+        out vec4 FragColor;
+        void main(){
+            FragColor = vec4(0.5,0.5,0.5,1);
+        }
+        """)
+
     # draw
-    glBindVertexArray(vao)
-    loc = glGetAttribLocation(prog, "position")
-    glVertexAttribPointer(loc, 3, GL_FLOAT, False, 0, None)
-    glEnableVertexAttribArray(loc)
-    glDrawArrays(GL_LINES, 0, positions.size)
-    glBindVertexArray(0)
+    with program.use(prog):
+        program.set_uniform(prog, "projection", projection)
+        program.set_uniform(prog, "view", view)
+        glBindVertexArray(vao)
+        loc = glGetAttribLocation(prog, "position")
+        glVertexAttribPointer(loc, 3, GL_FLOAT, False, 0, None)
+        glEnableVertexAttribArray(loc)
+        glDrawArrays(GL_LINES, 0, positions.size)
+        glBindVertexArray(0)
 

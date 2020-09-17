@@ -2,6 +2,13 @@ from OpenGL.GL import *
 
 
 class RenderPass:
+    """
+    Renderpass
+    width, height
+    depth_test
+    cull_face
+    blending
+    """
     def __init__(self, width, height, depth_test, cull_face, blending):
         # properties
         self.width = width

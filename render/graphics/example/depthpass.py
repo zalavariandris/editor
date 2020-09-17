@@ -56,10 +56,10 @@ class DepthPass(RenderPass):
 			glClear(GL_DEPTH_BUFFER_BIT)
 
 			# configure shaders
-
-			# draw scene
 			program.set_uniform(self.prog, "projection", self.camera.projection)
 			program.set_uniform(self.prog, "view", self.camera.view)
+
+			# draw scene
 			self.draw_scene(self.prog)
 
 
