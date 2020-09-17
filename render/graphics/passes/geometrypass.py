@@ -3,10 +3,12 @@ from OpenGL.GL import *
 from editor.render import puregl, glsl
 
 
-
 class GeometryPass(RenderPass):
     def __init__(self, width, height):
         super().__init__(width, height, depth_test=True, cull_face=GL_BACK, blending=None)
+        self.gPosition = self.gNormal = self.gAlbedo = self.gRoughness = self.gMetallic = self.gEmissive = None
+        self.fbo = None
+        self.program = None
 
     def setup(self):
         # Create textures
@@ -39,7 +41,7 @@ class GeometryPass(RenderPass):
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glBindTexture(GL_TEXTURE_2D, 0)
 
-        # create depth+stencil buffertarget, pname, param
+        # create render buffer
         rbo = glGenRenderbuffers(1)
         glBindRenderbuffer(GL_RENDERBUFFER, rbo)
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, self.width, self.height)
@@ -62,7 +64,7 @@ class GeometryPass(RenderPass):
         # attach render buffers
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
 
-         # cleanup
+        # cleanup
         assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
@@ -130,76 +132,28 @@ if __name__ == "__main__":
     viewer = Viewer(floating=True)
     geometry_pass = GeometryPass(viewer.width, viewer.height)
 
-    prog = None
     @viewer.on_setup
     def setup():
-        for child in scene.children:
-            child.geometry._setup()
+        scene._setup()
         print("setup geometry pass")
         geometry_pass.setup()
 
     @viewer.on_draw
     def draw():
-        glDisable(GL_DEPTH_TEST)
-        print("render geomtry pass")
+        # render passes
         gBuffer = geometry_pass.render(scene, viewer.camera)
         gPosition, gNormal, gAlbedo, gEmissive, gRoughness, gMetallic = gBuffer
 
-        # debug gBuffer
+        # render passes to screen
+        glDisable(GL_DEPTH_TEST)
+        puregl.imdraw.texture(gPosition, (0, 0, viewer.width, viewer.height), shuffle=(0, 1, 2, -1))
+
         puregl.imdraw.texture(gPosition, (0,0,190, 190), shuffle=(0,1,2,-1))
         puregl.imdraw.texture(gNormal, (200,0,190, 190), shuffle=(0,1,2,-1))
         puregl.imdraw.texture(gAlbedo, (400,0,190, 190), shuffle=(0,1,2,-1))
         puregl.imdraw.texture(gEmissive, (600,0,190, 190))
         puregl.imdraw.texture(gRoughness, (800,0,190, 190), shuffle=(0,0,0,-1))
         puregl.imdraw.texture(gMetallic, (1000,0,190, 190), shuffle=(0,0,0,-1))
-
-
-    # confi viewer
-    prog = None
-
-    @viewer.on_setup
-    def setup_scene():
-        # setup geometry
-        for child in scene.children:
-            child.geometry._setup()
-
-    @viewer.on_setup
-    def setup_grid():
-        global prog
-        # program
-        prog = puregl.program.create(
-            """#version 330 core
-            uniform mat4 projection;
-            uniform mat4 view;
-            
-            layout (location=0) in vec3 position;
-            
-            void main(){
-                gl_Position = projection * view * vec4(position, 1);
-            }
-            """,
-            """#version 330 core
-            out vec4 FragColor;
-            void main(){
-                FragColor = vec4(1,1,1,0.3);
-            }
-            """
-        )
-
-    @viewer.on_draw
-    def draw_grid():
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-        global prog
-        # draw
-        with puregl.program.use(prog):
-            # camera
-            puregl.program.set_uniform(prog, "projection", viewer.camera.projection)
-            puregl.program.set_uniform(prog, "view", viewer.camera.view)
-
-            # draw grid
-            puregl.imdraw.grid(prog)
 
     viewer.start(worker=True)
     print("- end of program -")

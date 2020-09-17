@@ -13,3 +13,7 @@ class Scene:
     def children(self) -> [Mesh]:
         return self._children
 
+    def _setup(self):
+        for child in self._children:
+            child.geometry._setup()
+

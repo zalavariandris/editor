@@ -1,6 +1,5 @@
 from OpenGL.GL import *
 import numpy as np
-from editor.render.puregl import program
 
 
 def grid(prog, size=10.9):

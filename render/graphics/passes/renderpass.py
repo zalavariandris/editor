@@ -10,6 +10,37 @@ class RenderPass:
         self.cull_face = cull_face
         self.blending = blending
 
+    @staticmethod
+    def create_texture(level, internalformat, width, height, format, type, data,
+                       min_filter=None, mag_filter=None,
+                       wrap_s=None, wrap_t=None):
+        # generate texture
+        # ----------------
+        tex = glGenTextures(1)
+
+        # define texture
+        # --------------
+        glBindTexture(GL_TEXTURE_2D, tex)
+        glTexImage2D(GL_TEXTURE_2D, level, internalformat, width, height, format, type, data)
+
+        # configure texture
+        # -----------------
+        if min_filter:
+            glTexParameteri(tex, GL_TEXTURE_MIN_FILTER, min_filter)
+        if mag_filter:
+            glTexParameteri(tex, GL_TEXTURE_MAG_FILTER, min_filter)
+        if wrap_s:
+            glTexParameteri(tex, GL_TEXTURE_MIN_FILTER, wrap_s)
+        if wrap_t:
+            glTexParameteri(tex, GL_TEXTURE_MIN_FILTER, wrap_t)
+        glBindTexture(GL_TEXTURE_2D, 0)
+        return tex
+
+    @staticmethod
+    def create_fbo(colors, depth=None, stencil=None):
+        fbo = glGenFramebuffers(1)
+        return fbo
+
     def setup(self):
         pass
 
@@ -27,6 +58,6 @@ class RenderPass:
 
         if self.blending:
             glEnable(GL_BLEND)
-            glBlendFunc(*blending)
+            glBlendFunc(*self.blending)
         else:
             glDisable(GL_BLEND)
