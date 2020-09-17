@@ -10,7 +10,7 @@ def create(*args, **kwargs):
 
 
 @create.register
-def create_with_data(data: np.ndarray, slot, internal_format=None, format=None, type=None, min_filter=GL_NEAREST, mag_filter=GL_NEAREST, wrap_s=None, wrap_t=None, border_color=None):
+def create_with_data(data: np.ndarray, slot, format=None, internal_format=None, type=None, min_filter=GL_NEAREST, mag_filter=GL_NEAREST, wrap_s=None, wrap_t=None, border_color=None):
 	# validate data
 	assert len(data.shape) == 3, "got: {}".format(data.shape)
 	assert data.shape[2] in (1,2,3,4)

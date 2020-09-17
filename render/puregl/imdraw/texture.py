@@ -31,9 +31,3 @@ def texture(tex, rect, shuffle=(0, 1, 2, -1)):
 		quad(debug_quad_program)
 		glBindTexture(GL_TEXTURE_2D, 0)
 
-
-@contextmanager
-def bind(target, tex):
-	glBindTexture(target, tex)
-	yield tex
-	glBindTexture(target, 0)

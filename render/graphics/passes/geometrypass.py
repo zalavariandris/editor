@@ -146,6 +146,7 @@ if __name__ == "__main__":
 
         # render passes to screen
         glDisable(GL_DEPTH_TEST)
+        glDisable(GL_CULL_FACE)
         puregl.imdraw.texture(gPosition, (0, 0, viewer.width, viewer.height), shuffle=(0, 1, 2, -1))
 
         puregl.imdraw.texture(gPosition, (0,0,190, 190), shuffle=(0,1,2,-1))
