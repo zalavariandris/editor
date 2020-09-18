@@ -93,6 +93,8 @@ void main()
             float saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
             float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
 
+            
+
             float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel); 
             
             prefilteredColor += textureLod(environmentMap, L, mipLevel).rgb * NdotL;

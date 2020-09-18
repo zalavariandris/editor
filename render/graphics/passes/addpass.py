@@ -12,31 +12,7 @@ class AddPass(RenderPass):
 
 	def setup(self):
 		# create program
-		self.program = puregl.program.create(
-			"""
-			#version 330 core
-			layout (location = 0) in vec3 position;
-			layout (location = 1) in vec2 uv;
-
-			out vec2 TexCoords;
-			void main()
-			{
-			    TexCoords = uv;
-			    gl_Position = vec4(position, 1.0);
-			}
-			""",
-			"""#version 330 core
-			uniform sampler2D inputA;
-			uniform sampler2D inputB;
-			in vec2 TexCoords;
-			out vec4 FragColor;
-
-			void main(){
-				vec3 colorA = texture(inputA, TexCoords).rgb;
-				vec3 colorB = texture(inputB, TexCoords).rgb;
-				FragColor = vec4(colorA+colorB, 1.0);
-			}
-			""")
+		self.program = puregl.program.create(*glsl.read("graphics/add"))
 
 		# create texture
 		self.output_texture = glGenTextures(1)

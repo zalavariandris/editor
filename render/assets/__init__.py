@@ -10,4 +10,5 @@ def to_srgb(img, gamma=2.2):
 	return np.power(img, (1/gamma, 1/gamma, 1/gamma))
 
 def to_linear(img, gamma=2.2):
-	return np.power(img, (gamma, gamma, gamma))
+	print(img.shape)
+	return np.power(img, (gamma, gamma, gamma)).astype(img.dtype)

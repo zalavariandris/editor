@@ -12,7 +12,7 @@ import glm
 
 class LightingPass(RenderPass):
     def __init__(self, width, height):
-        super().__init__(width, height)
+        super().__init__(width, height, seamless_cubemap=True)
         self.texture = None
         self.fbo = None
         self.program = None

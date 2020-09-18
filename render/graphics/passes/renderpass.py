@@ -30,11 +30,10 @@ class RenderPass:
 
         # TODO: handle more formats
         def format_from_data(data):
-            print("data", data.dtype, data.shape[2])
             if data.dtype == np.float32 and data.shape[2] == 3:
                 return (GL_RGB32F, GL_RGB, GL_FLOAT)
             else: 
-                NotImplementedError("{},{}".format(data.dtype, channels))
+                raise NotImplementedError("{},{}".format(data.dtype, channels))
 
         glinternalformat, glformat, gltype = format_from_data(data)
 

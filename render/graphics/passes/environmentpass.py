@@ -87,7 +87,14 @@ class EnvironmentPass(RenderPass):
                 # draw
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                 puregl.imdraw.cube(self.program, flip=True)
+
+            # glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
             glBindTexture(GL_TEXTURE_2D, 0)
+
+        glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
 
         return self.texture
 

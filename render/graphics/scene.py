@@ -20,26 +20,34 @@ class Scene:
 
     @staticmethod
     def test_scene():
-        cube = Mesh(transform=glm.translate(glm.mat4(1), (1, 0.5, 0.0)) * glm.rotate(glm.mat4(1), glm.radians(30), (0,1,0)),
-                    geometry=Geometry(*puregl.geo.cube()),
-                    material=Material(albedo=(1, 0, 0),
-                                      roughness=0.7,
-                                      metallic=0.0))
-        sphere = Mesh(transform=glm.translate(glm.mat4(1), (-1,0.5, 0.0)),
-                      geometry=Geometry(*puregl.geo.sphere()),
-                      material=Material(albedo=(0.04, 0.5, 0.8),
-                                        roughness=0.2,
-                                        metallic=1.0))
-        plane = Mesh(transform=glm.translate(glm.mat4(1), (0, 0.0, 0.0)),
-                     geometry=Geometry(*puregl.geo.plane()),
-                     material=Material(albedo=(0.5, 0.5, 0.5),
-                                       roughness=0.8,
-                                       metallic=0.0))
-
         scene = Scene()
-        scene.add_child(cube)
-        scene.add_child(sphere)
-        scene.add_child(plane)
+        for j in range(2):
+            for i in range(5):
+                sphere = Mesh(transform=glm.translate(glm.mat4(1), (i*1.0-2.5,0.5, j*3-1.5)),
+                              geometry=Geometry(*puregl.geo.sphere()),
+                              material=Material(albedo=glm.vec3(0.5),
+                                                emission=(0,0,0),
+                                                roughness=i/8.0,
+                                                metallic=float(j)))
+                print(j)
+                scene.add_child(sphere)
 
+
+        # cube = Mesh(transform=glm.translate(glm.mat4(1), (1.0, 0.5, 0.0)) * glm.rotate(glm.mat4(1), glm.radians(30), (0,1,0)),
+        #         geometry=Geometry(*puregl.geo.cube()),
+        #         material=Material(albedo=(1, 0, 0),
+        #                           emission=(0,0,0),
+        #                           roughness=0.7,
+        #                           metallic=0.0))
+        # scene.add_child(cube)
+
+        # plane = Mesh(transform=glm.translate(glm.mat4(1), (0, 0.0, 0.0)),
+        #              geometry=Geometry(*puregl.geo.plane()),
+        #              material=Material(albedo=(0.5, 0.5, 0.5),
+        #                                emission=(0,0,0),
+        #                                roughness=0.8,
+        #                                metallic=0.0))
+        # scene.add_child(plane)
+        
         return scene
 

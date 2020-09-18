@@ -52,6 +52,7 @@ def set_uniform(program, name, value):
 	# if location<0:
 	# 	logging.warning('uniform with name {} is not udes by current shader'.format(name))
 
+	# np arrays
 	if isinstance(value, np.ndarray):
 		if value.shape == (4, 4): # matrix
 			glUniformMatrix4fv(location, 1, False, value)
@@ -60,16 +61,24 @@ def set_uniform(program, name, value):
 		else:
 			raise NotImplementedError('uniform {} {}'.format(type(value), value.shape))
 
+	# glm
 	elif isinstance(value, glm.mat4):
 		glUniformMatrix4fv(location, 1, False, np.array(value))
 	elif isinstance(value, glm.mat3):
 		glUniformMatrix3fv(location, 1, False, np.array(value))
 	elif isinstance(value, glm.vec3):
 		glUniform3f(location, value.x, value.y, value.z)
+	elif isinstance(value, glm.vec2):
+		glUniform2f(location, value.x, value.y)
 
+	# tuples
 	elif isinstance(value, tuple):
 		if len(value) == 3:
 			glUniform3f(location, value[0], value[1], value[2])
+		elif len(value) == 2:
+			glUniform2f(location, value[0], value[1])
+		else:
+			raise NotImplementedError()
 
 	elif isinstance(value, bool):
 		glUniform1i(location, value)
