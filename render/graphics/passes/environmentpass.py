@@ -1,7 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl, assets
-from editor.render.graphics import Scene
 from editor.render.graphics.cameras import Camera360
 import numpy as np
 

@@ -3,6 +3,8 @@ from OpenGL.GL import *
 from editor.render import puregl, glsl
 import numpy as np
 import glm
+from editor.render.graphics import Scene
+from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
 
 class DepthPass(RenderPass):
     def __init__(self, width, height, cull_face=GL_BACK):
@@ -53,7 +55,7 @@ class DepthPass(RenderPass):
         # --------------
         self.program = puregl.program.create(*glsl.read("simple_depth"))
 
-    def render(self, scene, camera):
+    def render(self, scene: Scene, camera: (PerspectiveCamera, OrthographicCamera)):
         super().render()
         with puregl.fbo.bind(self.fbo), puregl.program.use(self.program):
             #set viewport

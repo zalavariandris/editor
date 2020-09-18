@@ -1,19 +1,14 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl, assets
-from editor.render.graphics import Scene
+
 from editor.render.graphics.cameras import Camera360
-from editor.render.graphics.lights import Spotlight, Pointlight, DirectionalLight
+
+from editor.render.graphics.lights import Pointlight, DirectionalLight
+from editor.render.graphics.lights import Spotlight
 import numpy as np
 import glm
 
-from geometrypass import GeometryPass
-from environmentpass import EnvironmentPass
-from iblpass import IrradiancePass, PrefilterPass, BRDFPass
-from tonemappingpass import TonemappingPass
-from clamppass import ClampPass
-from gaussianblurpass import GaussianblurPass
-from addpass import AddPass
 
 class LightingPass(RenderPass):
     def __init__(self, width, height):
@@ -159,6 +154,9 @@ class LightingPass(RenderPass):
         return self.texture
 
 if __name__ == "__main__":
+    from editor.render.graphics.passes import GeometryPass
+    from editor.render.graphics.passes import EnvironmentPass
+    from editor.render.graphics.passes import IrradiancePass, PrefilterPass, BRDFPass
     import glm
     from editor.render.graphics.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
@@ -198,10 +196,6 @@ if __name__ == "__main__":
     prefilter_pass = PrefilterPass(128,128)
     brdf_pass = BRDFPass(512, 512)
     lighting_pass = LightingPass(viewer.width, viewer.height)
-    tonemapping_pass = TonemappingPass(viewer.width, viewer.height)
-    clamp_pass = ClampPass(viewer.width, viewer.height)
-    gaussianblur_pass = GaussianblurPass(viewer.width, viewer.height)
-    add_pass = AddPass(viewer.width, viewer.height)
 
     # texture placeholders
     environment_texture = None
@@ -211,14 +205,11 @@ if __name__ == "__main__":
     prefilter_cubemap = None
     brdf_texture = None
     hdr_texture = None
-    clamped_texture = None
-    blurred_texture = None
-    ldr_texture = None
-    with_bloom_texture = None
+
 
     @viewer.on_setup
     def setup():
-        global gBuffer, environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture, hdr_texture, ldr_texture, clamped_texture
+        global gBuffer, environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture, hdr_texture
         scene._setup()
 
         environment_texture = RenderPass.create_texture_from_data(environment_image)
@@ -230,10 +221,6 @@ if __name__ == "__main__":
         prefilter_pass.setup()
         brdf_pass.setup()
         lighting_pass.setup()
-        clamp_pass.setup()
-        gaussianblur_pass.setup()
-        tonemapping_pass.setup()
-        add_pass.setup()
 
         # render passes
         camera360 = Camera360(transform=glm.mat4(1), near=0.1, far=15)
@@ -245,7 +232,7 @@ if __name__ == "__main__":
 
     @viewer.on_draw
     def draw():
-        global environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture, clamped_texture
+        global environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture
         # Render passes
         # -------------
         # geometry
@@ -256,23 +243,14 @@ if __name__ == "__main__":
             light._render_shadows(scene)
 
         hdr_texture = lighting_pass.render(viewer.camera.position, lights, gBuffer, irradiance_cubemap, prefilter_cubemap, brdf_texture)
-        ldr_texture = tonemapping_pass.render(hdr_texture, exposure=0.0, gamma=2.2)
-        highlights_texture = clamp_pass.render(ldr_texture, minimum=0.95, maximum=1.0)
-        blurred_highlights_texture = gaussianblur_pass.render(highlights_texture, iterations=8)
-        with_bloom_texture = add_pass.render(ldr_texture, blurred_highlights_texture)
+
         # Debug
         # -----
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
 
-        # debug beaury
-        puregl.imdraw.texture(with_bloom_texture,  (  0,0,viewer.width, viewer.height), shuffle=(0,1,2,-1))
-
-        # debug postprocessing
-        puregl.imdraw.texture(hdr_texture,                (  0,300,90,90), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(highlights_texture,         (100,300,90,90), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(blurred_highlights_texture, (200,300,90,90), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(with_bloom_texture,         (300,300,90,90), shuffle=(0,1,2,-1))
+        # debug beauty
+        puregl.imdraw.texture(hdr_texture,  (  0,0,viewer.width, viewer.height), shuffle=(0,1,2,-1))
 
         # debug shadows
         for i, light in enumerate(lights):

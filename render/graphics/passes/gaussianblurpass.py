@@ -1,4 +1,4 @@
-from renderpass import RenderPass
+from . import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl
 

@@ -4,8 +4,9 @@ from editor.render import puregl, glsl, assets
 from editor.render.graphics import Scene
 from editor.render.graphics.cameras import Camera360
 import numpy as np
-from environmentpass import EnvironmentPass
+from . import EnvironmentPass
 import glm
+
 
 class IrradiancePass(RenderPass):
     def __init__(self, width, height):

@@ -42,11 +42,6 @@ pointlight = Pointlight(position=glm.vec3(5, 2, 4),
                         far=8.0)
 
 
-
-
-
-
-
 class Viewer:
     def __init__(self, scene):
         # window
@@ -117,7 +112,6 @@ class Viewer:
             geometry_buffers[mesh] = geo_buffer
 
         return geo_buffer
-
 
     def draw_scene_for_geometry(self, prog):
         import ctypes
@@ -293,11 +287,11 @@ class Viewer:
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.forward_fbo)  # write to default framebuffer
         glBlitFramebuffer(
             0, 0, self.width, self.height, 0, 0, self.width, self.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST
-        );
+        )
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.lighting_pass.fbo)
         glBlitFramebuffer(
             0, 0, self.width, self.height, 0, 0, self.width, self.height, GL_COLOR_BUFFER_BIT, GL_NEAREST
-        );
+        )
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LEQUAL)

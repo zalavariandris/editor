@@ -2,6 +2,9 @@ from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl
 import glm
+from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
+from editor.render.graphics import Scene
+
 
 class GeometryPass(RenderPass):
     def __init__(self, width, height):
@@ -75,7 +78,7 @@ class GeometryPass(RenderPass):
     def resize(self, width, height):
         pass
 
-    def render(self, scene, camera):
+    def render(self, scene: Scene, camera: (PerspectiveCamera, OrthographicCamera)):
         super().render()
 
         with puregl.fbo.bind(self.fbo), puregl.program.use(self.program):
