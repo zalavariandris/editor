@@ -109,18 +109,20 @@ class MatcapLightingPass(RenderPass):
         return self.texture
 
 
-class MatcapRenderer:
+class DeferredMatcapRenderer(RenderPass):
     def __init__(self, width, height):
-        self.width, self.height = width, height
+        super().__init__(width, height, True, GL_BACK)
         self.geometry_pass = GeometryPass(self.width, self.height)
         self.matcap_pass =   MatcapLightingPass(self.width, self.height)
         self.matcap_image = assets.imread("matcap/jeepster_skinmat2.jpg").astype(np.float32)[..., :3]/255
         self.matcap_texture = None
 
     def setup(self):
+        super().setup()
         self.matcap_texture = RenderPass.create_texture_from_data(self.matcap_image)
 
     def render(self, scene, camera):
+        super().render()
         gBuffer = self.geometry_pass.render(scene.find_all(lambda obj: isinstance(obj, Mesh)), camera)
         beauty = self.matcap_pass.render(self.matcap_texture, gBuffer[0], gBuffer[1], camera)
         return beauty
@@ -143,7 +145,7 @@ if __name__ == "__main__":
 
     # create and start viewer
     window = Window(floating=True)
-    renderer = MatcapRenderer(window.width, window.height)
+    renderer = DeferredMatcapRenderer(window.width, window.height)
 
     @window.on_setup
     def setup():

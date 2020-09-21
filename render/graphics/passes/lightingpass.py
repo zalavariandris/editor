@@ -108,6 +108,7 @@ class LightingPass(RenderPass):
             shadowMapIdx, shadowCubeIdx = 0, 0
             for i, light in enumerate(lights):
                 shadow_map = light._shadow_map
+                print("shadow map", shadow_map)
                 slot = 9+i
                 if isinstance(light, DirectionalLight):
                     puregl.program.set_uniform(self.program, "lights[{}].type".format(i), 0)

@@ -131,6 +131,7 @@ class DeferredPBRRenderer(RenderPass):
         for light in scene.find_lights():
             light._render_shadows(scene.find_meshes()+[self.ground_plane])
 
+
         hdr_texture = self.lighting_pass.render(camera.position,
                                                 scene.find_lights(),
                                                 gBuffer,
@@ -162,7 +163,7 @@ class DeferredPBRRenderer(RenderPass):
 
 if __name__ == "__main__":
     import logging
-    from editor.render.graphics.window import Viewer
+    from editor.render.graphics.window import Window
     logging.basicConfig(level=logging.DEBUG)
 
     if __name__ == "__main__":
@@ -172,15 +173,15 @@ if __name__ == "__main__":
 
         scene = Scene.test_scene()
 
-        viewer = Viewer(floating=True)
-        renderer = DeferredPBRRenderer(viewer.width, viewer.height)
+        window = Window(floating=True)
+        renderer = DeferredPBRRenderer(window.width, window.height)
 
 
-        @viewer.on_draw
+        @window.on_draw
         def setup():
-            beauty = renderer.render(scene, viewer.camera)
-            puregl.imdraw.texture(beauty, (0, 0, viewer.width, viewer.height))
+            beauty = renderer.render(scene, window.camera)
+            puregl.imdraw.texture(beauty, (0, 0, window.width, window.height))
 
 
-        viewer.start(worker=False)
+        window.start(worker=False)
         print("- end of program -")
