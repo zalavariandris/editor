@@ -3,8 +3,9 @@ from OpenGL.GL import *
 from editor.render import puregl, glsl
 import numpy as np
 import glm
-from editor.render.graphics import Scene
+from editor.render.graphics import Mesh
 from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
+
 
 class DepthPass(RenderPass):
     def __init__(self, width, height, cull_face=GL_BACK):
@@ -55,7 +56,7 @@ class DepthPass(RenderPass):
         # --------------
         self.program = puregl.program.create(*glsl.read("simple_depth"))
 
-    def render(self, scene: Scene, camera: (PerspectiveCamera, OrthographicCamera)):
+    def render(self, objects: [Mesh], camera: (PerspectiveCamera, OrthographicCamera)):
         super().render()
         with puregl.fbo.bind(self.fbo), puregl.program.use(self.program):
             #set viewport
@@ -68,23 +69,23 @@ class DepthPass(RenderPass):
             puregl.program.set_uniform(self.program, "view", camera.view)
 
             # draw scene
-            for child in scene.children:
+            for mesh in objects:
                 # transform
-                puregl.program.set_uniform(self.program, "model", child.transform)
+                puregl.program.set_uniform(self.program, "model", mesh.transform)
 
                 # material
-                puregl.program.set_uniform(self.program, "albedo", glm.vec3(*child.material.albedo))
-                puregl.program.set_uniform(self.program, "roughness", child.material.roughness)
-                puregl.program.set_uniform(self.program, "metallic", child.material.metallic)
+                puregl.program.set_uniform(self.program, "albedo", glm.vec3(*mesh.material.albedo))
+                puregl.program.set_uniform(self.program, "roughness", mesh.material.roughness)
+                puregl.program.set_uniform(self.program, "metallic", mesh.material.metallic)
 
                 # geometry
-                child.geometry._draw(self.program)
+                mesh.geometry._draw(self.program)
 
         return self.texture
 
 
 if __name__ == "__main__":
-    from editor.render.graphics.viewer import Viewer
+    from editor.render.graphics.window import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
 
     scene = Scene.test_scene()

@@ -10,7 +10,7 @@ from .. import geo
 
 @functools.lru_cache(maxsize=128)
 def cube_buffer(locations, flip=False):
-    logging.debug("create cube buffer for locations: {}".format(locations))
+    logging.debug("create cube buffer".format())
     positions, normals, uvs, indices = geo.cube(flip=flip)
     position_location, uv_location, normal_location = locations
     count = indices.size

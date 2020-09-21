@@ -11,6 +11,7 @@ class ClampPass(RenderPass):
 		self.fbo = None
 
 	def setup(self):
+		super().setup()
 		# create program
 		self.program = puregl.program.create(*glsl.read("graphics/clamp"))
 
@@ -40,6 +41,7 @@ class ClampPass(RenderPass):
 			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 
 	def render(self, input_texture, minimum, maximum):
+		super().render()
 		glCullFace(GL_BACK)
 		glDisable(GL_DEPTH_TEST)
 		with puregl.fbo.bind(self.fbo), puregl.program.use(self.program) as prog:

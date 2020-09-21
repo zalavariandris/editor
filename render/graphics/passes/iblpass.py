@@ -1,7 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl, assets
-from editor.render.graphics import Scene
 from editor.render.graphics.cameras import Camera360
 import numpy as np
 from . import EnvironmentPass
@@ -17,6 +16,7 @@ class IrradiancePass(RenderPass):
         self.irradiance = None
 
     def setup(self):
+        super().setup()
         # Create textures
         # ---------------
         self.irradiance = glGenTextures(1)
@@ -156,6 +156,7 @@ class BRDFPass(RenderPass):
         self.brdflut = None #output texture
 
     def setup(self):
+        super().setup()
         # Create Shader
         self.program = puregl.program.create(*glsl.read('brdf'))
         
@@ -191,7 +192,7 @@ class BRDFPass(RenderPass):
 
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.viewer import Viewer
+    from editor.render.graphics.window import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
     import time, math
 

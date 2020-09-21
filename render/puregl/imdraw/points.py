@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 import ctypes
+import logging
 
 
 def points(prog, positions):
@@ -9,6 +10,7 @@ def points(prog, positions):
     has_position = positions and pos_loc is not -1
 
     # create vertex buffers
+    logging.debug("create points buffers")
     if has_position:
         pos_vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, pos_vbo)
@@ -37,4 +39,3 @@ def points(prog, positions):
     glDeleteVertexArrays(1, vao)
     if pos_vbo:
         glDeleteBuffers(1, pos_vbo)
-

@@ -1,5 +1,7 @@
 from OpenGL.GL import *
 import numpy as np
+import logging
+
 
 class RenderPass:
     """
@@ -17,6 +19,8 @@ class RenderPass:
         self.cull_face = cull_face
         self.blending = blending
         self.seamless_cubemap = seamless_cubemap
+
+        self._needs_setup = True
 
     @staticmethod
     def create_texture_from_data(data: np.ndarray, level=0, internal_format=None, format=None, type=None, min_filter=GL_LINEAR, mag_filter=GL_LINEAR, wrap_s=None, wrap_t=None, border_color=None):
@@ -60,15 +64,13 @@ class RenderPass:
 
         return tex
 
-    @staticmethod
-    def create_fbo(colors, depth=None, stencil=None):
-        fbo = glGenFramebuffers(1)
-        return fbo
-
     def setup(self):
-        pass
+        logging.debug("setup {}".format(self.__class__.__name__))
+        self._needs_setup = False
 
     def render(self, *args):
+        if self._needs_setup:
+            self.setup()
         if self.cull_face:
             glEnable(GL_CULL_FACE)
             glCullFace(self.cull_face)
@@ -90,3 +92,11 @@ class RenderPass:
             glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS)
         else:
             glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS)
+
+    def copy_buffer_from(self, source, buffers):
+        if self._needs_setup:
+            self.setup()
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, source.fbo)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.fbo)  # write to default framebuffer
+        glBlitFramebuffer(0, 0, self.width, self.height, 0, 0, self.width, self.height, buffers, GL_NEAREST)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)

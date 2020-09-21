@@ -11,6 +11,7 @@ class TonemappingPass(RenderPass):
 		self.fbo = None
 
 	def setup(self):
+		super().setup()
 		# create program
 		self.program = puregl.program.create(
 			"""#version 330 core

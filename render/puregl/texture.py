@@ -2,7 +2,7 @@ from OpenGL.GL import *
 import numpy as np
 from functools import singledispatch
 
-
+import logging
 
 @singledispatch
 def create(*args, **kwargs):
@@ -11,6 +11,7 @@ def create(*args, **kwargs):
 
 @create.register
 def create_with_data(data: np.ndarray, slot, format=None, internal_format=None, type=None, min_filter=GL_NEAREST, mag_filter=GL_NEAREST, wrap_s=None, wrap_t=None, border_color=None):
+	logging.debug("create texture with data")
 	# validate data
 	assert len(data.shape) == 3, "got: {}".format(data.shape)
 	assert data.shape[2] in (1,2,3,4)
@@ -56,6 +57,7 @@ def create_with_data(data: np.ndarray, slot, format=None, internal_format=None, 
 
 @create.register
 def create_with_size(size: tuple, slot, format, wrap_s=None, wrap_t=None, border_color=None):
+	logging.debug("create texture with size")
 	tex = glGenTextures(1)
 	glActiveTexture(GL_TEXTURE0+slot)
 	glBindTexture(GL_TEXTURE_2D, tex)

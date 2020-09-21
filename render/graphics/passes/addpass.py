@@ -11,6 +11,7 @@ class AddPass(RenderPass):
 		self.fbo = None
 
 	def setup(self):
+		super().setup()
 		# create program
 		self.program = puregl.program.create(*glsl.read("graphics/add"))
 
@@ -40,6 +41,7 @@ class AddPass(RenderPass):
 			assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 
 	def render(self, inputA, inputB):
+		super().render()
 		glCullFace(GL_BACK)
 		glDisable(GL_DEPTH_TEST)
 		with puregl.fbo.bind(self.fbo), puregl.program.use(self.program) as prog:

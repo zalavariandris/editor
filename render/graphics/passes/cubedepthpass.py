@@ -1,7 +1,7 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl
-from editor.render.graphics import Scene
+from editor.render.graphics import Mesh
 from editor.render.graphics.cameras import Camera360
 import numpy as np
 
@@ -54,7 +54,7 @@ class CubeDepthPass(RenderPass):
         # --------------
         self.program = puregl.program.create(*glsl.read("point_shadow"))
 
-    def render(self, scene: Scene, camera: Camera360):
+    def render(self, objects: [Mesh], camera: Camera360):
         super().render()
         with puregl.fbo.bind(self.fbo), puregl.program.use(self.program):
             #set viewport
@@ -69,19 +69,19 @@ class CubeDepthPass(RenderPass):
             puregl.program.set_uniform(self.program, "lightPos", camera.position)
 
             # draw scene
-            for child in scene.children:
+            for mesh in objects:
                 # transform
-                puregl.program.set_uniform(self.program, "model", child.transform)
+                puregl.program.set_uniform(self.program, "model", mesh.transform)
 
                 # geometry
-                child.geometry._draw(self.program)
+                mesh.geometry._draw(self.program)
 
         return self.texture
 
 
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.viewer import Viewer
+    from editor.render.graphics.window import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
     import time, math
 

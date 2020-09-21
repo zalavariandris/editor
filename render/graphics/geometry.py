@@ -1,12 +1,14 @@
 from editor.render import puregl
 from OpenGL.GL import *
 
+
 class Geometry:
     def __init__(self, positions, normals, uvs, indices):
         self._positions = positions
         self._normals = normals
         self._uvs = uvs
         self._indices = indices
+        self._needs_setup = True
 
     @property
     def positions(self):
@@ -46,7 +48,6 @@ class Geometry:
         glBindBuffer(GL_ARRAY_BUFFER, norm_vbo)
         glBufferData(GL_ARRAY_BUFFER, normals.nbytes, normals, GL_STATIC_DRAW)
 
-
         # create EBO
         ebo = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
@@ -58,7 +59,12 @@ class Geometry:
         self._ebo = ebo
         self._vbos = pos_vbo, uv_vbo, norm_vbo
 
+        self._needs_setup = False
+
     def _draw(self, prog):
+        if self._needs_setup:
+            self._setup()
+
         vao = self._vao
         ebo = self._ebo
         pos_vbo, uv_vbo, norm_vbo = self._vbos
@@ -72,13 +78,13 @@ class Geometry:
         glEnableVertexAttribArray(position_location)
 
         uv_location = glGetAttribLocation(prog, 'uv')
-        if uv_location>=0:
+        if uv_location >= 0:
             glBindBuffer(GL_ARRAY_BUFFER, uv_vbo)
             glVertexAttribPointer(uv_location, 2, GL_FLOAT, False, 0, None)
             glEnableVertexAttribArray(uv_location)
 
         norm_location = glGetAttribLocation(prog, 'normal')
-        if norm_location>=0:
+        if norm_location >= 0:
             glBindBuffer(GL_ARRAY_BUFFER, norm_vbo)
             glVertexAttribPointer(norm_location, 3, GL_FLOAT, False, 0, None)
             glEnableVertexAttribArray(norm_location)
@@ -88,8 +94,6 @@ class Geometry:
         glDrawElements(GL_TRIANGLES, self.indices.size, GL_UNSIGNED_INT, None)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
-
-
 
     @classmethod
     def cube(cls):

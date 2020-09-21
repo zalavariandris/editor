@@ -1,12 +1,14 @@
 from OpenGL.GL import *
 import numpy as np
 import glm
+import logging
 
 from . import cube
 from .. import program
 
 
 def cubemap(tex, rect, projection, view, LOD=None, shuffle=(0,1,2,3)):
+	logging.debug("create cubemap program")
 	prog = program.create(
 		"""
 		#version 330 core

@@ -11,6 +11,7 @@ class GaussianblurPass(RenderPass):
         self.fbo = None
 
     def setup(self):
+        super().setup()
         self.program = puregl.program.create(*glsl.read('gaussian'))
 
         self.bloom_blur_fbos = glGenFramebuffers(2)
@@ -32,13 +33,13 @@ class GaussianblurPass(RenderPass):
             assert glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-    def render(self, input_texture, iterations=4):
+    def render(self, input_texture, iterations=2):
         super().render()
 
         horizontal = True
         first_iteration = True
         with puregl.program.use(self.program):
-            for i in range(iterations):
+            for i in range(iterations*2):
                 horizontal = i % 2
                 glBindFramebuffer(GL_FRAMEBUFFER, self.bloom_blur_fbos[horizontal])
                 glClearColor(0.0, 0.0, 0.0, 1.0)

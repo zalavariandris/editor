@@ -3,6 +3,46 @@ from .cameras import OrthographicCamera, PerspectiveCamera, Camera360
 from .passes import DepthPass, CubeDepthPass
 from OpenGL.GL import *
 import numpy as np
+import logging
+
+from editor.render.graphics import Mesh
+
+
+class ShadowMap(DepthPass):
+    def __init__(self, width, height, radius, near, far):
+        super().__init__(width, height, cull_face=GL_FRONT)
+        self.radius = radius
+        self.near = near
+        self.far = far
+        self.position = glm.vec3()
+        self.direction = glm.vec3()
+
+    @property
+    def camera(self):
+        tr = glm.lookAt(self.position, self.position + self.direction, (0, 1, 0))
+        return OrthographicCamera(glm.inverse(tr), self.radius * 2, self.radius * 2, self.near, self.far)
+
+    def setup(self):
+        super().setup()
+
+    def render(self, objects: [Mesh]):
+        return super().render(objects, self.camera)
+
+
+class ShadowCubemap(CubeDepthPass):
+    def __init__(self, width, height):
+        super().__init__(width, height, cull_face=GL_FRONT)
+        self.position = glm.vec3()
+
+    @property
+    def camera(self):
+        pass
+
+    def setup(self):
+        super().setup()
+
+    def render(self, objects: [Mesh]):
+        return super().render(objects, self.camera)
 
 
 class DirectionalLight:
@@ -16,6 +56,8 @@ class DirectionalLight:
 
         self._shadow_pass = DepthPass(1024, 1024, cull_face=GL_FRONT)
         self._depth_map = None
+
+        self._needs_setup = True
 
     @property
     def projection(self):
@@ -32,14 +74,18 @@ class DirectionalLight:
 
     def _setup_shadows(self):
         """setup shadows"""
+        logging.debug("setup shadows")
         self._shadow_pass.setup()
+        self._needs_setup = False
 
     def _render_shadows(self, scene):
         """render shadows"""
+        if self._needs_setup:
+            self._setup_shadows()
         self._shadow_map = self._shadow_pass.render(scene, self.camera)
 
 
-class Spotlight:
+class SpotLight:
     def __init__(self, position, direction, color, fov, near, far):
         self.position = position
         self.direction = direction
@@ -50,6 +96,8 @@ class Spotlight:
 
         self._shadow_pass = DepthPass(1024, 1024, cull_face=GL_FRONT)
         self._depth_map = None
+
+        self._needs_setup = True
 
     @property
     def cut_off(self):
@@ -71,14 +119,18 @@ class Spotlight:
 
     def _setup_shadows(self):
         """setup shadows"""
+        logging.debug("setup shadows")
         self._shadow_pass.setup()
+        self._needs_setup = False
 
     def _render_shadows(self, scene):
         """render shadows"""
+        if self._needs_setup:
+            self._setup_shadows()
         self._shadow_map = self._shadow_pass.render(scene, self.camera)
 
 
-class Pointlight:
+class PointLight:
     def __init__(self, position, color, near, far):
         self.position = position
         self.color = color
@@ -87,6 +139,8 @@ class Pointlight:
 
         self._shadow_pass = CubeDepthPass(1024, 1024, cull_face=GL_FRONT)
         self._depth_map = None
+
+        self._needs_setup = True
 
     @property
     def projection(self):
@@ -119,8 +173,12 @@ class Pointlight:
 
     def _setup_shadows(self):
         """setup shadows"""
+        logging.debug("setup shadows")
         self._shadow_pass.setup()
+        self._needs_setup = False
 
     def _render_shadows(self, scene):
         """render shadows"""
+        if self._needs_setup:
+            self._setup_shadows()
         self._shadow_map = self._shadow_pass.render(scene, self.camera)

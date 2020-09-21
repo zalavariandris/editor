@@ -13,11 +13,11 @@ out vec3 Albedo;
 out float Specular;
 
 void main(){
-	// positin in world-space
+	// position in world-space
     FragPos = (model * vec4(position, 1.0)).xyz;
 
     // normal in word-space
-    mat3 normalMatrix = transpose(inverse(mat3( model)));
+    mat3 normalMatrix = transpose(inverse(mat3(model)));
 	Normal = normalMatrix * normal;
 
 	// albedo

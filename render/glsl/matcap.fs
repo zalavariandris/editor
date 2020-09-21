@@ -8,6 +8,7 @@ uniform sampler2D matCap;
 out vec4 FragColor;
 
 void main(){
+
 	vec3 normal = normalize(Normal);
 	vec3 R=reflect(Eye, normal);
 

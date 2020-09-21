@@ -1,6 +1,6 @@
 class Material:
     """PBR material"""
-    def __init__(self, albedo, emission, roughness, metallic, ao=1.0):
+    def __init__(self, albedo=(0.5, 0.5, 0.5), emission=(0.5, 0.5, 0.5), roughness=0.5, metallic=0.0, ao=1.0):
         self._albedo = albedo
         self._emission = emission
         self._roughness = roughness

@@ -101,12 +101,12 @@ class EnvironmentPass(RenderPass):
 
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.viewer import Viewer
+    from editor.render.graphics.window import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
     import time, math
 
     viewer = Viewer(floating=True)
-    environment_pass = EnvironmentPass(1024,1024)
+    environment_pass = EnvironmentPass(512, 512)
     environment_image = assets.imread('hdri/Tropical_Beach_3k.hdr').astype(np.float32)
 
     environment_texture = None

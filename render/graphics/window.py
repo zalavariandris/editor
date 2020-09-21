@@ -6,7 +6,8 @@ from editor.render.graphics import cameras
 from editor.render import puregl
 import glm
 
-class Viewer:
+
+class Window:
     def __init__(self, width=1280, height=720, title="Graphics Viewer", background_color=(0,0,0,1), floating=False):
         self.width = width
         self.height = height
