@@ -16,8 +16,8 @@ if __name__ == "__main__":
         triscene = trimesh.load(path)
 
         print( [name for name in triscene.geometry.keys()] )
-        sphere = triscene.geometry['Sphere']
-
+        sphere = triscene.geometry['Cube']
+        print( sphere.__dict__ )
 
         derived_geo=Geometry(positions=sphere.vertices.astype(np.float32),
                              normals=sphere.vertex_normals.astype(np.float32),
@@ -28,11 +28,32 @@ if __name__ == "__main__":
                       geometry=derived_geo,#Geometry(*puregl.geo.sphere()),
                       material=Material(albedo=glm.vec3(0.5),
                                         emission=(0,0,0),
-                                        roughness=0.5,
-                                        metallic=0.0))
+                                        roughness=0.3,
+                                        metallic=1.0))
     
-        scene = Scene.test_scene()
+        scene = Scene()
         scene.add_child(sphere)
+        from editor.render.graphics.lights import PointLight, SpotLight
+
+        scene.add_child(PointLight(position=glm.vec3(5, 2, 4),
+                        color=glm.vec3(1, 0.7, 0.1) * 500,
+                        near=1.0,
+                        far=10.0))
+
+        # scene.add_child(SpotLight(position=glm.vec3(-2, 0.5, -4),
+        #                       direction=glm.vec3(2, -0.5, 4),
+        #                       color=glm.vec3(0.2, 0.18, 0.7) * 150,
+        #                       fov=45.0,
+        #                       near=1.0,
+        #                       far=30.0))
+
+        plane = Mesh(transform=glm.translate(glm.mat4(1), (0, 0.0, 0.0)),
+                     geometry=Geometry(*puregl.geo.plane()),
+                     material=Material(albedo=(0.5, 0.5, 0.5),
+                                       emission=(0,0,0),
+                                       roughness=0.8,
+                                       metallic=0.0))
+        scene.add_child(plane)
 
 
         window = Window(floating=True)
