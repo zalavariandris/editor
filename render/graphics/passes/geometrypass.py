@@ -112,7 +112,7 @@ class GeometryPass(RenderPass):
             
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.window import Viewer
+    from editor.render.graphics.window import Window
     from editor.render.graphics import Scene, Mesh, Geometry, Material
 
     cube = Mesh(transform=glm.translate(glm.mat4(1), (1, 0.5, 0.0)),
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     scene.add_child(sphere)
     scene.add_child(plane)
 
-    viewer = Viewer(floating=True)
+    viewer = Window(floating=True)
     viewer.camera.far = 10
     viewer.camera.near = 1
     geometry_pass = GeometryPass(viewer.width, viewer.height)

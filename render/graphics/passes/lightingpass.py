@@ -6,7 +6,7 @@ from editor.render.graphics.cameras import Camera360
 
 
 import numpy as np
-import glm
+from editor.render.graphics.lights import PointLight, DirectionalLight, SpotLight
 
 
 class LightingPass(RenderPass):
@@ -104,7 +104,7 @@ class LightingPass(RenderPass):
             glBindTexture(GL_TEXTURE_2D, brdf)
             puregl.program.set_uniform(self.program, "brdfLUT", 8)
 
-            from editor.render.graphics.lights import PointLight, DirectionalLight, SpotLight
+
             shadowMapIdx, shadowCubeIdx = 0, 0
             for i, light in enumerate(lights):
                 shadow_map = light._shadow_map
@@ -160,11 +160,10 @@ if __name__ == "__main__":
     from editor.render.graphics.passes import EnvironmentPass
     from editor.render.graphics.passes import IrradiancePass, PrefilterPass, BRDFPass
     import glm
-    from editor.render.graphics.window import Viewer
+    from editor.render.graphics.window import Window
     from editor.render.graphics import Scene, Mesh, Geometry, Material
-    import time, math
 
-    viewer = Viewer(floating=True)
+    viewer = Window(floating=True)
 
     # assets
     environment_image = assets.imread('hdri/Tropical_Beach_3k.hdr').astype(np.float32)
@@ -212,17 +211,17 @@ if __name__ == "__main__":
     @viewer.on_setup
     def setup():
         global gBuffer, environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture, hdr_texture
-        scene._setup()
+        # scene._setup()
 
         environment_texture = RenderPass.create_texture_from_data(environment_image)
-        geometry_pass.setup()
-        for light in lights:
-            light._setup_shadows()
-        environment_pass.setup()
-        irradiance_pass.setup()
-        prefilter_pass.setup()
-        brdf_pass.setup()
-        lighting_pass.setup()
+        # geometry_pass.setup()
+        # for light in lights:
+        #     light._setup_shadows()
+        # environment_pass.setup()
+        # irradiance_pass.setup()
+        # prefilter_pass.setup()
+        # brdf_pass.setup()
+        # lighting_pass.setup()
 
         # render passes
         camera360 = Camera360(transform=glm.mat4(1), near=0.1, far=15)
@@ -238,11 +237,11 @@ if __name__ == "__main__":
         # Render passes
         # -------------
         # geometry
-        gBuffer = geometry_pass.render(scene, viewer.camera)
+        gBuffer = geometry_pass.render(scene.find_meshes(), viewer.camera)
 
         # shadows
         for light in lights:
-            light._render_shadows(scene)
+            light._render_shadows(scene.find_meshes())
 
         hdr_texture = lighting_pass.render(viewer.camera.position, lights, gBuffer, irradiance_cubemap, prefilter_cubemap, brdf_texture)
 
@@ -258,7 +257,7 @@ if __name__ == "__main__":
         for i, light in enumerate(lights):
             if isinstance(light, PointLight):
                 puregl.imdraw.cubemap(light._shadow_map, (i*100, 200, 90, 90), viewer.camera.projection, viewer.camera.view, shuffle=(0,0,0,-1))
-            elif isinstance(light, SpotLight, DirectionalLight):
+            elif isinstance(light, (SpotLight, DirectionalLight)):
                 puregl.imdraw.texture(light._shadow_map, (i*100, 200, 90, 90), shuffle=(0,0,0,-1))
 
         # debug gBuffer

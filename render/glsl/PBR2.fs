@@ -163,8 +163,8 @@ void main()
 			attenuation = 1.0 / (distance*distance);
 
 			// calc shadow
-			float shadow = PointShadowCalculation(lights[i].position, surfacePos, shadowCubes[0], lights[i].farPlane);
-			attenuation*=1-shadow;
+			//float shadow = PointShadowCalculation(lights[i].position, surfacePos, shadowCubes[0], lights[i].farPlane);
+			//attenuation*=1-shadow;
 		}
 		else{
 			continue;

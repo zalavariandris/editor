@@ -1,14 +1,15 @@
 import glm
 from . import Material
-
+import uuid
 
 class Mesh:
-    def __init__(self, geometry, transform=glm.mat4(1), material=Material()):
+    def __init__(self, geometry, transform=glm.mat4(1), material=Material(), name=uuid.uuid4().hex):
         self._transform = transform
         self._material = material
         self._geometry = geometry
 
         self.buffers = ()
+        self.name = name
 
     @property
     def transform(self):

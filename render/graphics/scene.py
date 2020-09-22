@@ -92,3 +92,52 @@ class Scene:
         
         return scene
 
+    @staticmethod
+    def from_trimesh_scene(triscene):
+        import uuid
+        import logging
+        from editor.render.graphics import Scene, Mesh, Geometry, Material
+        # read scene
+
+        scene = Scene()
+        # convert gltf
+        for name, data in triscene.graph.transforms.nodes(data=True):
+            # extract transform
+            import glm
+            transform = glm.mat4(triscene.graph[name][0])
+
+            # extract mesh
+            hasGeometry = 'geometry' in data
+            if hasGeometry:
+                trigeo = triscene.geometry[data['geometry']]
+                print("!!!!!!!!!!", name)
+                print(transform)
+                # geometry
+                geometry = Geometry(positions = trigeo.vertices.astype(np.float32),
+                            indices =   trigeo.faces.astype(np.uint),
+                            normals =   trigeo.vertex_normals.astype(np.float32),
+                            uvs =       trigeo.visual.uv.astype(np.float32))
+
+                # material
+                print("!!!!!!!!!!", trigeo.visual.material.baseColorFactor)
+                material = Material(albedo=trigeo.visual.material.baseColorFactor[:3]/255,
+                            emission=trigeo.visual.material.emissiveFactor[:3]/255,
+                            roughness=float(trigeo.visual.material.roughnessFactor),
+                            metallic=float(trigeo.visual.material.metallicFactor))
+
+                scene.add_child(Mesh(name=name,
+                                    transform=glm.transpose(transform),
+                                    geometry=geometry,
+                                    material=material))
+            else:
+                logging.warning("currently only supports mesh")
+            # extract light
+
+        return scene
+
+    def plot(self):
+        for obj in self.children:
+            print("•",obj.name)
+
+
+
