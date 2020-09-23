@@ -10,25 +10,38 @@ if __name__ == "__main__":
 
     if __name__ == "__main__":
         import numpy as np
+
         import glm
+        from editor.render import assets
         from editor.render.graphics import Scene
-        from editor.render.graphics.lights import PointLight, DirectionalLight
+        from editor.render.graphics.lights import PointLight, SpotLight, DirectionalLight
         from pathlib import Path
         path = Path("../../assets/test_scene.glb").resolve()
         triscene = trimesh.load(str(path))
         scene = Scene.from_trimesh_scene(triscene)
         scene.plot()
 
-        dirlight = DirectionalLight(direction=glm.vec3(5, -8, -3),
-                                    color=glm.vec3(1.0),
-                                    position=glm.vec3(-5, 8, 3),
-                                    radius=5.0,
-                                    near=1.0,
-                                    far=30)
-        scene.add_child(dirlight)
+        # dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
+        #                             color=glm.vec3(1.0),
+        #                             intensity=2.0,
+        #                             position=glm.vec3(-1, 6, 2),
+        #                             radius=5.0,
+        #                             near=1.0,
+        #                             far=30)
+        # scene.add_child(dirlight)
+        #
+        # spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
+        #                       direction=glm.vec3(1, -0.5, 3),
+        #                       color=glm.vec3(0.04, 0.6, 1.0),
+        #                       intensity=150,
+        #                       fov=60,
+        #                       near=1.0,
+        #                       far=10)
+        # scene.add_child(spotlight)
 
-        pointlight = PointLight(position=glm.vec3(5, 2, 4),
-                                color=glm.vec3(1, 0.7, 0.1) * 500,
+        pointlight = PointLight(position=glm.vec3(2, 0.3, 2),
+                                color=glm.vec3(1, 0.7, 0.1),
+                                intensity=175,
                                 near=1.0,
                                 far=10.0)
         scene.add_child(pointlight)
@@ -40,6 +53,7 @@ if __name__ == "__main__":
         def draw():
             beauty = renderer.render(scene, window.camera)
             puregl.imdraw.texture(beauty, (0, 0, window.width, window.height))
+            puregl.imdraw.axis(window.camera.projection, window.camera.view)
 
 
         window.start(worker=False)

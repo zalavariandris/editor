@@ -9,6 +9,7 @@ from .torusknot import torusknot
 from .texture import texture
 from .cubemap import cubemap
 from .grid import grid
+from .axis import axis
 
 
 

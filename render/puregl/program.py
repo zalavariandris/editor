@@ -78,7 +78,7 @@ def set_uniform(program, name, value):
 		elif len(value) == 2:
 			glUniform2f(location, value[0], value[1])
 		else:
-			raise NotImplementedError()
+			raise NotImplementedError("for value: {}".format(value))
 
 	elif isinstance(value, bool):
 		glUniform1i(location, value)

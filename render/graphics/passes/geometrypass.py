@@ -4,7 +4,7 @@ from editor.render import puregl, glsl
 import glm
 from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
 from editor.render.graphics import Mesh
-
+from editor.render.assets import to_linear
 
 class GeometryPass(RenderPass):
     def __init__(self, width, height):
@@ -99,8 +99,8 @@ class GeometryPass(RenderPass):
                 puregl.program.set_uniform(self.program, "model", mesh.transform)
 
                 # material
-                puregl.program.set_uniform(self.program, "albedo", glm.vec3(*mesh.material.albedo))
-                puregl.program.set_uniform(self.program, "emission", glm.vec3(*mesh.material.emission))
+                puregl.program.set_uniform(self.program, "albedo", to_linear(glm.vec3(*mesh.material.albedo)))
+                puregl.program.set_uniform(self.program, "emission", to_linear(glm.vec3(*mesh.material.emission)))
                 puregl.program.set_uniform(self.program, "roughness", mesh.material.roughness)
                 puregl.program.set_uniform(self.program, "metallic", mesh.material.metallic)
 

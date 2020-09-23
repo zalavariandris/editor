@@ -7,9 +7,10 @@ from editor.render.graphics.cameras import Camera360
 
 import numpy as np
 from editor.render.graphics.lights import PointLight, DirectionalLight, SpotLight
+from editor.render.assets import to_linear
 
 
-class LightingPass(RenderPass):
+class PBRLightingPass(RenderPass):
     def __init__(self, width, height):
         super().__init__(width, height, seamless_cubemap=True)
         self.texture = None
@@ -20,7 +21,7 @@ class LightingPass(RenderPass):
         super().setup()
         # create program
         # --------------
-        self.program = puregl.program.create(*glsl.read("PBR2"))
+        self.program = puregl.program.create(*glsl.read("graphics/pbrlighting"))
 
         with puregl.program.use(self.program):
             puregl.program.set_uniform(self.program, "projectionMatrix", np.eye(4))
@@ -104,15 +105,13 @@ class LightingPass(RenderPass):
             glBindTexture(GL_TEXTURE_2D, brdf)
             puregl.program.set_uniform(self.program, "brdfLUT", 8)
 
-
             shadowMapIdx, shadowCubeIdx = 0, 0
             for i, light in enumerate(lights):
                 shadow_map = light._shadow_map
-                print("shadow map", shadow_map)
                 slot = 9+i
                 if isinstance(light, DirectionalLight):
                     puregl.program.set_uniform(self.program, "lights[{}].type".format(i), 0)
-                    puregl.program.set_uniform(self.program, "lights[{}].color".format(i), light.color)
+                    puregl.program.set_uniform(self.program, "lights[{}].color".format(i), to_linear(light.color)*light.intensity)
 
                     puregl.program.set_uniform(self.program, "lights[{}].direction".format(i), light.direction)
                     puregl.program.set_uniform(self.program, "lights[{}].shadowIdx".format(i), shadowMapIdx)
@@ -125,7 +124,7 @@ class LightingPass(RenderPass):
 
                 elif isinstance(light, SpotLight):
                     puregl.program.set_uniform(self.program, "lights[{}].type".format(i), 1)
-                    puregl.program.set_uniform(self.program, "lights[{}].color".format(i), light.color)
+                    puregl.program.set_uniform(self.program, "lights[{}].color".format(i), to_linear(light.color)*light.intensity)
 
                     puregl.program.set_uniform(self.program, "lights[{}].position".format(i), light.position)
                     puregl.program.set_uniform(self.program, "lights[{}].direction".format(i), light.direction)
@@ -140,7 +139,7 @@ class LightingPass(RenderPass):
 
                 elif isinstance(light, PointLight):
                     puregl.program.set_uniform(self.program, "lights[{}].type".format(i), 2)
-                    puregl.program.set_uniform(self.program, "lights[{}].color".format(i), light.color)
+                    puregl.program.set_uniform(self.program, "lights[{}].color".format(i), to_linear(light.color)*light.intensity)
                     puregl.program.set_uniform(self.program, "lights[{}].position".format(i), light.position)
 
                     glActiveTexture(GL_TEXTURE0+slot)
@@ -170,23 +169,26 @@ if __name__ == "__main__":
 
     # scene
     scene = Scene.test_scene()
-    dirlight = DirectionalLight(direction=glm.vec3(5, -8, -3),
-                                color=glm.vec3(1.0) * 1.0,
-                                position=glm.vec3(-5, 8, 3),
+    dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
+                                color=glm.vec3(1.0),
+                                intensity=1.0,
+                                position=glm.vec3(-1, 6, 2),
                                 radius=5.0,
                                 near=1.0,
                                 far=30)
 
-    spotlight = SpotLight(position=glm.vec3(-2, 0.5, -4),
-                          direction=glm.vec3(2, -0.5, 4),
-                          color=glm.vec3(0.2, 0.18, 0.7) * 1500,
-                          fov=45.0,
+    spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
+                          direction=glm.vec3(1, -0.5, 3),
+                          color=glm.vec3(0.04, 0.6, 1.0),
+                          intensity=150.0,
+                          fov=60,
                           near=1.0,
-                          far=30.0)
+                          far=10)
 
-    pointlight = PointLight(position=glm.vec3(5, 2, 4),
-                            color=glm.vec3(1, 0.7, 0.1) * 500,
-                            near=1.0,
+    pointlight = PointLight(position=glm.vec3(2.5, 1.3, 2.5),
+                            color=glm.vec3(1, 0.7, 0.1),
+                            intensity=17.5,
+                            near=0.1,
                             far=10.0)
     lights = [dirlight, spotlight, pointlight]
 
@@ -196,7 +198,7 @@ if __name__ == "__main__":
     irradiance_pass = IrradiancePass(32,32)
     prefilter_pass = PrefilterPass(128,128)
     brdf_pass = BRDFPass(512, 512)
-    lighting_pass = LightingPass(viewer.width, viewer.height)
+    lighting_pass = PBRLightingPass(viewer.width, viewer.height)
 
     # texture placeholders
     environment_texture = None
@@ -214,14 +216,6 @@ if __name__ == "__main__":
         # scene._setup()
 
         environment_texture = RenderPass.create_texture_from_data(environment_image)
-        # geometry_pass.setup()
-        # for light in lights:
-        #     light._setup_shadows()
-        # environment_pass.setup()
-        # irradiance_pass.setup()
-        # prefilter_pass.setup()
-        # brdf_pass.setup()
-        # lighting_pass.setup()
 
         # render passes
         camera360 = Camera360(transform=glm.mat4(1), near=0.1, far=15)
@@ -276,5 +270,5 @@ if __name__ == "__main__":
         puregl.imdraw.cubemap(prefilter_cubemap,   (300, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
         puregl.imdraw.texture(brdf_texture,        (400, 100, 90, 90))
 
-    viewer.start(worker=False)
+    viewer.start(worker=True)
     print("- end of program -")

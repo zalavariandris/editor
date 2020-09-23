@@ -5,7 +5,7 @@ from .cubedepthpass import CubeDepthPass
 from .geometrypass import GeometryPass
 from .environmentpass import EnvironmentPass
 from .iblpass import IrradiancePass, PrefilterPass, BRDFPass
-from .lightingpass import LightingPass
+from .pbrlightingpass import PBRLightingPass
 from .tonemappingpass import TonemappingPass
 from .clamppass import ClampPass
 from .gaussianblurpass import GaussianblurPass

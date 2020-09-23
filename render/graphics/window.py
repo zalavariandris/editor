@@ -24,8 +24,8 @@ class Window:
             'scroll': [],
             'resize': []
         }
-        self.camera = cameras.PerspectiveCamera(glm.mat4(1), glm.radians(45), self.width/self.height, 0.1, 30)
-        self.camera.transform = glm.inverse(glm.lookAt(glm.vec3(0, 2, -6), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0)))
+        self.camera = cameras.PerspectiveCamera(glm.mat4(1), glm.radians(39.6), self.width/self.height, 0.1, 30)
+        self.camera.transform = glm.inverse(glm.lookAt(glm.vec3(2, 3, 6), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0)))
 
     def _create_window(self):
         # Initialize the library
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     scene.add_child(cube)
     scene.add_child(sphere)
     scene.add_child(plane)
-    viewer = Viewer(floating=True)
+    viewer = Window(floating=True)
 
     # confi viewer
     prog = None
@@ -230,7 +230,8 @@ if __name__ == "__main__":
                 child.geometry._draw(prog)
 
             # draw grid
-            puregl.imdraw.grid(prog)
+            puregl.imdraw.grid(viewer.camera.projection, viewer.camera.view)
+            puregl.imdraw.axis(viewer.camera.projection, viewer.camera.view)
 
     viewer.start(worker=True)
     print("- end of program -")

@@ -46,9 +46,10 @@ class ShadowCubemap(CubeDepthPass):
 
 
 class DirectionalLight:
-    def __init__(self, direction, color, position, radius, near, far):
+    def __init__(self, direction, color, intensity, position, radius, near, far):
         self.direction = direction
         self.color = color
+        self.intensity = intensity
         self.position = position
         self.radius = radius
         self.near = near
@@ -86,10 +87,11 @@ class DirectionalLight:
 
 
 class SpotLight:
-    def __init__(self, position, direction, color, fov, near, far):
+    def __init__(self, position, direction, color, intensity, fov, near, far):
         self.position = position
         self.direction = direction
         self.color = color
+        self.intensity = intensity
         self.fov = fov
         self.near = near
         self.far = far
@@ -131,9 +133,10 @@ class SpotLight:
 
 
 class PointLight:
-    def __init__(self, position, color, near, far):
+    def __init__(self, position, color, intensity, near, far):
         self.position = position
         self.color = color
+        self.intensity = intensity
         self.near = near
         self.far = far
 
