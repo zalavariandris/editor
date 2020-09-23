@@ -21,23 +21,23 @@ if __name__ == "__main__":
         scene = Scene.from_trimesh_scene(triscene)
         scene.plot()
 
-        # dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
-        #                             color=glm.vec3(1.0),
-        #                             intensity=2.0,
-        #                             position=glm.vec3(-1, 6, 2),
-        #                             radius=5.0,
-        #                             near=1.0,
-        #                             far=30)
-        # scene.add_child(dirlight)
-        #
-        # spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
-        #                       direction=glm.vec3(1, -0.5, 3),
-        #                       color=glm.vec3(0.04, 0.6, 1.0),
-        #                       intensity=150,
-        #                       fov=60,
-        #                       near=1.0,
-        #                       far=10)
-        # scene.add_child(spotlight)
+        dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
+                                    color=glm.vec3(1.0),
+                                    intensity=2.0,
+                                    position=glm.vec3(-1, 6, 2),
+                                    radius=5.0,
+                                    near=1.0,
+                                    far=30)
+        scene.add_child(dirlight)
+        
+        spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
+                              direction=glm.vec3(1, -0.5, 3),
+                              color=glm.vec3(0.04, 0.6, 1.0),
+                              intensity=150,
+                              fov=60,
+                              near=1.0,
+                              far=10)
+        scene.add_child(spotlight)
 
         pointlight = PointLight(position=glm.vec3(2, 0.3, 2),
                                 color=glm.vec3(1, 0.7, 0.1),

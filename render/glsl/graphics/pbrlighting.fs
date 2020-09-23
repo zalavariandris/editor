@@ -51,8 +51,18 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal, samp
 
 	// float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
 	float bias = 0.0001;
-	float pcfDepth = texture(shadowMap, projCoords.xy).r;
-	float shadow = currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+	// PCF
+	float shadow=0.0;
+	vec2 texelSize = 1.0 / vec2(1024,1024);
+	for(int x = -1; x <= 1; ++x)
+	{
+	    for(int y = -1; y <= 1; ++y)
+	    {
+	        float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+	        shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+	    }    
+	}
+	shadow /= 9.0;
 	return shadow;
 }
 
@@ -63,7 +73,7 @@ float PointShadowCalculation(vec3 lightPos, vec3 surfacePos, samplerCube shadowC
 
 	float surfaceDepth = length(L);
 
-	float bias = 0.1;
+	float bias = 0.01;
 	float shadow = surfaceDepth > shadowDepth ? 1.0 : 0.0;
 
 	return shadow;

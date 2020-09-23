@@ -52,28 +52,29 @@ class Scene:
 
         dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
                                     color=glm.vec3(1.0),
-                                    intensity=2.0,
-                                    position=glm.vec3(-1, 6, 2),
-                                    radius=5.0,
-                                    near=1.0,
+                                    intensity=1.0,
+                                    position=-glm.vec3(1, -6, -2),
+                                    radius=5,
+                                    near=1,
                                     far=30)
-        scene.add_child(dirlight)
 
         spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
                               direction=glm.vec3(1, -0.5, 3),
                               color=glm.vec3(0.04, 0.6, 1.0),
-                              intensity=1500,
+                              intensity=150.0,
                               fov=60,
-                              near=1.0,
-                              far=10)
-        scene.add_child(spotlight)
+                              near=1,
+                              far=15)
 
-        # pointlight = PointLight(position=glm.vec3(2, 0.3, 2),
-        #                         color=glm.vec3(1, 0.7, 0.1),
-        #                         intensity=175,
-        #                         near=1.0,
-        #                         far=10.0)
-        # scene.add_child(pointlight)
+        pointlight = PointLight(position=glm.vec3(2.5, 1.3, 2.5),
+                                color=glm.vec3(1, 0.7, 0.1),
+                                intensity=17.5,
+                                near=0.1,
+                                far=10)
+
+        scene.add_child(dirlight)
+        scene.add_child(spotlight)
+        scene.add_child(pointlight)
 
 
         # cube = Mesh(transform=glm.translate(glm.mat4(1), (1.0, 0.5, 0.0)) * glm.rotate(glm.mat4(1), glm.radians(30), (0,1,0)),

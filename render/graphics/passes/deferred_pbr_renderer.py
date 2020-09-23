@@ -6,7 +6,7 @@ import glm
 
 from editor.render.graphics.passes import GeometryPass, EnvironmentPass
 from editor.render.graphics.passes import IrradiancePass, PrefilterPass, BRDFPass
-from editor.render.graphics.passes import LightingPass
+from editor.render.graphics.passes import PBRLightingPass
 from editor.render.graphics.passes import AddPass, TonemappingPass, ClampPass, GaussianblurPass
 
 from editor.render.graphics.passes import RenderPass
@@ -91,7 +91,7 @@ class DeferredPBRRenderer(RenderPass):
         self.irradiance_pass = IrradiancePass(32, 32)
         self.prefilter_pass = PrefilterPass(128, 128)
         self.brdf_pass = BRDFPass(512, 512)
-        self.lighting_pass = LightingPass(self.width, self.height)
+        self.lighting_pass = PBRLightingPass(self.width, self.height)
         self.tonemapping_pass = TonemappingPass(self.width, self.height)
         self.clamp_pass = ClampPass(self.width, self.height)
         self.gaussianblur_pass = GaussianblurPass(self.width, self.height)
@@ -129,7 +129,7 @@ class DeferredPBRRenderer(RenderPass):
 
         # shadows
         for light in scene.find_lights():
-            light._render_shadows(scene.find_meshes()+[self.ground_plane])
+            light.shadowmap.render(scene.find_meshes()+[self.ground_plane], light.camera)
 
 
         hdr_texture = self.lighting_pass.render(camera.position,

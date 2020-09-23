@@ -107,7 +107,6 @@ class PBRLightingPass(RenderPass):
 
             shadowMapIdx, shadowCubeIdx = 0, 0
             for i, light in enumerate(lights):
-                shadow_map = light._shadow_map
                 slot = 9+i
                 if isinstance(light, DirectionalLight):
                     puregl.program.set_uniform(self.program, "lights[{}].type".format(i), 0)
@@ -117,7 +116,7 @@ class PBRLightingPass(RenderPass):
                     puregl.program.set_uniform(self.program, "lights[{}].shadowIdx".format(i), shadowMapIdx)
                     
                     glActiveTexture(GL_TEXTURE0+slot)
-                    glBindTexture(GL_TEXTURE_2D, shadow_map)
+                    glBindTexture(GL_TEXTURE_2D, light.shadowmap.texture)
                     puregl.program.set_uniform(self.program, "lights[{}].matrix".format(i), light.camera.projection * light.camera.view)
                     puregl.program.set_uniform(self.program, "shadowMaps[{}]".format(shadowMapIdx), slot)
                     shadowMapIdx += 1
@@ -131,7 +130,7 @@ class PBRLightingPass(RenderPass):
                     puregl.program.set_uniform(self.program, "lights[{}].cutOff".format(i), light.cut_off)
 
                     glActiveTexture(GL_TEXTURE0+slot)
-                    glBindTexture(GL_TEXTURE_2D, shadow_map)
+                    glBindTexture(GL_TEXTURE_2D, light.shadowmap.texture)
                     puregl.program.set_uniform(self.program, "lights[{}].matrix".format(i), light.camera.projection * light.camera.view)
                     puregl.program.set_uniform(self.program, "lights[{}].shadowIdx".format(i), shadowMapIdx)
                     puregl.program.set_uniform(self.program, "shadowMaps[{}]".format(shadowMapIdx), slot)
@@ -143,7 +142,7 @@ class PBRLightingPass(RenderPass):
                     puregl.program.set_uniform(self.program, "lights[{}].position".format(i), light.position)
 
                     glActiveTexture(GL_TEXTURE0+slot)
-                    glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_map)
+                    glBindTexture(GL_TEXTURE_CUBE_MAP, light.shadowmap.texture)
                     puregl.program.set_uniform(self.program, "lights[{}].farPlane".format(i), float(light.far))
                     puregl.program.set_uniform(self.program, "lights[{}].shadowIdx".format(i), shadowCubeIdx)
                     puregl.program.set_uniform(self.program, "shadowCubes[{}]".format(shadowCubeIdx), slot)
@@ -161,7 +160,7 @@ if __name__ == "__main__":
     import glm
     from editor.render.graphics.window import Window
     from editor.render.graphics import Scene, Mesh, Geometry, Material
-
+    # from editor.render.graphics.lights import ShadowMap, ShadowCubemap
     viewer = Window(floating=True)
 
     # assets
@@ -169,28 +168,7 @@ if __name__ == "__main__":
 
     # scene
     scene = Scene.test_scene()
-    dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
-                                color=glm.vec3(1.0),
-                                intensity=1.0,
-                                position=glm.vec3(-1, 6, 2),
-                                radius=5.0,
-                                near=1.0,
-                                far=30)
-
-    spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
-                          direction=glm.vec3(1, -0.5, 3),
-                          color=glm.vec3(0.04, 0.6, 1.0),
-                          intensity=150.0,
-                          fov=60,
-                          near=1.0,
-                          far=10)
-
-    pointlight = PointLight(position=glm.vec3(2.5, 1.3, 2.5),
-                            color=glm.vec3(1, 0.7, 0.1),
-                            intensity=17.5,
-                            near=0.1,
-                            far=10.0)
-    lights = [dirlight, spotlight, pointlight]
+    lights = scene.find_lights()
 
     # init passes
     geometry_pass = GeometryPass(viewer.width, viewer.height)
@@ -235,7 +213,7 @@ if __name__ == "__main__":
 
         # shadows
         for light in lights:
-            light._render_shadows(scene.find_meshes())
+            light.shadowmap.render(scene.find_meshes(), light.camera)
 
         hdr_texture = lighting_pass.render(viewer.camera.position, lights, gBuffer, irradiance_cubemap, prefilter_cubemap, brdf_texture)
 
@@ -250,9 +228,9 @@ if __name__ == "__main__":
         # debug shadows
         for i, light in enumerate(lights):
             if isinstance(light, PointLight):
-                puregl.imdraw.cubemap(light._shadow_map, (i*100, 200, 90, 90), viewer.camera.projection, viewer.camera.view, shuffle=(0,0,0,-1))
+                puregl.imdraw.cubemap(light.shadowmap.texture, (i*100, 200, 90, 90), viewer.camera.projection, viewer.camera.view, shuffle=(0,0,0,-1))
             elif isinstance(light, (SpotLight, DirectionalLight)):
-                puregl.imdraw.texture(light._shadow_map, (i*100, 200, 90, 90), shuffle=(0,0,0,-1))
+                puregl.imdraw.texture(light.shadowmap.texture, (i*100, 200, 90, 90), shuffle=(0,0,0,-1))
 
         # debug gBuffer
         gPosition, gNormal, gAlbedo, gEmissive, gRoughness, gMetallic = gBuffer
