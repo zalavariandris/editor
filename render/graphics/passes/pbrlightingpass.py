@@ -158,10 +158,10 @@ if __name__ == "__main__":
     from editor.render.graphics.passes import EnvironmentPass
     from editor.render.graphics.passes import IrradiancePass, PrefilterPass, BRDFPass
     import glm
-    from editor.render.graphics.window import Window
     from editor.render.graphics import Scene, Mesh, Geometry, Material
-    # from editor.render.graphics.lights import ShadowMap, ShadowCubemap
-    viewer = Window(floating=True)
+
+    import pyglet
+    window = pyglet.window.Window()
 
     # assets
     environment_image = assets.imread('hdri/Tropical_Beach_3k.hdr').astype(np.float32)
@@ -171,12 +171,12 @@ if __name__ == "__main__":
     lights = scene.find_lights()
 
     # init passes
-    geometry_pass = GeometryPass(viewer.width, viewer.height)
+    geometry_pass = GeometryPass(window.width, window.height)
     environment_pass = EnvironmentPass(512,512)
     irradiance_pass = IrradiancePass(32,32)
     prefilter_pass = PrefilterPass(128,128)
     brdf_pass = BRDFPass(512, 512)
-    lighting_pass = PBRLightingPass(viewer.width, viewer.height)
+    lighting_pass = PBRLightingPass(window.width, window.height)
 
     # texture placeholders
     environment_texture = None
@@ -188,23 +188,22 @@ if __name__ == "__main__":
     hdr_texture = None
 
 
-    @viewer.on_setup
-    def setup():
-        global gBuffer, environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture, hdr_texture
-        # scene._setup()
+    window.switch_to()
+    # global gBuffer, environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture, hdr_texture
+    # scene._setup()
 
-        environment_texture = RenderPass.create_texture_from_data(environment_image)
+    environment_texture = RenderPass.create_texture_from_data(environment_image)
 
-        # render passes
-        camera360 = Camera360(transform=glm.mat4(1), near=0.1, far=15)
+    # render passes
+    camera360 = Camera360(transform=glm.mat4(1), near=0.1, far=15)
 
-        environment_cubemap = environment_pass.render(environment_texture, camera360)
-        irradiance_cubemap = irradiance_pass.render(environment_cubemap, camera360)
-        prefilter_cubemap = prefilter_pass.render(environment_cubemap, camera360)
-        brdf_texture = brdf_pass.render()
+    environment_cubemap = environment_pass.render(environment_texture, camera360)
+    irradiance_cubemap = irradiance_pass.render(environment_cubemap, camera360)
+    prefilter_cubemap = prefilter_pass.render(environment_cubemap, camera360)
+    brdf_texture = brdf_pass.render()
 
-    @viewer.on_draw
-    def draw():
+    @window.event
+    def on_draw():
         global environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture
         # Render passes
         # -------------
@@ -248,5 +247,5 @@ if __name__ == "__main__":
         puregl.imdraw.cubemap(prefilter_cubemap,   (300, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
         puregl.imdraw.texture(brdf_texture,        (400, 100, 90, 90))
 
-    viewer.start(worker=True)
+    pyglet.app.run()
     print("- end of program -")

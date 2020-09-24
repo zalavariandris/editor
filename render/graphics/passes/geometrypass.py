@@ -146,9 +146,8 @@ if __name__ == "__main__":
 
     @viewer.on_setup
     def setup():
-        print("GL_MAX_COLOR_ATTACHMENTS:", glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS ))
+        logging.debug("GL_MAX_COLOR_ATTACHMENTS:", glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS ))
         scene._setup()
-        print("setup geometry pass")
         geometry_pass.setup()
 
     @viewer.on_draw

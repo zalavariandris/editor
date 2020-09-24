@@ -47,7 +47,7 @@ class Scene:
                                                 emission=(0,0,0),
                                                 roughness=roughness,
                                                 metallic=float(j)))
-                print(j)
+
                 scene.add_child(sphere)
 
         dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
