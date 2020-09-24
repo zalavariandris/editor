@@ -1,11 +1,12 @@
 if __name__ == "__main__":
     import logging
-    from editor.render.graphics.window import Window
+    
     from editor.render.graphics.passes.deferred_pbr_renderer import DeferredPBRRenderer
     from editor.render.graphics.passes.deferred_matcap_renderer import DeferredMatcapRenderer
     from editor.render.graphics import Mesh, Geometry, Scene, Material
     from editor.render import puregl
     import trimesh
+    from editor.render.graphics.window import Window
     # logging.basicConfig(level=logging.DEBUG)
 
     if __name__ == "__main__":
@@ -14,7 +15,7 @@ if __name__ == "__main__":
         import glm
         from editor.render import assets
         from editor.render.graphics import Scene
-        from editor.render.graphics.lights import PointLight, SpotLight, DirectionalLight
+        from editor.render.graphics import PointLight, SpotLight, DirectionalLight
         from pathlib import Path
         path = Path("../../assets/test_scene.glb").resolve()
         triscene = trimesh.load(str(path))

@@ -1,11 +1,9 @@
 import glm
-from .cameras import OrthographicCamera, PerspectiveCamera, Camera360
+
 
 from OpenGL.GL import *
 import numpy as np
 import logging
-
-from . import Mesh
 
 
 class DirectionalLight:
@@ -20,10 +18,12 @@ class DirectionalLight:
         self.near = near
         self.far = far
 
+        from .passes import DepthPass
         self.shadowmap = DepthPass(1024, 1024, cull_face=GL_FRONT)
 
     @property
     def camera(self):
+        from . import OrthographicCamera
         tr = glm.lookAt(self.position, self.position+self.direction, (0, 1, 0))
         return OrthographicCamera(glm.inverse(tr), self.radius * 2, self.radius * 2, self.near, self.far) 
     
@@ -39,10 +39,12 @@ class SpotLight:
         self.far = far
 
         # self.shadowmap = ShadowMap(1024, 1024, light=self)
+        from .passes import DepthPass
         self.shadowmap = DepthPass(1024, 1024, cull_face=GL_FRONT)
 
     @property
     def camera(self):
+        from . import PerspectiveCamera
         tr = glm.lookAt(self.position, self.position + self.direction, (0, 1, 0))
         return PerspectiveCamera(glm.inverse(tr), self.fov, 1.0, self.near, self.far)
 
@@ -59,16 +61,17 @@ class PointLight:
         self.near = near
         self.far = far
 
-
-        # self.shadowmap = ShadowCubemap(1024, 1024, light=self)
+        from .passes import CubeDepthPass
         self.shadowmap = CubeDepthPass(1024, 1024, cull_face=GL_FRONT)
 
     @property
     def camera(self):
+        from . import Camera360
         return Camera360(transform=glm.translate(glm.mat4(1), self.position),
                            near=self.near,
                            far=self.far)
     
  
 
-from .passes import DepthPass, CubeDepthPass
+
+

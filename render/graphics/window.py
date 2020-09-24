@@ -2,7 +2,7 @@ import glfw
 from threading import Thread, RLock
 from OpenGL.GL import *
 import functools
-from editor.render.graphics import cameras
+
 from editor.render import puregl
 import glm
 
@@ -24,7 +24,9 @@ class Window:
             'scroll': [],
             'resize': []
         }
-        self.camera = cameras.PerspectiveCamera(glm.mat4(1), glm.radians(39.6), self.width/self.height, 0.1, 30)
+
+        from editor.render.graphics import PerspectiveCamera
+        self.camera = PerspectiveCamera(glm.mat4(1), glm.radians(39.6), self.width/self.height, 0.1, 30)
         self.camera.transform = glm.inverse(glm.lookAt(glm.vec3(2, 3, 6), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0)))
 
     def _create_window(self):
