@@ -1,6 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl
+from editor.render import puregl, glsl, imdraw
 import numpy as np
 import glm
 from editor.render.graphics import Mesh
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
         # render passes to screen
         glDisable(GL_DEPTH_TEST)
-        puregl.imdraw.texture(depth_map, (0, 0, viewer.width, viewer.height), shuffle=(0,0,0,-1))
+        imdraw.texture(depth_map, (0, 0, viewer.width, viewer.height), shuffle=(0,0,0,-1))
 
     viewer.start(worker=False)
     print("- end of program -")

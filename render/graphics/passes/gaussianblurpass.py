@@ -1,6 +1,6 @@
 from . import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl
+from editor.render import puregl, glsl, imdraw
 
 
 class GaussianblurPass(RenderPass):
@@ -48,7 +48,7 @@ class GaussianblurPass(RenderPass):
                 glBindTexture(
                     GL_TEXTURE_2D, input_texture if first_iteration else self.bloom_blur_texs[1 - horizontal]
                 )
-                puregl.imdraw.quad(self.program)
+                imdraw.quad(self.program)
                 if first_iteration:
                     first_iteration = False
 

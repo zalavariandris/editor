@@ -19,8 +19,9 @@ from pathlib import Path
 import imageio
 import time
 
-# puregl
-from editor.render.puregl import imdraw, program, texture, fbo
+
+from editor.render import imdraw, assets
+from editor.render.puregl import program, texture, fbo
 
 
 from editor.render import glsl
@@ -44,13 +45,13 @@ def to_linear(img, gamma=2.2):
 	return np.power(img, (gamma, gamma, gamma))
 
 # textures
-diffuse_data  = np.array(Image.open(Path(assets_folder, 'container2_axis.png')))[...,[2,1,0]]/255
-specular_data = np.array(Image.open(Path(assets_folder, 'container2_specular.png')))[...,[2,1,0]]/255
+diffuse_data = assets.imread('container2_axis.png')[...,[2,1,0]]/255
+specular_data = assets.imread('container2_specular.png')[...,[2,1,0]]/255
 diffuse_data  = to_linear(diffuse_data)
 specular_data = to_linear(specular_data)
 
 # environment
-environment_data = imageio.imread(Path(assets_folder, 'hdri/fin4_Ref.hdr'), format="HDR-FI")
+environment_data = assets.imread('hdri/fin4_Ref.hdr')
 environment_data*=1
 
 with window:
@@ -552,13 +553,13 @@ with window:
 
 		# Debug
 		# -----------------------------------------
-		imdraw.texture(shadow_tex,           (  0,   0, 100, 100), shuffle=(0,0,0,-1))
-		imdraw.texture(hdr_color_buffers[0], (  0, 100, 100, 100))
-		imdraw.texture(pingpong_buffer[0],   (  0, 200, 100, 100))
-		imdraw.texture(gPosition,            (  0, 300, 100, 100))
-		imdraw.texture(gNormal,              (  0, 400, 100, 100))
-		imdraw.texture(gAlbedoSpec,          (  0, 500, 100, 100), shuffle=(0,1,2,-1))
-		imdraw.texture(gAlbedoSpec,          (  0, 600, 100, 100), shuffle=(3,3,3,-1))
+		imdraw.texture(shadow_tex,           (  0, 0, 100, 100), shuffle=(0,0,0,-1))
+		imdraw.texture(hdr_color_buffers[0], (100, 0, 100, 100))
+		imdraw.texture(pingpong_buffer[0],   (200, 0, 100, 100))
+		imdraw.texture(gPosition,            (300, 0, 100, 100))
+		imdraw.texture(gNormal,              (400, 0, 100, 100))
+		imdraw.texture(gAlbedoSpec,          (500, 0, 100, 100), shuffle=(0,1,2,-1))
+		imdraw.texture(gAlbedoSpec,          (600, 0, 100, 100), shuffle=(3,3,3,-1))
 
 
 		# swap buffers

@@ -1,6 +1,6 @@
 from . import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl
+from editor.render import puregl, imdraw
 
 
 class TonemappingPass(RenderPass):
@@ -92,6 +92,6 @@ class TonemappingPass(RenderPass):
             puregl.program.set_uniform(prog, 'exposure', exposure)
             puregl.program.set_uniform(prog, 'gamma', gamma)
 
-            puregl.imdraw.quad(prog)
+            imdraw.quad(prog)
 
         return self.texture

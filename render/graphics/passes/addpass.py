@@ -1,6 +1,6 @@
 from . import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl
+from editor.render import puregl, glsl, imdraw
 
 
 class AddPass(RenderPass):
@@ -57,6 +57,6 @@ class AddPass(RenderPass):
 			puregl.program.set_uniform(prog, 'inputA', 0)
 			puregl.program.set_uniform(prog, 'inputB', 1)
 
-			puregl.imdraw.quad(prog)
+			imdraw.quad(prog)
 
 		return self.output_texture

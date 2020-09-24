@@ -1,6 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl, assets
+from editor.render import puregl, imdraw, glsl, assets
 from editor.render.graphics.cameras import Camera360
 import numpy as np
 
@@ -86,7 +86,7 @@ class EnvironmentPass(RenderPass):
                 
                 # draw
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-                puregl.imdraw.cube(self.program, flip=True)
+                imdraw.cube(self.program, flip=True)
 
             # glGenerateMipmap(GL_TEXTURE_CUBE_MAP)
             glBindTexture(GL_TEXTURE_2D, 0)
@@ -130,8 +130,8 @@ if __name__ == "__main__":
         # render passes to screen
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
-        puregl.imdraw.texture(environment_texture, (0, 0, 190,190))
-        puregl.imdraw.cubemap(environment_cubemap, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
+        imdraw.texture(environment_texture, (0, 0, 190,190))
+        imdraw.cubemap(environment_cubemap, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
     
     viewer.start(worker=False)
     print("- end of program -")

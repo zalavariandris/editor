@@ -1,6 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl
+from editor.render import puregl, glsl, imdraw
 from editor.render.graphics import Mesh
 from editor.render.graphics.cameras import Camera360
 import numpy as np
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
         # render passes to screen
         glDisable(GL_DEPTH_TEST)
-        # puregl.imdraw.texture(depth_map, (0, 0, viewer.width, viewer.height), shuffle=(0,0,0,-1))
-        puregl.imdraw.cubemap(cubedepth_map, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
+        # imdraw.texture(depth_map, (0, 0, viewer.width, viewer.height), shuffle=(0,0,0,-1))
+        imdraw.cubemap(cubedepth_map, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
     viewer.start(worker=False)
     print("- end of program -")

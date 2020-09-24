@@ -1,6 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl, assets
+from editor.render import puregl, glsl, assets, imdraw
 from editor.render.graphics.cameras import Camera360
 import numpy as np
 from . import EnvironmentPass
@@ -65,7 +65,7 @@ class IrradiancePass(RenderPass):
                     puregl.program.set_uniform(self.program, "viewMatrix", camera.views[i]);
                     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, self.irradiance, 0)
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-                    puregl.imdraw.cube(self.program, flip=True)
+                    imdraw.cube(self.program, flip=True)
 
         return self.irradiance
 
@@ -140,7 +140,7 @@ class PrefilterPass(RenderPass):
                         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, self.prefilter, mip)
 
                         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-                        puregl.imdraw.cube(self.program, flip=True)
+                        imdraw.cube(self.program, flip=True)
 
         return self.prefilter
 
@@ -185,7 +185,7 @@ class BRDFPass(RenderPass):
             with puregl.fbo.bind(self.fbo):
                 glViewport(0, 0, self.width, self.height)
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-                puregl.imdraw.quad(self.program)
+                imdraw.quad(self.program)
 
         return self.brdflut
 
@@ -235,13 +235,13 @@ if __name__ == "__main__":
         # render passes to screen
         glEnable(GL_DEPTH_TEST)
         glDisable(GL_CULL_FACE)
-        puregl.imdraw.cubemap(prefilter_cubemap, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
+        imdraw.cubemap(prefilter_cubemap, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
     
-        puregl.imdraw.texture(environment_texture, (  0, 0, 190, 190))
-        puregl.imdraw.cubemap(environment_cubemap, (200, 0, 190, 190), viewer.camera.projection, viewer.camera.view)
-        puregl.imdraw.cubemap(irradiance_cubemap,  (400, 0, 190, 190), viewer.camera.projection, viewer.camera.view)
-        puregl.imdraw.cubemap(prefilter_cubemap,   (600, 0, 190, 190), viewer.camera.projection, viewer.camera.view)
-        puregl.imdraw.texture(brdf_texture,        (800, 0, 190, 190))
+        imdraw.texture(environment_texture, (  0, 0, 190, 190))
+        imdraw.cubemap(environment_cubemap, (200, 0, 190, 190), viewer.camera.projection, viewer.camera.view)
+        imdraw.cubemap(irradiance_cubemap,  (400, 0, 190, 190), viewer.camera.projection, viewer.camera.view)
+        imdraw.cubemap(prefilter_cubemap,   (600, 0, 190, 190), viewer.camera.projection, viewer.camera.view)
+        imdraw.texture(brdf_texture,        (800, 0, 190, 190))
 
     viewer.start(worker=False)
     print("- end of program -")

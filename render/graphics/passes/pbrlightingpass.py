@@ -1,6 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl, assets
+from editor.render import puregl, glsl, assets, imdraw
 
 from editor.render.graphics.cameras import Camera360
 
@@ -149,7 +149,7 @@ class PBRLightingPass(RenderPass):
                     shadowCubeIdx += 1
 
             # draw
-            puregl.imdraw.quad(self.program)
+            imdraw.quad(self.program)
         return self.texture
 
 
@@ -222,30 +222,30 @@ if __name__ == "__main__":
         glDisable(GL_CULL_FACE)
 
         # debug beauty
-        puregl.imdraw.texture(hdr_texture,  (  0,0,viewer.width, viewer.height), shuffle=(0,1,2,-1))
+        imdraw.texture(hdr_texture,  (  0,0,viewer.width, viewer.height), shuffle=(0,1,2,-1))
 
         # debug shadows
         for i, light in enumerate(lights):
             if isinstance(light, PointLight):
-                puregl.imdraw.cubemap(light.shadowmap.texture, (i*100, 200, 90, 90), viewer.camera.projection, viewer.camera.view, shuffle=(0,0,0,-1))
+                imdraw.cubemap(light.shadowmap.texture, (i*100, 200, 90, 90), viewer.camera.projection, viewer.camera.view, shuffle=(0,0,0,-1))
             elif isinstance(light, (SpotLight, DirectionalLight)):
-                puregl.imdraw.texture(light.shadowmap.texture, (i*100, 200, 90, 90), shuffle=(0,0,0,-1))
+                imdraw.texture(light.shadowmap.texture, (i*100, 200, 90, 90), shuffle=(0,0,0,-1))
 
         # debug gBuffer
         gPosition, gNormal, gAlbedo, gEmissive, gRoughness, gMetallic = gBuffer
-        puregl.imdraw.texture(gPosition,  (  0,0,90, 90), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(gNormal,    (100,0,90, 90), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(gAlbedo,    (200,0,90, 90), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(gEmissive,  (300,0,90, 90))
-        puregl.imdraw.texture(gRoughness, (400,0,90, 90), shuffle=(0,0,0,-1))
-        puregl.imdraw.texture(gMetallic,  (500,0,90, 90), shuffle=(0,0,0,-1))
+        imdraw.texture(gPosition,  (  0,0,90, 90), shuffle=(0,1,2,-1))
+        imdraw.texture(gNormal,    (100,0,90, 90), shuffle=(0,1,2,-1))
+        imdraw.texture(gAlbedo,    (200,0,90, 90), shuffle=(0,1,2,-1))
+        imdraw.texture(gEmissive,  (300,0,90, 90))
+        imdraw.texture(gRoughness, (400,0,90, 90), shuffle=(0,0,0,-1))
+        imdraw.texture(gMetallic,  (500,0,90, 90), shuffle=(0,0,0,-1))
 
         # debug IBL      
-        puregl.imdraw.texture(environment_texture, (  0, 100, 90, 90))
-        puregl.imdraw.cubemap(environment_cubemap, (100, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
-        puregl.imdraw.cubemap(irradiance_cubemap,  (200, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
-        puregl.imdraw.cubemap(prefilter_cubemap,   (300, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
-        puregl.imdraw.texture(brdf_texture,        (400, 100, 90, 90))
+        imdraw.texture(environment_texture, (  0, 100, 90, 90))
+        imdraw.cubemap(environment_cubemap, (100, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
+        imdraw.cubemap(irradiance_cubemap,  (200, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
+        imdraw.cubemap(prefilter_cubemap,   (300, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
+        imdraw.texture(brdf_texture,        (400, 100, 90, 90))
 
     pyglet.app.run()
     print("- end of program -")

@@ -42,7 +42,7 @@ class Scene:
         for j in range(2):
             for x, roughness in zip(np.linspace(-3,3, 5), np.linspace(0,1, 5)):
                 sphere = Mesh(transform=glm.translate(glm.mat4(1), (x,0.5, j*3-1.5)),
-                              geometry=Geometry(*puregl.geo.sphere()),
+                              geometry=Geometry(*imdraw.geo.sphere()),
                               material=Material(albedo=glm.vec3(0.5),
                                                 emission=(0,0,0),
                                                 roughness=roughness,
@@ -78,7 +78,7 @@ class Scene:
 
 
         # cube = Mesh(transform=glm.translate(glm.mat4(1), (1.0, 0.5, 0.0)) * glm.rotate(glm.mat4(1), glm.radians(30), (0,1,0)),
-        #         geometry=Geometry(*puregl.geo.cube()),
+        #         geometry=Geometry(*imdraw.geo.cube()),
         #         material=Material(albedo=(1, 0, 0),
         #                           emission=(0,0,0),
         #                           roughness=0.7,
@@ -86,7 +86,7 @@ class Scene:
         # scene.add_child(cube)
 
         plane = Mesh(transform=glm.translate(glm.mat4(1), (0, 0.0, 0.0)),
-                     geometry=Geometry(*puregl.geo.plane()),
+                     geometry=Geometry(*imdraw.geo.plane()),
                      material=Material(albedo=(0.5, 0.5, 0.5),
                                        emission=(0,0,0),
                                        roughness=0.8,

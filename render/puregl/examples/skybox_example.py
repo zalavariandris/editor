@@ -1,9 +1,9 @@
 from OpenGL.GL import *
 from editor.render.window import GLFWViewer
 import numpy as np
-from editor.render.puregl import imdraw, program
+from editor.render.puregl import program
 
-from editor.render import glsl
+from editor.render import glsl, imdraw
 import glm
 import logging
 logging.basicConfig(filename=None, level=logging.DEBUG, format='%(levelname)s:%(module)s.%(funcName)s: %(message)s')

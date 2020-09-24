@@ -4,7 +4,7 @@ import glm
 import logging
 
 from . import cube
-from .. import program
+from editor.render.puregl import program
 
 
 def cubemap(tex, rect, projection, view, LOD=None, shuffle=(0,1,2,3)):

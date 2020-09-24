@@ -1,6 +1,6 @@
 from . import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl
+from editor.render import puregl, glsl, imdraw
 
 
 class ClampPass(RenderPass):
@@ -56,6 +56,6 @@ class ClampPass(RenderPass):
 			puregl.program.set_uniform(prog, 'minimum', float(minimum))
 			puregl.program.set_uniform(prog, 'maximum', float(maximum))
 
-			puregl.imdraw.quad(prog)
+			imdraw.quad(prog)
 
 		return self.output_texture

@@ -6,7 +6,7 @@ import math
 import logging
 import functools
 
-from .. import geo
+from . import geo
 
 
 @functools.lru_cache(maxsize=128)

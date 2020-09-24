@@ -1,6 +1,6 @@
 from editor.render.graphics.passes.renderpass import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl
+from editor.render import puregl, glsl, imdraw
 import glm
 from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
 from editor.render.graphics import Mesh
@@ -195,19 +195,19 @@ if __name__ == "__main__":
         with puregl.program.use(checkerboard_program):
             puregl.program.set_uniform(checkerboard_program, "viewportSize", (viewer.width, viewer.height))
             puregl.program.set_uniform(checkerboard_program, "size", 8.0)
-            puregl.imdraw.quad(checkerboard_program)
+            imdraw.quad(checkerboard_program)
 
-        puregl.imdraw.texture(gPosition, (20, 20, viewer.width-40, viewer.height-40), shuffle=(0, 1, 2, 3))
+        imdraw.texture(gPosition, (20, 20, viewer.width-40, viewer.height-40), shuffle=(0, 1, 2, 3))
 
         #
-        puregl.imdraw.texture(gPosition, (0,0,190, 190), shuffle=(0,1,2,3))
-        puregl.imdraw.texture(gNormal, (200,0,190, 190), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(gAlbedo, (400,0,190, 190), shuffle=(0,1,2,-1))
-        puregl.imdraw.texture(gEmission, (600,0,190, 190))
-        puregl.imdraw.texture(gRoughness, (800,0,190, 190), shuffle=(0,0,0,-1))
-        puregl.imdraw.texture(gMetallic, (1000,0,190, 190), shuffle=(0,0,0,-1))
+        imdraw.texture(gPosition, (0,0,190, 190), shuffle=(0,1,2,3))
+        imdraw.texture(gNormal, (200,0,190, 190), shuffle=(0,1,2,-1))
+        imdraw.texture(gAlbedo, (400,0,190, 190), shuffle=(0,1,2,-1))
+        imdraw.texture(gEmission, (600,0,190, 190))
+        imdraw.texture(gRoughness, (800,0,190, 190), shuffle=(0,0,0,-1))
+        imdraw.texture(gMetallic, (1000,0,190, 190), shuffle=(0,0,0,-1))
 
-        puregl.imdraw.texture(geometry_pass.gDepth, (  0, 200, 190, 190), shuffle=(0, 0, 0, -1))
+        imdraw.texture(geometry_pass.gDepth, (  0, 200, 190, 190), shuffle=(0, 0, 0, -1))
 
     viewer.start(worker=True)
     print("- end of program -")

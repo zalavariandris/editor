@@ -1,5 +1,5 @@
 from OpenGL.GL import *
-from .. import program
+from editor.render.puregl import program
 import numpy as np
 
 

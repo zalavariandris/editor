@@ -2,8 +2,8 @@ from OpenGL.GL import *
 import numpy as np
 import glm
 from editor.render.window import GLFWViewer
-from editor.render.puregl import imdraw, program, fbo
-from editor.render import glsl
+from editor.render import imdraw, glsl
+from editor.render.puregl import program, fbo
 
 
 width, height = 1024, 768

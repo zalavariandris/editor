@@ -1,5 +1,5 @@
 from editor.render.graphics.passes import RenderPass
-from editor.render import glsl, puregl
+from editor.render import glsl, puregl, imdraw
 from OpenGL.GL import *
 
 
@@ -76,5 +76,5 @@ class TemplatePass(RenderPass):
             # configure shader
 
             # draw
-            puregl.imdraw.quad(self.program)
+            imdraw.quad(self.program)
         return self.texture

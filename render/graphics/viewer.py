@@ -1,5 +1,5 @@
 from editor.render.graphics.passes.deferred_pbr_renderer import DeferredPBRRenderer
-from editor.render import puregl
+from editor.render import puregl, imdraw
 from OpenGL.GL import *
 import glm
 import glfw
@@ -100,9 +100,9 @@ class Viewer:
 
         # Draw
         # ----
-        beauty = self.  renderer.render(self.scene, self.camera)
-        puregl.imdraw.texture(beauty, (0,0,self.width, self.height))
-        puregl.imdraw.axis(self.camera.projection, self.camera.view)
+        beauty = self.renderer.render(self.scene, self.camera)
+        imdraw.texture(beauty, (0,0,self.width, self.height))
+        imdraw.axis(self.camera.projection, self.camera.view)
 
 
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     for j in range(2):
         for x, roughness in zip(np.linspace(-6,6, 10), np.linspace(0,1, 10)):
             scene.add_child(Mesh(transform=glm.translate(glm.mat4(1), (x,0.5, j*1.5)),
-                          geometry=Geometry(*puregl.geo.sphere()),
+                          geometry=Geometry(*imdraw.geo.sphere()),
                           material=Material(albedo=glm.vec3(0.5),
                                             emission=(0,0,0),
                                             roughness=roughness,
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     for j in range(2):
         for x, roughness in zip(np.linspace(-6,6, 10), np.linspace(0,1, 10)):
             scene.add_child(Mesh(transform=glm.translate(glm.mat4(1), (x,0.5, j*1.5-3)),
-                          geometry=Geometry(*puregl.geo.sphere()),
+                          geometry=Geometry(*imdraw.geo.sphere()),
                           material=Material(albedo=glm.vec3(0.5),
                                             emission=(0,0,0),
                                             roughness=glm.pow(roughness, 2),

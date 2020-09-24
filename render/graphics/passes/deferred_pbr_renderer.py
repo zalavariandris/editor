@@ -11,7 +11,7 @@ from editor.render.graphics.passes import AddPass, TonemappingPass, ClampPass, G
 
 from editor.render.graphics.passes import RenderPass
 from OpenGL.GL import *
-from editor.render import puregl, glsl
+from editor.render import puregl, glsl, imdraw
 
 from editor.render import assets
 from editor.render.graphics import Mesh
@@ -118,7 +118,7 @@ class DeferredPBRRenderer(RenderPass):
         self.brdf_texture = self.brdf_pass.render()
 
         from editor.render.graphics import Geometry
-        self.ground_plane = Mesh(geometry=Geometry(*puregl.geo.plane()))
+        self.ground_plane = Mesh(geometry=Geometry(*imdraw.geo.plane()))
 
     def render(self, scene, camera):
         super().render()

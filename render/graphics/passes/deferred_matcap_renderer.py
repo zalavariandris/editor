@@ -1,6 +1,6 @@
 from OpenGL.GL import *
 import numpy as np
-from editor.render import puregl, assets
+from editor.render import puregl, assets, imdraw
 from editor.render.graphics.passes import RenderPass, GeometryPass
 from editor.render.graphics import Mesh
 import logging
@@ -104,7 +104,7 @@ class MatcapLightingPass(RenderPass):
             puregl.program.set_uniform(self.program, "camPos", camera.position)
 
             # draw
-            puregl.imdraw.quad(self.program)
+            imdraw.quad(self.program)
             glBindTexture(GL_TEXTURE_2D, 0)
         return self.texture
 
@@ -130,8 +130,10 @@ class DeferredMatcapRenderer(RenderPass):
 
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.window import Window
-    from editor.render.graphics import Scene, Mesh, Geometry, Material
+    import glfw
+    from editor.render.graphics import Scene, Mesh, Geometry, Material, PerspectiveCamera
+
+
 
     # create scene
     scene = Scene()
@@ -140,21 +142,33 @@ if __name__ == "__main__":
                                   emission=(0, 0, 0),
                                   roughness=0.0,
                                   metallic=0.0),
-                geometry=Geometry(*puregl.geo.sphere()))
+                geometry=Geometry(*imdraw.geo.sphere()))
     scene.add_child(mesh)
+    renderer = DeferredMatcapRenderer(1280, 720)
+    camera = PerspectiveCamera(transform=glm.inverse(glm.lookAt(glm.vec3(2,2,4), glm.vec3(0,0,0), glm.vec3(0,1,0))), 
+                               fovy=glm.radians(60), 
+                               aspect=1280/720, 
+                               near=0.1, 
+                               far=30)
 
-    # create and start viewer
-    window = Window(floating=True)
-    renderer = DeferredMatcapRenderer(window.width, window.height)
+    # window
+    glfw.init()
+    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+    glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, True)
+    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+    window = glfw.create_window(1280, 720, "matcap example", None, None)
+    glfw.make_context_current(window)
 
-    @window.on_setup
-    def setup():
-        scene.setup()
-        renderer.setup()
+    while not glfw.window_should_close(window):
+        glClearColor(0,0,0,1)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glEnable(GL_DEPTH_TEST)
 
-    @window.on_draw
-    def draw():
-        beauty = renderer.render(scene, window.camera)
-        puregl.imdraw.texture(beauty, (0, 0, window.width, window.height))
-    window.start(worker=False)
+        beauty = renderer.render(scene, camera)
+        imdraw.texture(beauty, (0, 0, 1280, 720))
+
+        glfw.swap_buffers(window)
+        glfw.poll_events()
+
     print("- end of program -")

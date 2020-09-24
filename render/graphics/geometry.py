@@ -97,15 +97,15 @@ class Geometry:
 
     @classmethod
     def cube(cls):
-        positions, normals, uvs, indices = puregl.geo.cube()
+        positions, normals, uvs, indices = imdraw.geo.cube()
         return cls(positions, normals, uvs, indices)
 
     @classmethod
     def sphere(cls):
-        positions, normals, uvs, indices = puregl.geo.sphere()
+        positions, normals, uvs, indices = imdraw.geo.sphere()
         return cls(positions, normals, uvs, indices)
 
     @classmethod
     def plane(cls):
-        positions, normals, uvs, indices = puregl.geo.plane()
+        positions, normals, uvs, indices = imdraw.geo.plane()
         return cls(positions, normals, uvs, indices)
