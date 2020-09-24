@@ -6,6 +6,7 @@ import glfw
 import functools
 from threading import Thread
 
+
 class Viewer:
     def __init__(self, scene, width=1280, height=720, title="Viewer", floating=False, background_color=(0,0,0,1)):
         # window
@@ -106,8 +107,28 @@ class Viewer:
 
 
 if __name__ == "__main__":
-    from editor.render.graphics import Scene
-    scene = Scene.test_scene()
+    from editor.render.graphics.viewer import Viewer
+    from editor.render.graphics import Scene, Mesh, Geometry, Material
+    import numpy as np
+    scene = Scene()
+    for j in range(2):
+        for x, roughness in zip(np.linspace(-6,6, 10), np.linspace(0,1, 10)):
+            scene.add_child(Mesh(transform=glm.translate(glm.mat4(1), (x,0.5, j*1.5)),
+                          geometry=Geometry(*puregl.geo.sphere()),
+                          material=Material(albedo=glm.vec3(0.5),
+                                            emission=(0,0,0),
+                                            roughness=roughness,
+                                            metallic=float(j))))
+
+    for j in range(2):
+        for x, roughness in zip(np.linspace(-6,6, 10), np.linspace(0,1, 10)):
+            scene.add_child(Mesh(transform=glm.translate(glm.mat4(1), (x,0.5, j*1.5-3)),
+                          geometry=Geometry(*puregl.geo.sphere()),
+                          material=Material(albedo=glm.vec3(0.5),
+                                            emission=(0,0,0),
+                                            roughness=glm.pow(roughness, 2),
+                                            metallic=float(j))))
+
     viewer = Viewer(scene, floating=True)
     viewer.start(worker=True)
     print("-- end of program --")
