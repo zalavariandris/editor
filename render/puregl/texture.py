@@ -42,7 +42,7 @@ def create_with_data(data: np.ndarray, slot, format=None, internal_format=None, 
 	if min_filter:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, min_filter)
 	if mag_filter:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mag_filter)
 	if wrap_s:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s)
 	if wrap_t:

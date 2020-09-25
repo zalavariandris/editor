@@ -8,6 +8,7 @@ import sys
 
 positions = np.random.uniform(-1,1,(10, 3)).astype(np.float32)
 
+
 viewer = Viewer()
 @viewer.event
 def on_setup():
@@ -41,11 +42,11 @@ t0 = time.time()
 @viewer.event
 def on_draw():
     global t0
-    with puregl.program.use(prog):
+    # with puregl.program.use(prog):
+    with imdraw.paint(color=(0,1,1)):
         puregl.program.set_uniform(prog, 'projection', viewer.projection)
         puregl.program.set_uniform(prog, 'view', viewer.view)
         puregl.program.set_uniform(prog, 'model', np.eye(4))
-        puregl.program.set_uniform(prog, 'color', np.random.uniform(0,1,(3,)))
 
         print(viewer.view[3])
         imdraw.lines(prog, positions)

@@ -66,6 +66,9 @@ def set_uniform(program, name, value):
 		glUniformMatrix4fv(location, 1, False, np.array(value))
 	elif isinstance(value, glm.mat3):
 		glUniformMatrix3fv(location, 1, False, np.array(value))
+	elif isinstance(value, glm.vec4):
+		print(value.x, value.y, value.z, value.w)
+		glUniform4f(location, value.x, value.y, value.z, value.w)
 	elif isinstance(value, glm.vec3):
 		glUniform3f(location, value.x, value.y, value.z)
 	elif isinstance(value, glm.vec2):
@@ -73,6 +76,8 @@ def set_uniform(program, name, value):
 
 	# tuples
 	elif isinstance(value, tuple):
+		if len(value) == 4:
+			glUniform4f(location, value[0], value[1], value[2], value[3])
 		if len(value) == 3:
 			glUniform3f(location, value[0], value[1], value[2])
 		elif len(value) == 2:

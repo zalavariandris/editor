@@ -5,13 +5,15 @@ import functools
 from editor.render import puregl
 
 class Viewer:
-    def __init__(self):
+    def __init__(self, width=1280, height=720, title="puregl-viewer"):
+        self.width, self.height = width, height
+        self.title = title
         self.events = {'on_setup':[], 'on_draw':[]}
 
         # Handle window events
         # -------------
         self.view = glm.lookAt(glm.vec3(2,2,4), glm.vec3(0,0,0), glm.vec3(0,1,0))
-        self.projection = glm.perspective(glm.radians(48.5), 1280/720,0.1,30)
+        self.projection = glm.perspective(glm.radians(48.5), self.width/self.height,0.1,30)
 
 
     def event(self, f):
@@ -25,7 +27,7 @@ class Viewer:
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
         glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, True)
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-        window = glfw.create_window(1280, 720, "Lines example", None, None)
+        window = glfw.create_window(self.width, self.height, self.title, None, None)
         
         # Handle window events
         # --------------------
@@ -64,6 +66,7 @@ class Viewer:
             glEnable(GL_DEPTH_TEST)
 
             for f in self.events['on_draw']:
+                glViewport(0,0,self.width, self.height)
                 f()
             glfw.swap_buffers(window)
             glfw.poll_events()

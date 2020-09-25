@@ -1,4 +1,4 @@
-from . import RenderPass
+from editor.render.graphics.passes import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl, imdraw
 
@@ -55,3 +55,37 @@ class GaussianblurPass(RenderPass):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
         return self.bloom_blur_texs[1]
+
+if __name__ == "__main__":
+    from editor.render.imdraw.examples.viewer import Viewer
+    from editor.render import assets
+    import glm
+    import numpy as np
+    # load assets
+    img = (assets.imread("container2.png")[...,:3]/255).astype(np.float32)
+    h, w, c = img.shape
+    # create viewer
+    viewer = Viewer(1024,512, "GaussianBlur example")
+    blurpass = GaussianblurPass(viewer.width, viewer.height)
+
+    @viewer.event
+    def on_setup():
+        global tex
+        tex = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, tex)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, w, h, 0, GL_RGB, GL_FLOAT, img)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glGenerateMipmap(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, 0)
+
+    @viewer.event
+    def on_draw():
+        glDisable(GL_DEPTH_TEST)
+        imdraw.texture(tex, (0,0,viewer.width//2,viewer.height))
+        blurred = blurpass.render(tex, iterations=16)
+        imdraw.texture(blurred, (viewer.width//2,0,viewer.width//2,viewer.height))
+
+        
+    viewer.start()
+

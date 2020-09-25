@@ -12,5 +12,5 @@ from .cubemap import cubemap
 from .grid import grid
 from .axis import axis
 
-
-
+# Paint
+from .paint import paint

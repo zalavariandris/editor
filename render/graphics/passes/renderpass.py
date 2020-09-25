@@ -93,6 +93,8 @@ class RenderPass:
         else:
             glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS)
 
+        glViewport(0,0,self.width, self.height)
+
     def copy_buffer_from(self, source, buffers):
         if self._needs_setup:
             self.setup()
