@@ -8,7 +8,7 @@ import functools
 
 @functools.lru_cache(maxsize=128)
 def quad_geo():
-    logging.debug("create quad geo")
+    
     positions = np.array(
         [(-1.0, +1.0, 0.0),
          (-1.0, -1.0, 0.0),
@@ -25,12 +25,12 @@ def quad_geo():
         dtype=np.float32
     )
 
+    logging.debug("create quad geo")
     return positions, uvs
 
 
 @functools.lru_cache(maxsize=128)
 def create_buffer(program):
-    logging.debug("create quad buffer")
     positions, uvs = quad_geo()
 
     # setup VAO
@@ -61,6 +61,7 @@ def create_buffer(program):
 
     glBindVertexArray(0)
 
+    logging.debug("create quad buffer: {}".format(vao))
     return vao
 
 

@@ -5,6 +5,8 @@ import glm
 import glfw
 import functools
 from threading import Thread
+import logging
+logging.basicConfig(filename=None, level=logging.DEBUG, format='%(levelname)s:%(module)s.%(funcName)s: %(message)s')
 
 
 class Viewer:
@@ -74,7 +76,7 @@ class Viewer:
             self.thread = Thread(target=self._start)
             self.thread.start()
         else:
-            self.start()
+            self._start()
 
     def _start(self, worker=False):
         self.create_window()
@@ -130,7 +132,7 @@ if __name__ == "__main__":
                                             metallic=float(j))))
 
     viewer = Viewer(scene, floating=True)
-    viewer.start(worker=True)
+    viewer.start(worker=False)
     print("-- end of program --")
 
 

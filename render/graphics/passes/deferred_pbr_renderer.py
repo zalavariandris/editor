@@ -71,7 +71,7 @@ class SkyboxPass(RenderPass):
                 puregl.program.set_uniform(prog, 'groundProjection', True)
                 glActiveTexture(GL_TEXTURE0 + 0)
                 glBindTexture(GL_TEXTURE_CUBE_MAP, environment)
-                puregl.imdraw.cube(prog, flip=True)
+                imdraw.cube(prog, flip=True)
 
                 glBindTexture(GL_TEXTURE_CUBE_MAP, 0)
             glDepthMask(GL_TRUE)
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         @window.on_draw
         def setup():
             beauty = renderer.render(scene, window.camera)
-            puregl.imdraw.texture(beauty, (0, 0, window.width, window.height))
+            imdraw.texture(beauty, (0, 0, window.width, window.height))
 
 
         window.start(worker=False)

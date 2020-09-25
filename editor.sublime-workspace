@@ -4,6 +4,14 @@
 		"selected_items":
 		[
 			[
+				"GL_DEPTH",
+				"GL_DEPTH_TEST"
+			],
+			[
+				"window",
+				"window_should_close"
+			],
+			[
 				"pre",
 				"_prev_mouse_pos"
 			],
@@ -296,10 +304,6 @@
 				"glFramebufferTexture2D"
 			],
 			[
-				"GL_DEPTH",
-				"GL_DEPTH_COMPONENT"
-			],
-			[
 				"GL_TEX",
 				"GL_TEXTURE_CUBE_MAP"
 			],
@@ -510,29 +514,42 @@
 			[
 				"diffuse",
 				"diffuseColor"
-			],
-			[
-				"pos",
-				"positions"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "render/graphics/material.py",
+			"file": "render/imdraw/quad.py",
 			"settings":
 			{
-				"buffer_size": 303,
+				"buffer_size": 1952,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "render/graphics/viewer.py",
+			"file": "render/imdraw/examples/viewer.py",
 			"settings":
 			{
-				"buffer_size": 4064,
+				"buffer_size": 1034,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/imdraw/cube.py",
+			"settings":
+			{
+				"buffer_size": 2321,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/imdraw/examples/lines_example.py",
+			"settings":
+			{
+				"buffer_size": 1403,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -586,12 +603,12 @@
 		"selected_items":
 		[
 			[
-				"install",
-				"Package Control: Install Package"
-			],
-			[
 				"remove",
 				"Package Control: Remove Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
 			],
 			[
 				"packa",
@@ -672,14 +689,29 @@
 	[
 		"/C/Users/andris/Documents/BABPythonModules/editor",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics"
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/examples",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/geo",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl"
 	],
 	"file_history":
 	[
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/pbrlightingpass.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/geometrypass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/viewer.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/scene.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/deferred_pbr_renderer.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/cube.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/material.py",
+		"/C/Users/andris/anaconda3/lib/site-packages/OpenGL/error.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/stroke/__init__.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/__init__.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/stroke.py",
+		"/C/Users/andris/AppData/Roaming/Sublime Text 3/Packages/SublimeREPL/config/Python/Main.sublime-menu",
+		"/C/Users/andris/AppData/Roaming/Sublime Text 3/Packages/SublimeREPL/config/Python/ipy_repl.py",
+		"/C/Users/andris/AppData/Roaming/Sublime Text 3/Packages/SublimeREPL/repls/subprocess_repl.py",
+		"/C/Users/andris/.ipython/profile_default/ipython_config.py",
+		"/C/Users/andris/AppData/Roaming/Sublime Text 3/Packages/SublimeREPL/sublimerepl.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/pbrlightingpass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/geometrypass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/lights.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/__init__.py",
 		"/C/Users/andris/anaconda3/lib/site-packages/OpenGL/platform/baseplatform.py",
@@ -722,7 +754,6 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/ssao_example.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/examples/point_light_shadow_example.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl/imdraw/cube.py",
-		"/C/Users/andris/anaconda3/lib/site-packages/OpenGL/error.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/point_shadow.vs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/point_shadow.gs",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/point_shadow.fs",
@@ -792,22 +823,11 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/window.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/shader.vert",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/texture.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/helpers.py",
-		"/C/Users/andris/Desktop/PyAssimp env/assimp-tester/share/examples/pyassimp/transformations.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/shader.frag",
-		"/C/Users/andris/Desktop/PyAssimp env/main.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/opengltutorial/modelloading/main.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/with_glfw.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/shader.vert",
-		"/C/Users/andris/Desktop/Rodin2/src/rodin2_character180_v03.py",
-		"/C/Users/andris/Desktop/Rodin2/src/rodin2_character180_v04.py",
-		"/C/Users/andris/Desktop/Rodin2/src/rodin2_character180_v05.py",
-		"/C/Users/andris/Desktop/Rodin2/src/rodin2_follow180_v01.py",
-		"/C/Users/andris/Desktop/Rodin2/src/rodin2_follow-orbit180_v01.py"
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/helpers.py"
 	],
 	"find":
 	{
-		"height": 39.0
+		"height": 23.0
 	},
 	"find_in_files":
 	{
@@ -994,24 +1014,24 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "render/graphics/material.py",
+					"file": "render/imdraw/quad.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 303,
+						"buffer_size": 1952,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								301,
-								301
+								358,
+								358
 							]
 						],
 						"settings":
@@ -1024,30 +1044,53 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
-				}
-			]
-		},
-		{
-			"selected": 0,
-			"sheets":
-			[
+				},
 				{
 					"buffer": 1,
-					"file": "render/graphics/viewer.py",
+					"file": "render/imdraw/examples/viewer.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4064,
+						"buffer_size": 1034,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3862,
-								3862
+								35,
+								35
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "render/imdraw/cube.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 2321,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								2321
 							]
 						],
 						"settings":
@@ -1057,7 +1100,42 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1135.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 3,
+					"file": "render/imdraw/examples/lines_example.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1403,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								754,
+								754
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -1094,7 +1172,7 @@
 		"cols":
 		[
 			0.0,
-			0.350934199837,
+			0.480503655564,
 			1.0
 		],
 		"rows":
@@ -1110,7 +1188,7 @@
 	},
 	"output.exec":
 	{
-		"height": 246.0
+		"height": 232.0
 	},
 	"output.find_results":
 	{

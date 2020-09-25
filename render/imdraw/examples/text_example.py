@@ -6,6 +6,9 @@ from viewer import Viewer
 import time
 import sys
 
+def draw_text(prog, txt):
+    print("draw text")
+
 viewer = Viewer()
 @viewer.event
 def on_setup():
@@ -46,6 +49,7 @@ def on_draw():
         puregl.program.set_uniform(prog, 'color', np.random.uniform(0,1,(3,)))
 
         positions = np.random.uniform(-1,1,(10, 3)).astype(np.float32)
+        draw_text(prog, "Hello my Proggy clean bitmap font")
         imdraw.lines(prog, positions)
         t1 = time.time()
         # print("{:.0f}fps".format(1/(t1-t0)))
