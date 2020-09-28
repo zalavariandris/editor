@@ -29,7 +29,7 @@ class DirectionalLight:
     
 
 class SpotLight:
-    def __init__(self, position, direction, color, intensity, fov, near, far):
+    def __init__(self, position: glm.vec3, direction:glm.vec3, color, intensity, fov, near, far):
         self.position = position
         self.direction = direction
         self.color = color
@@ -54,7 +54,7 @@ class SpotLight:
 
 
 class PointLight:
-    def __init__(self, position, color, intensity, near, far):
+    def __init__(self, position: glm.vec3, color: glm.vec3, intensity: float, near: float, far: float):
         self.position = position
         self.color = color
         self.intensity = intensity

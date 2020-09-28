@@ -29,20 +29,32 @@ def read(*args):
 	else:
 		raise NotImplementedError()
 
-def replace_defines(shader, defines):
-	result = ""
-	for line in shader.split("\n"):
-		if line.startswith("#define NUM_LIGHTS"):
-			define, name, value = line.split(" ")
-			value = str(3)
-			result += " ".join([define, name, value])
-		else:
-			result+=line
-		result+="\n"
+def load(shader, fragment=None, geometry=None, defines=dict()):
+	assert isinstance(defines, dict)
+	glsl_folder = Path(__file__).parent
+	if fragment is None:
+		vertex=shader+".vs"
+		fragment=shader+".fs"
+	else:
+		vertex = shader
+		fragment = fragment
 
-	return result
+	vertex = Path(glsl_folder, vertex).read_text()
+	fragment = Path(glsl_folder, fragment).read_text()
+
+
+def insert_defines(shader, defines=dict()):
+	shader = shader.split("\n")
+	for name, value in defines.items():
+		define = f"#define {name} {value}"
+		shader.insert(1, define)
+	return "\n".join(shader)
+
+
 
 if __name__ == "__main__":
-	vert, frag = read("graphics/pbrlighting")
-	frag = replace_defines(frag, {'NUM_LIGHTS', 10})
-	print(frag)
+	shaders = read("graphics/pbrlighting")
+	shader = insert_defines(shaders[0], defines={'NUM_LIGHTS': 10})
+	# shaders = load("graphics/pbrlighting", )
+	for line in shader.split("\n"):
+		print(line)

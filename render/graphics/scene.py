@@ -3,6 +3,8 @@ import glm
 from editor.render import puregl, imdraw
 import numpy as np
 
+from . import Mesh
+from .lights import PointLight, SpotLight, DirectionalLight
 
 class Scene:
     def __init__(self, children=[]):
@@ -12,11 +14,11 @@ class Scene:
         self._children.append(child)
 
     def setup(self):
-        from . import Mesh
+        
         for geometry in {mesh.geometry for mesh in self.find_all(lambda obj: isinstance(obj, Mesh))}:
             geometry._setup()
 
-        from .lights import PointLight, SpotLight, DirectionalLight
+        
         lights = self.find_all(lambda obj: isinstance(obj, (PointLight, SpotLight, DirectionalLight)))
         for light in lights:
             light._setup_shadows()
@@ -33,6 +35,12 @@ class Scene:
 
     def find_lights(self):
         from .lights import PointLight, SpotLight, DirectionalLight
+        return self.find_all(lambda obj: isinstance(obj, (PointLight, SpotLight, DirectionalLight)))
+
+    def meshes(self):
+        return self.find_all(lambda obj: isinstance(obj, Mesh))
+
+    def lights(self):
         return self.find_all(lambda obj: isinstance(obj, (PointLight, SpotLight, DirectionalLight)))
 
     @staticmethod

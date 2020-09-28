@@ -15,7 +15,7 @@ class Viewer:
 
         # Handle window events
         # -------------
-        self.camera = PerspectiveCamera(transform=glm.inverse(glm.lookAt(glm.vec3(2,2,4), glm.vec3(0,0,0), glm.vec3(0,1,0))),
+        self.camera = PerspectiveCamera(transform=glm.inverse(glm.lookAt(glm.vec3(1,1.5,4), glm.vec3(0,0,0), glm.vec3(0,1,0))),
                                         fovy=glm.radians(48.5),
                                         aspect=self.width/self.height,
                                         near=0.1,
