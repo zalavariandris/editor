@@ -81,7 +81,7 @@ class CubeDepthPass(RenderPass):
 
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.window import Viewer
+    from editor.render.graphics.examples.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
     import time, math
 
@@ -90,24 +90,18 @@ if __name__ == "__main__":
     viewer = Viewer(floating=True)
     cubedepth_pass = CubeDepthPass(1024,1024)
 
-    @viewer.on_setup
-    def setup():
-        scene._setup()
-        print("setup geometry pass")
-        cubedepth_pass.setup()
-
-    @viewer.on_draw
-    def draw():
+    @viewer.event
+    def on_draw():
         # render passes
         pos = glm.vec3(math.cos(time.time()*2)*3, 1, 3)
         camera360 = Camera360(transform=glm.translate(glm.mat4(1), pos),
                               near=1, 
                               far=10)
-        cubedepth_map = cubedepth_pass.render(scene, camera360)
+        cubedepth_map = cubedepth_pass.render(scene.find_meshes(), camera360)
 
         # render passes to screen
         glDisable(GL_DEPTH_TEST)
         # imdraw.texture(depth_map, (0, 0, viewer.width, viewer.height), shuffle=(0,0,0,-1))
         imdraw.cubemap(cubedepth_map, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
-    viewer.start(worker=False)
+    viewer.start()
     print("- end of program -")

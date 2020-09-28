@@ -85,7 +85,7 @@ class DepthPass(RenderPass):
 
 
 if __name__ == "__main__":
-    from editor.render.graphics.window import Viewer
+    from editor.render.graphics.examples.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
 
     scene = Scene.test_scene()
@@ -95,20 +95,15 @@ if __name__ == "__main__":
     viewer.camera.far = 15
     depth_pass = DepthPass(viewer.width, viewer.height)
 
-    @viewer.on_setup
-    def setup():
-        scene._setup()
-        print("setup depth pass")
-        depth_pass.setup()
 
-    @viewer.on_draw
-    def draw():
+    @viewer.event
+    def on_draw():
         # render passes
-        depth_map = depth_pass.render(scene, viewer.camera)
+        depth_map = depth_pass.render(scene.find_meshes(), viewer.camera)
 
         # render passes to screen
         glDisable(GL_DEPTH_TEST)
         imdraw.texture(depth_map, (0, 0, viewer.width, viewer.height), shuffle=(0,0,0,-1))
 
-    viewer.start(worker=False)
+    viewer.start()
     print("- end of program -")

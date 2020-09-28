@@ -1,8 +1,10 @@
 #version 330 core
-#define NUM_LIGHTS 3
-#define NUM_SHADOWMAPS 2
-#define NUM_SHADOWCUBES 1
+#define MAX_LIGHTS 3
+#define MAX_SHADOWMAPS 2
+#define MAX_SHADOWCUBES 1
 const float PI = 3.14159265359;
+
+uniform int numLights;
 
 uniform vec3 cameraPos;
 uniform sampler2D gPosition;
@@ -28,9 +30,9 @@ struct Light{
 	float farPlane;
 };
 
-uniform Light lights[NUM_LIGHTS];
-uniform sampler2D shadowMaps[NUM_SHADOWMAPS];
-uniform samplerCube shadowCubes[NUM_SHADOWCUBES];
+uniform Light lights[MAX_LIGHTS];
+uniform sampler2D shadowMaps[MAX_SHADOWMAPS];
+uniform samplerCube shadowCubes[MAX_SHADOWCUBES];
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
@@ -131,7 +133,7 @@ void main()
 	// Reflectance equatation
 	// ----------------------
 	vec3 Lo=vec3(0);
-	for(int i=0; i<NUM_LIGHTS; ++i)
+	for(int i=0; i<numLights; ++i)
 	{
 		// Calculate each light radiance
 		// ----------------------------

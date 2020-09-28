@@ -1,9 +1,10 @@
-from editor.render.graphics.passes.renderpass import RenderPass
+
 from OpenGL.GL import *
 from editor.render import puregl, glsl, assets, imdraw
 from editor.render.graphics.cameras import Camera360
 import numpy as np
-from . import EnvironmentPass
+from editor.render.graphics.passes import EnvironmentPass
+from editor.render.graphics.passes.renderpass import RenderPass
 import glm
 
 
@@ -192,7 +193,7 @@ class BRDFPass(RenderPass):
 
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.window import Viewer
+    from editor.render.graphics.examples.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
     import time, math
 
@@ -210,8 +211,8 @@ if __name__ == "__main__":
     brdf_pass = BRDFPass(512, 512)
 
 
-    @viewer.on_setup
-    def setup():
+    @viewer.event
+    def on_setup():
         global environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture
         environment_texture = RenderPass.create_texture_from_data(environment_image)
         environment_pass.setup()
@@ -228,8 +229,8 @@ if __name__ == "__main__":
         prefilter_cubemap = prefilter_pass.render(environment_cubemap, camera360)
         brdf_texture = brdf_pass.render()
 
-    @viewer.on_draw
-    def draw():
+    @viewer.event
+    def on_draw():
         global environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture
 
         # render passes to screen
@@ -243,7 +244,7 @@ if __name__ == "__main__":
         imdraw.cubemap(prefilter_cubemap,   (600, 0, 190, 190), viewer.camera.projection, viewer.camera.view)
         imdraw.texture(brdf_texture,        (800, 0, 190, 190))
 
-    viewer.start(worker=False)
+    viewer.start()
     print("- end of program -")
 
 

@@ -1,7 +1,6 @@
-from . import RenderPass
+from editor.render.graphics.passes import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, imdraw
-
 
 class TonemappingPass(RenderPass):
     def __init__(self, width, height):
@@ -95,3 +94,32 @@ class TonemappingPass(RenderPass):
             imdraw.quad(prog)
 
         return self.texture
+
+if __name__ == "__main__":
+    from editor.render.graphics.examples.viewer import Viewer
+    from editor.render import assets, imdraw
+    viewer = Viewer(1024, 512)
+
+    img = assets.imread("house.png")[...,:3]/255
+    h,w,c = img.shape
+    tonepass = TonemappingPass(w, h)
+
+    @viewer.event
+    def on_setup():
+        global tex
+        
+        tex = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, tex)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, h, w, 0, GL_RGB, GL_FLOAT, img)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glBindTexture(GL_TEXTURE_2D, 0)
+
+    @viewer.event
+    def on_draw():
+        imdraw.texture(tex, (0,0,viewer.width//2,viewer.height))
+        toned = tonepass.render(tex, exposure=2.0, gamma=1/2.2)
+        imdraw.texture(toned, (viewer.width//2,0,viewer.width//2, viewer.height))
+        
+
+    viewer.start()

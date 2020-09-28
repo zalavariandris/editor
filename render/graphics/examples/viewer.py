@@ -3,18 +3,23 @@ import glfw
 import glm
 import functools
 from editor.render import puregl
+from editor.render.graphics import PerspectiveCamera
 
 class Viewer:
     def __init__(self, width=1280, height=720, title="puregl-viewer", floating=False):
         self.width, self.height = width, height
         self.title = title
+        self._floating = floating
+
         self.events = {'on_setup':[], 'on_draw':[]}
 
         # Handle window events
         # -------------
-        self.view = glm.lookAt(glm.vec3(2,2,4), glm.vec3(0,0,0), glm.vec3(0,1,0))
-        self.projection = glm.perspective(glm.radians(48.5), self.width/self.height,0.1,30)
-
+        self.camera = PerspectiveCamera(transform=glm.inverse(glm.lookAt(glm.vec3(2,2,4), glm.vec3(0,0,0), glm.vec3(0,1,0))),
+                                        fovy=glm.radians(48.5),
+                                        aspect=self.width/self.height,
+                                        near=0.1,
+                                        far=30)
 
     def event(self, f):
         self.events[f.__name__].append(f)
@@ -29,6 +34,7 @@ class Viewer:
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
         glfw.window_hint(glfw.FLOATING, GL_TRUE if self._floating else GL_FALSE)
         window = glfw.create_window(self.width, self.height, self.title, None, None)
+
         
         # Handle window events
         # --------------------
@@ -46,17 +52,32 @@ class Viewer:
             if glfw.get_mouse_button(window, 0):
                 dx = x1-x0
                 dy = y1-y0
-                self.view = puregl.transform.orbit(self.view, dx * 2, dy * 2)
+                self.camera.transform = glm.inverse(puregl.transform.orbit(glm.inverse(self.camera.transform), dx * 2, dy * 2))
             x0, y0 = x1, y1
 
         @functools.partial(glfw.set_scroll_callback, window)
         def scroll(handle, dx, dy):
             s = 1 + dy / 10
-            self.view[3].xyz *= glm.vec3(1/s)
+            self.camera.transform[3].xyz *= glm.vec3(1/s)
 
         # Start rendering
         # ---------------
         glfw.make_context_current(window)
+
+        # print info
+        import sys
+        print("+------------------ Python Info ------------------")
+        print("| executable           ", sys.executable)
+        print("| version              ", ".".join(str(v) for v in sys.version_info))
+        print("|")
+        print("+------------------ OpenGL Info ------------------")
+        print("| VENDOR               ", glGetString(GL_VENDOR).decode('UTF-8'))
+        print("| RENDERER             ", glGetString(GL_RENDERER).decode('UTF-8'))
+        print("| MAX_DRAW_BUFFERS     ", glGetIntegerv(GL_MAX_DRAW_BUFFERS))
+        print("| MAX_COLOR_ATTACHMENTS", glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS))
+        print("|")
+        print("+-------------------------------------------------")
+
         # fire setup events
         for f in self.events['on_setup']:
             f()

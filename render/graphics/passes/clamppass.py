@@ -1,4 +1,4 @@
-from . import RenderPass
+from editor.render.graphics.passes import RenderPass
 from OpenGL.GL import *
 from editor.render import puregl, glsl, imdraw
 
@@ -59,3 +59,29 @@ class ClampPass(RenderPass):
 			imdraw.quad(prog)
 
 		return self.output_texture
+
+if __name__ == "__main__":
+	import numpy as np
+	from editor.render import assets
+	from editor.render.graphics.examples.viewer import Viewer
+	imgA = assets.imread("peppers.png").astype(np.float32)[...,:3]/255
+
+	clamppass = ClampPass(512, 512)
+
+	viewer = Viewer()
+	@viewer.event
+	def on_setup():
+		global texA
+		texA = glGenTextures(1)
+		glBindTexture(GL_TEXTURE_2D, texA)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, imgA.shape[1], imgA.shape[0], 0, GL_RGB, GL_FLOAT, imgA)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glBindTexture(GL_TEXTURE_2D, 0)
+
+	@viewer.event
+	def on_draw():
+		imdraw.texture(texA, (0,0,200,200))
+		added = clamppass.render(texA, 0.5, 1.0)
+		imdraw.texture(added, (400,0,500,500))
+	viewer.start()

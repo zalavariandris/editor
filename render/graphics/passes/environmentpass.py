@@ -101,7 +101,7 @@ class EnvironmentPass(RenderPass):
 
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.window import Viewer
+    from editor.render.graphics.examples.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
     import time, math
 
@@ -111,15 +111,20 @@ if __name__ == "__main__":
 
     environment_texture = None
 
-    @viewer.on_setup
-    def setup():
-        global environment_texture
-        environment_texture = RenderPass.create_texture_from_data(environment_image)
-        environment_pass.setup()
 
-    @viewer.on_draw
-    def draw():
+    @viewer.event
+    def on_setup():
         global environment_texture
+        h,w,c = environment_image.shape
+        environment_texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, environment_texture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, w, h, 0, GL_RGB, GL_FLOAT, environment_image)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glBindTexture(GL_TEXTURE_2D, 0)
+
+    @viewer.event
+    def on_draw():
         # render passes
         camera360 = Camera360(transform=glm.mat4(1),
                               near=0.1, 
@@ -133,5 +138,5 @@ if __name__ == "__main__":
         imdraw.texture(environment_texture, (0, 0, 190,190))
         imdraw.cubemap(environment_cubemap, (0,0,viewer.width, viewer.height), viewer.camera.projection, viewer.camera.view)
     
-    viewer.start(worker=False)
+    viewer.start()
     print("- end of program -")

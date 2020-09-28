@@ -5,11 +5,12 @@ import logging
 
 from . import cube
 from editor.render.puregl import program
+import functools
 
-
-def cubemap(tex, rect, projection, view, LOD=None, shuffle=(0,1,2,3)):
+@functools.lru_cache(maxsize=1)
+def create_program():
 	logging.debug("create cubemap program")
-	prog = program.create(
+	return program.create(
 		"""
 		#version 330 core
 		layout (location=0) in vec3 position;
@@ -47,6 +48,10 @@ def cubemap(tex, rect, projection, view, LOD=None, shuffle=(0,1,2,3)):
 		             shuffle.alpha>=0 ? color[shuffle.alpha] : 1.0);
 		}
 		""")
+
+
+def cubemap(tex, rect, projection, view, LOD=None, shuffle=(0,1,2,3)):
+	prog = create_program()
 
 	glViewport(*rect)
 	with program.use(prog):

@@ -1,6 +1,6 @@
 from . import Mesh, Geometry, Material
 import glm
-from editor.render import puregl
+from editor.render import puregl, imdraw
 import numpy as np
 
 

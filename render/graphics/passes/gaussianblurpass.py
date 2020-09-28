@@ -57,7 +57,7 @@ class GaussianblurPass(RenderPass):
         return self.bloom_blur_texs[1]
 
 if __name__ == "__main__":
-    from editor.render.imdraw.examples.viewer import Viewer
+    from editor.render.graphics.examples.viewer import Viewer
     from editor.render import assets
     import glm
     import numpy as np

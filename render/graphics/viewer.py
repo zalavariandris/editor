@@ -6,6 +6,7 @@ import glfw
 import functools
 from threading import Thread
 import logging
+from editor.render.graphics import PerspectiveCamera
 logging.basicConfig(filename=None, level=logging.DEBUG, format='%(levelname)s:%(module)s.%(funcName)s: %(message)s')
 
 
@@ -81,6 +82,21 @@ class Viewer:
     def _start(self, worker=False):
         self.create_window()
         glfw.make_context_current(self._handle)
+
+        # print info
+        import sys
+        print("+------------------ Python Info ------------------")
+        print("| executable           ", sys.executable)
+        print("| version              ", ".".join(str(v) for v in sys.version_info))
+        print("|")
+        print("+------------------ OpenGL Info ------------------")
+        print("| VENDOR               ", glGetString(GL_VENDOR).decode('UTF-8'))
+        print("| RENDERER             ", glGetString(GL_RENDERER).decode('UTF-8'))
+        print("| MAX_DRAW_BUFFERS     ", glGetIntegerv(GL_MAX_DRAW_BUFFERS))
+        print("| MAX_COLOR_ATTACHMENTS", glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS))
+        print("|")
+        print("+-------------------------------------------------")
+
         
         # main loop
         while not glfw.window_should_close(self._handle):
@@ -109,8 +125,18 @@ class Viewer:
 
 
 if __name__ == "__main__":
-    from editor.render.graphics.viewer import Viewer
-    from editor.render.graphics import Scene, Mesh, Geometry, Material
+    # from editor.render.graphics.examples.viewer import Viewer as TestViewer
+
+    # viewer = TestViewer()
+
+
+    # @viewer.event
+    # def on_draw():
+    #     pass
+    # viewer.start()
+
+
+    from editor.render.graphics import Scene, Mesh, Geometry, Material, PointLight, SpotLight, DirectionalLight
     import numpy as np
     scene = Scene()
     for j in range(2):
@@ -130,6 +156,31 @@ if __name__ == "__main__":
                                             emission=(0,0,0),
                                             roughness=glm.pow(roughness, 2),
                                             metallic=float(j))))
+
+    dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
+                                color=glm.vec3(1.0),
+                                intensity=1.0,
+                                position=-glm.vec3(1, -6, -2),
+                                radius=5,
+                                near=1,
+                                far=30)
+    scene.add_child(dirlight)
+
+    spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
+                          direction=glm.vec3(1, -0.5, 3),
+                          color=glm.vec3(0.04, 0.6, 1.0),
+                          intensity=150.0,
+                          fov=60,
+                          near=1,
+                          far=15)
+    scene.add_child(spotlight)
+
+    pointlight = PointLight(position=glm.vec3(2.5, 1.3, 2.5),
+                            color=glm.vec3(1, 0.7, 0.1),
+                            intensity=17.5,
+                            near=0.1,
+                            far=10)
+    scene.add_child(pointlight)
 
     viewer = Viewer(scene, floating=True)
     viewer.start(worker=False)

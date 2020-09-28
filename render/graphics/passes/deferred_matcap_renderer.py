@@ -130,7 +130,7 @@ class DeferredMatcapRenderer(RenderPass):
 
 if __name__ == "__main__":
     import glm
-    import glfw
+    from editor.render.graphics.examples.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material, PerspectiveCamera
 
 
@@ -151,24 +151,13 @@ if __name__ == "__main__":
                                near=0.1, 
                                far=30)
 
-    # window
-    glfw.init()
-    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
-    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
-    glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, True)
-    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-    window = glfw.create_window(1280, 720, "matcap example", None, None)
-    glfw.make_context_current(window)
+    viewer = Viewer()
 
-    while not glfw.window_should_close(window):
-        glClearColor(0,0,0,1)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glEnable(GL_DEPTH_TEST)
-
-        beauty = renderer.render(scene, camera)
+    @viewer.event
+    def on_draw():
+        beauty = renderer.render(scene, viewer.camera)
         imdraw.texture(beauty, (0, 0, 1280, 720))
 
-        glfw.swap_buffers(window)
-        glfw.poll_events()
+    viewer.start()
 
     print("- end of program -")

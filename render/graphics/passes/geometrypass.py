@@ -5,6 +5,7 @@ import glm
 from editor.render.graphics.cameras import PerspectiveCamera, OrthographicCamera
 from editor.render.graphics import Mesh
 from editor.render.assets import to_linear
+import logging
 
 class GeometryPass(RenderPass):
     def __init__(self, width, height):
@@ -112,23 +113,23 @@ class GeometryPass(RenderPass):
             
 if __name__ == "__main__":
     import glm
-    from editor.render.graphics.window import Window
+    from editor.render.graphics.examples.viewer import Viewer
     from editor.render.graphics import Scene, Mesh, Geometry, Material
 
     cube = Mesh(transform=glm.translate(glm.mat4(1), (1, 0.5, 0.0)),
-                geometry=Geometry(*puregl.geo.cube()),
+                geometry=Geometry(*imdraw.geo.cube()),
                 material=Material(albedo=(1, 0, 0),
                                   emission=(0,0,0),
                                   roughness=0.7,
                                   metallic=0.0))
     sphere = Mesh(transform=glm.translate(glm.mat4(1), (-1,0.5, 0.0)),
-                  geometry=Geometry(*puregl.geo.sphere()),
+                  geometry=Geometry(*imdraw.geo.sphere()),
                   material=Material(albedo=(0.04, 0.5, 0.8),
                                     emission=(0,0,0),
                                     roughness=0.2,
                                     metallic=1.0))
     plane = Mesh(transform=glm.translate(glm.mat4(1), (0, 0.0, 0.0)),
-                 geometry=Geometry(*puregl.geo.plane()),
+                 geometry=Geometry(*imdraw.geo.plane()),
                  material=Material(albedo=(0.5, 0.5, 0.5),
                                    emission=(0,0,0),
                                    roughness=0.8,
@@ -139,21 +140,17 @@ if __name__ == "__main__":
     scene.add_child(sphere)
     scene.add_child(plane)
 
-    viewer = Window(floating=True)
-    viewer.camera.far = 10
-    viewer.camera.near = 1
+    viewer = Viewer(floating=True)
     geometry_pass = GeometryPass(viewer.width, viewer.height)
 
-    @viewer.on_setup
-    def setup():
-        logging.debug("GL_MAX_COLOR_ATTACHMENTS:", glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS ))
-        scene._setup()
-        geometry_pass.setup()
+    # @viewer.event
+    # def on_setup():
+    #     logging.debug("GL_MAX_COLOR_ATTACHMENTS:", glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS))
 
-    @viewer.on_draw
-    def draw():
+    @viewer.event
+    def on_draw():
         # render passes
-        gBuffer = geometry_pass.render(scene, viewer.camera)
+        gBuffer = geometry_pass.render(scene.find_meshes(), viewer.camera)
         gPosition, gNormal, gAlbedo, gEmission, gRoughness, gMetallic = gBuffer
 
         # render passes to screen
@@ -209,5 +206,5 @@ if __name__ == "__main__":
 
         imdraw.texture(geometry_pass.gDepth, (  0, 200, 190, 190), shuffle=(0, 0, 0, -1))
 
-    viewer.start(worker=True)
+    viewer.start()
     print("- end of program -")

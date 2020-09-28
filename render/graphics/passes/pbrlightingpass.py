@@ -68,7 +68,9 @@ class PBRLightingPass(RenderPass):
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # configure shader
+            puregl.program.set_uniform(self.program, "numLights", len(lights))
             puregl.program.set_uniform(self.program, "cameraPos", cameraPos)
+            
             glActiveTexture(GL_TEXTURE0+0)
             glBindTexture(GL_TEXTURE_2D, gPosition)
             puregl.program.set_uniform(self.program, "gPosition", 0)
@@ -160,61 +162,86 @@ if __name__ == "__main__":
     import glm
     from editor.render.graphics import Scene, Mesh, Geometry, Material
 
-    import pyglet
-    window = pyglet.window.Window()
+    from editor.render.graphics.examples.viewer import Viewer
+
+    viewer = Viewer()
 
     # assets
     environment_image = assets.imread('hdri/Tropical_Beach_3k.hdr').astype(np.float32)
 
     # scene
-    scene = Scene.test_scene()
-    lights = scene.find_lights()
+    scene = Scene()
+    scene.add_child(Mesh(transform=glm.translate(glm.mat4(1), (0.0,0.5, 0.0)),
+                         geometry=Geometry(*imdraw.geo.sphere()),
+                         material=Material(albedo=glm.vec3(0.5),
+                                           emission=(0,0,0),
+                                           roughness=glm.pow(0.5, 2),
+                                           metallic=0.0)))
+    scene.add_child(Mesh(geometry=Geometry(*imdraw.geo.plane())))
+
+    dirlight = DirectionalLight(direction=glm.vec3(1, -6, -2),
+                                color=glm.vec3(1.0),
+                                intensity=1.0,
+                                position=-glm.vec3(1, -6, -2),
+                                radius=5,
+                                near=1,
+                                far=30)
+    scene.add_child(dirlight)
+
+    spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
+                          direction=glm.vec3(1, -0.5, 3),
+                          color=glm.vec3(0.04, 0.6, 1.0),
+                          intensity=150.0,
+                          fov=60,
+                          near=1,
+                          far=15)
+    scene.add_child(spotlight)
+
+    pointlight = PointLight(position=glm.vec3(2.5, 1.3, 2.5),
+                            color=glm.vec3(1, 0.7, 0.1),
+                            intensity=17.5,
+                            near=0.1,
+                            far=10)
+    scene.add_child(pointlight)
 
     # init passes
-    geometry_pass = GeometryPass(window.width, window.height)
+    geometry_pass = GeometryPass(viewer.width, viewer.height)
     environment_pass = EnvironmentPass(512,512)
     irradiance_pass = IrradiancePass(32,32)
     prefilter_pass = PrefilterPass(128,128)
     brdf_pass = BRDFPass(512, 512)
-    lighting_pass = PBRLightingPass(window.width, window.height)
+    lighting_pass = PBRLightingPass(viewer.width, viewer.height)
 
-    # texture placeholders
-    environment_texture = None
-    gBuffer = None
-    environment_cubemap = None
-    irradiance_cubemap = None
-    prefilter_cubemap = None
-    brdf_texture = None
-    hdr_texture = None
+    @viewer.event
+    def on_setup():
+        global environment_texture
+        environment_texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, environment_texture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, environment_image.shape[1], environment_image.shape[0], 
+            0, GL_RGB, GL_FLOAT, environment_image)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glBindTexture(GL_TEXTURE_2D,0)
 
+        # render passes
+        global environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture
+        camera360 = Camera360(transform=glm.mat4(1), near=0.1, far=15)
+        environment_cubemap = environment_pass.render(environment_texture, camera360)
+        irradiance_cubemap = irradiance_pass.render(environment_cubemap, camera360)
+        prefilter_cubemap = prefilter_pass.render(environment_cubemap, camera360)
+        brdf_texture = brdf_pass.render()
 
-    window.switch_to()
-    # global gBuffer, environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture, hdr_texture
-    # scene._setup()
-
-    environment_texture = RenderPass.create_texture_from_data(environment_image)
-
-    # render passes
-    camera360 = Camera360(transform=glm.mat4(1), near=0.1, far=15)
-
-    environment_cubemap = environment_pass.render(environment_texture, camera360)
-    irradiance_cubemap = irradiance_pass.render(environment_cubemap, camera360)
-    prefilter_cubemap = prefilter_pass.render(environment_cubemap, camera360)
-    brdf_texture = brdf_pass.render()
-
-    @window.event
+    @viewer.event
     def on_draw():
-        global environment_texture, environment_cubemap, irradiance_cubemap, prefilter_cubemap, brdf_texture
-        # Render passes
-        # -------------
-        # geometry
+        # geometry ass
         gBuffer = geometry_pass.render(scene.find_meshes(), viewer.camera)
 
-        # shadows
-        for light in lights:
+        # shadows pass
+        for light in scene.find_lights():
             light.shadowmap.render(scene.find_meshes(), light.camera)
 
-        hdr_texture = lighting_pass.render(viewer.camera.position, lights, gBuffer, irradiance_cubemap, prefilter_cubemap, brdf_texture)
+        # lighting pass
+        hdr_texture = lighting_pass.render(viewer.camera.position, scene.find_lights(), gBuffer, irradiance_cubemap, prefilter_cubemap, brdf_texture)
 
         # Debug
         # -----
@@ -225,7 +252,7 @@ if __name__ == "__main__":
         imdraw.texture(hdr_texture,  (  0,0,viewer.width, viewer.height), shuffle=(0,1,2,-1))
 
         # debug shadows
-        for i, light in enumerate(lights):
+        for i, light in enumerate( scene.find_lights() ):
             if isinstance(light, PointLight):
                 imdraw.cubemap(light.shadowmap.texture, (i*100, 200, 90, 90), viewer.camera.projection, viewer.camera.view, shuffle=(0,0,0,-1))
             elif isinstance(light, (SpotLight, DirectionalLight)):
@@ -247,5 +274,5 @@ if __name__ == "__main__":
         imdraw.cubemap(prefilter_cubemap,   (300, 100, 90, 90), viewer.camera.projection, viewer.camera.view)
         imdraw.texture(brdf_texture,        (400, 100, 90, 90))
 
-    pyglet.app.run()
+    viewer.start()
     print("- end of program -")
