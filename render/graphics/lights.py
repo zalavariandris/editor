@@ -46,7 +46,7 @@ class SpotLight:
     def camera(self):
         from . import PerspectiveCamera
         tr = glm.lookAt(self.position, self.position + self.direction, (0, 1, 0))
-        return PerspectiveCamera(glm.inverse(tr), self.fov, 1.0, self.near, self.far)
+        return PerspectiveCamera(glm.inverse(tr), glm.radians(self.fov), 1.0, self.near, self.far)
 
     @property
     def cut_off(self):

@@ -98,19 +98,10 @@ float calcShadow(SpotLight light, vec3 surfacePosition, vec3 surfaceNormal){
     float currentDepth = projCoords.z;
 
     // float bias = max(0.005 * (1.0 - dot(surfaceNormal, lightDir)), 0.0005);
-    float bias = 0.0001;
+    float bias = 0.00001;
     // PCF
-    float shadow=0.0;
-    vec2 texelSize = 1.0 / vec2(1024,1024);
-    for(int x = -1; x <= 1; ++x)
-    {
-        for(int y = -1; y <= 1; ++y)
-        {
-            float pcfDepth = texture(light.shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
-        }    
-    }
-    shadow /= 9.0;
+
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;        
     return shadow;
 }
 
@@ -120,8 +111,8 @@ vec3 calcRadiance(DirectionalLight light){
 }
 
 float calcShadow(DirectionalLight light, vec3 surfacePosition, vec3 surfaceNormal){
-    vec4 fragPosLightSpace = light.matrix * vec4(surfacePosition, 1.0);
     vec3 L = -normalize(light.direction);
+    vec4 fragPosLightSpace = light.matrix * vec4(surfacePosition, 1.0);
     if(dot(L, surfaceNormal)<=0){
         return 0.0;
     }
@@ -135,20 +126,11 @@ float calcShadow(DirectionalLight light, vec3 surfacePosition, vec3 surfaceNorma
     float closestDepth = texture(light.shadowMap, projCoords.xy).r;
     float currentDepth = projCoords.z;
 
-    // float bias = max(0.005 * (1.0 - dot(normal, L)), 0.0005);
-    float bias = 0.0001;
+    // float bias = max(0.005 * (1.0 - dot(surfaceNormal, lightDir)), 0.0005);
+    float bias = 0.00001;
     // PCF
-    float shadow=0.0;
-    vec2 texelSize = 1.0 / vec2(1024,1024);
-    for(int x = -1; x <= 1; ++x)
-    {
-        for(int y = -1; y <= 1; ++y)
-        {
-            float pcfDepth = texture(light.shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
-        }    
-    }
-    shadow /= 9.0;
+
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;        
     return shadow;
 }
 

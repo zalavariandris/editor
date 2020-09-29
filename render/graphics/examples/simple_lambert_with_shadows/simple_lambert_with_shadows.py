@@ -25,7 +25,7 @@ spotlight = SpotLight(position=glm.vec3(-1, 0.5, -3),
                       direction=glm.vec3(1, -0.5, 3),
                       color=glm.vec3(0.04, 0.6, 1.0),
                       intensity=15.0,
-                      fov=60,
+                      fov=40,
                       near=1,
                       far=15)
 scene.add_child(spotlight)
