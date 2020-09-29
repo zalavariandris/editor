@@ -2,7 +2,6 @@ from pathlib import Path
 import logging
 import functools
 
-
 @functools.lru_cache(maxsize=128)
 def read(*args):
 	logging.debug("read {}".format(args))
@@ -29,32 +28,17 @@ def read(*args):
 	else:
 		raise NotImplementedError()
 
-def load(shader, fragment=None, geometry=None, defines=dict()):
-	assert isinstance(defines, dict)
-	glsl_folder = Path(__file__).parent
-	if fragment is None:
-		vertex=shader+".vs"
-		fragment=shader+".fs"
-	else:
-		vertex = shader
-		fragment = fragment
 
-	vertex = Path(glsl_folder, vertex).read_text()
-	fragment = Path(glsl_folder, fragment).read_text()
-
-
-def insert_defines(shader, defines=dict()):
+def define(shader, **defines):
 	shader = shader.split("\n")
-	for name, value in defines.items():
+	for i, (name, value) in enumerate(defines.items()):
 		define = f"#define {name} {value}"
-		shader.insert(1, define)
+		shader.insert(1+i, define)
 	return "\n".join(shader)
-
 
 
 if __name__ == "__main__":
 	shaders = read("graphics/pbrlighting")
-	shader = insert_defines(shaders[0], defines={'NUM_LIGHTS': 10})
-	# shaders = load("graphics/pbrlighting", )
-	for line in shader.split("\n"):
+	shaders = [define(shader, NUM_LIGHTS=10, MAX_LIGHTS=5) for shader in shaders]
+	for line in shaders[0].split("\n")[:4]:
 		print(line)

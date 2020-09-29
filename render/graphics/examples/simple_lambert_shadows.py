@@ -29,7 +29,7 @@ if __name__ == "__main__":
                           fov=60,
                           near=1,
                           far=15)
-    scene.add_child(spotlight)
+    # scene.add_child(spotlight)
 
     pointlight = PointLight(position=glm.vec3(2.5, 1.3, 2.5),
                             color=glm.vec3(1, 0.7, 0.1),
@@ -41,8 +41,7 @@ if __name__ == "__main__":
     @viewer.event
     def on_setup():
         global lambert_program
-        lambert_program = puregl.program.create(
-        """#version 330 core
+        vertex = """#version 330 core
         layout (location=0) in vec3 position;
         layout (location=1) in vec2 uv;
         layout (location=2) in vec3 normal;
@@ -61,27 +60,36 @@ if __name__ == "__main__":
         }
         """,
 
-        """#version 330 core
-        #define MAX_LIGHTS 3
-        #define MAX_SHADOWMAPS 2
-        #define MAX_SHADOWCUBES 1
+        fragment="""#version 330 core
+        // Lighting
+        #define MAX_POINT_LIGHTS 3
+        #define MAX_SPOT_LIGHTS 3
+        #define MAX_DIR_LIGHTS 3
 
-        struct Light{
-            int type;
+        uniform struct PointLight{
             vec3 color;
+            float intensity;
             vec3 position;
-            vec3 direction;
-            float cutOff;
-            mat4 matrix;
-            int shadowIdx;
-
-            float nearPlane;
+            samplerCube shadowcube;
             float farPlane;
-        };
-        
-        uniform Light lights[MAX_LIGHTS];
-        uniform sampler2D shadowMaps[MAX_SHADOWMAPS];
-        uniform samplerCube shadowCubes[MAX_SHADOWCUBES];
+        } point_lights[MAX_POINT_LIGHTS];
+        uniform int num_point_lights;
+
+        vec3 calcRadiance(PointLight light, vec3 surfacePosition){
+            vec3 lightPosition = light.position;
+            vec3 L = normalize(lightPosition-surfacePosition);
+            float dist = length(lightPosition-surfacePosition);
+            float attenuation = 1.0 / (dist*dist);
+            vec3 radiance = light.color * light.intensity * attenuation;
+
+            // mask radiance with shadowmap
+            float shadowDepth = texture(light.shadowcube, normalize(-L)).r*light.farPlane;
+            float surfaceDepth = dist;
+            float bias = 0.01;
+            float shadow = surfaceDepth-bias > shadowDepth ? 1.0 : 0.0;
+            radiance*=1-shadow;
+            return radiance;
+        }
 
         uniform vec3 color;
         in vec3 Position;
@@ -92,58 +100,26 @@ if __name__ == "__main__":
 
             vec3 Lo=vec3(0);
             vec3 surfacePosition = Position;
-            for(int i=0; i<MAX_LIGHTS; i++){
-                float lightStrength = 0;
-                vec3 L=vec3(0);
-                if(lights[i].type==0)
-                {
-                    L = normalize(-lights[i].direction);
-                    lightStrength=1.0;
-                }
-                else if(lights[i].type==1)
-                {
-                    L = normalize(lights[i].position - surfacePosition);
-                    float distance = length(lights[i].position - surfacePosition);
-                    lightStrength = 1.0 / (distance*distance);
+            for(int i=0; i<num_point_lights; i++){
+                // calculate light radiance at surface positions (Light Function)
+                vec3 radiance = calcRadiance(point_lights[i], surfacePosition);
 
-                    // spotlight cutoff
-                    if(lights[i].cutOff>=0)
-                    {
-                        float theta = dot(L, normalize(-lights[i].direction));
-                        if(theta<lights[i].cutOff){
-                            lightStrength=0.0;
-                        }
-                    }
-                }
-                else if(lights[i].type==2){
-                    L = normalize(lights[i].position-surfacePosition);
-                    // Calc light luminance
-                    float distance = length(lights[i].position-surfacePosition);
-                    lightStrength = 1.0 / (distance * distance);
-
-                    // Mask luminance with shadow
-                    float shadowDepth = texture(shadowCubes[lights[i].shadowIdx], -L).r;
-                    shadowDepth*=lights[i].farPlane;
-                    float surfaceDepth = length(lights[i].position-surfacePosition);
-                    float bias=0.0;
-                    float shadow = surfaceDepth-bias > shadowDepth ? 0.0 : 1.0;
-                    lightStrength*=shadow;
-                }else{
-                    continue;
-                }
+                // calculate surface reflectance (BRDF function)
+                vec3 lightPosition = point_lights[i].position;
+                vec3 L = normalize(lightPosition-surfacePosition);
+                float NdotL = max(dot(N, L), 0.0000001);
+                vec3 reflectance = max(NdotL,0.0)*radiance;
 
                 // Accumulate surface reflectance
-                vec3 radiance = lights[i].color * lightStrength;
-
-                float NdotL = max(dot(N, L), 0.0000001);
-                Lo+=max(NdotL,0.0)*radiance*lightStrength;
+                Lo+=reflectance;
             }
 
 
             float ambient = 0.1;
             FragColor = vec4(ambient+Lo, 1.0);
         }
-        """)
+        """
+        lambert_program = puregl.program.create(vertex, fragment)
 
     @viewer.event
     def on_draw():
@@ -161,29 +137,24 @@ if __name__ == "__main__":
             puregl.program.set_uniform(lambert_program, "model", glm.mat4(1))
             puregl.program.set_uniform(lambert_program, "color", (1,1,1))
 
+            puregl.program.set_uniform(lambert_program, "num_point_lights", 1)
             # set each light uniforms
             for i, light in enumerate(scene.lights()):
                 if isinstance(light, PointLight):
-                    puregl.program.set_uniform(lambert_program, "lights[{}].type".format(i), 2)
-                    puregl.program.set_uniform(lambert_program, "lights[{}].position".format(i), light.position)
-                    puregl.program.set_uniform(lambert_program, "lights[{}].color".format(i), light.color*light.intensity)
+                    puregl.program.set_uniform(lambert_program, "point_lights[{}].type".format(i), 2)
+                    puregl.program.set_uniform(lambert_program, "point_lights[{}].position".format(i), light.position)
+                    puregl.program.set_uniform(lambert_program, "point_lights[{}].color".format(i), light.color)
+                    puregl.program.set_uniform(lambert_program, "point_lights[{}].intensity".format(i), light.intensity)
+                    # shadowmap
+                    glActiveTexture(GL_TEXTURE0+0)
+                    glBindTexture(GL_TEXTURE_CUBE_MAP, light.shadowmap.texture)
+                    puregl.program.set_uniform(lambert_program, "point_lights[{}].shadowCube".format(i), 0)
+                    puregl.program.set_uniform(lambert_program, "point_lights[{}].farPlane".format(i), float(light.far))
+
                 if isinstance(light, SpotLight):
                     pass
 
-            # set each shadowmap
-            # - pointlight
-            for i, light in enumerate(scene.lights()):
-                shadowCubeIdx=0
-                shadowMapIdx=0
-                if isinstance(light, PointLight):
-                    glActiveTexture(GL_TEXTURE0+0)
-                    glBindTexture(GL_TEXTURE_CUBE_MAP, light.shadowmap.texture)
-                    
-                    puregl.program.set_uniform(lambert_program, "lights[{}].farPlane".format(i), float(light.far))
 
-                    puregl.program.set_uniform(lambert_program, "lights[{}].shadowIdx".format(i), shadowCubeIdx)
-                    puregl.program.set_uniform(lambert_program, "shadowCubes[{}]".format(shadowCubeIdx), 0)
-                    shadowCubeIdx += 1
 
             # draw each geometry
             for mesh in scene.meshes():
