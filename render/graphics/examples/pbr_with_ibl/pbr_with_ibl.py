@@ -1,6 +1,9 @@
 from editor.render.graphics.passes import RenderPass
 from editor.render.graphics.passes import EnvironmentPass
 from editor.render.graphics.passes import IrradiancePass, PrefilterPass, BRDFPass
+
+from editor.render.graphics.passes import  TonemappingPass, ClampPass, GaussianblurPass, AddPass
+
 from editor.render.graphics import Scene, Mesh, PerspectiveCamera, OrthographicCamera, Camera360
 from editor.render import assets
 from editor.render.graphics.passes import RenderPass
@@ -35,7 +38,7 @@ class GeometryPass(RenderPass):
     def __init__(self, width, height):
         super().__init__(width, height, depth_test=True, cull_face=GL_BACK, blending=False)
 
-        self.gPosition = self.gNormal = self.gAlbedo = self.gEmission = self.gRoughness = self.gMetallic = None
+        self.gPosition = self.gNormal = self.gAlbedo = self.gEmission = self.gRoughness = self.gMetallic = self.objectId = None
         self.fbo = None
         self.program = None
 
@@ -43,13 +46,16 @@ class GeometryPass(RenderPass):
         super().setup()
         # Create textures
         # ---------------
-        self.gPosition, self.gNormal, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic = glGenTextures(6)
+        self.gPosition, self.gNormal, self.gObjectId, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic = glGenTextures(7)
         
         # define textures
         glBindTexture(GL_TEXTURE_2D, self.gPosition)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, self.width, self.height, 0, GL_RGBA, GL_FLOAT, None)
 
         glBindTexture(GL_TEXTURE_2D, self.gNormal)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, self.width, self.height, 0, GL_RGB, GL_FLOAT, None)
+
+        glBindTexture(GL_TEXTURE_2D, self.gObjectId)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, self.width, self.height, 0, GL_RGB, GL_FLOAT, None)
 
         glBindTexture(GL_TEXTURE_2D, self.gAlbedo)
@@ -63,9 +69,10 @@ class GeometryPass(RenderPass):
 
         glBindTexture(GL_TEXTURE_2D, self.gMetallic)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, self.width, self.height, 0, GL_RED, GL_FLOAT, None)
+
         
         # configure textures
-        for tex in [self.gPosition, self.gNormal, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic]:
+        for tex in [self.gPosition, self.gNormal, self.gObjectId, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic]:
             glBindTexture(GL_TEXTURE_2D, tex)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
@@ -85,10 +92,10 @@ class GeometryPass(RenderPass):
 
         # configure fbo
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
-        glDrawBuffers(6, [GL_COLOR_ATTACHMENT0+i for i in range(6)])
+        glDrawBuffers(7, [GL_COLOR_ATTACHMENT0+i for i in range(7)])
 
         # attach textures
-        for i, tex in enumerate([self.gPosition, self.gNormal, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic]):
+        for i, tex in enumerate([self.gPosition, self.gNormal, self.gObjectId, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic]):
             glFramebufferTexture2D(
                 GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, tex, 0
             )
@@ -104,7 +111,68 @@ class GeometryPass(RenderPass):
 
         # Create program
         # --------------
-        self.program = puregl.program.create(*glsl.read("graphics/geometry"))
+        self.program = puregl.program.create(
+            """#version 330 core
+            layout (location=0) in vec3 position;
+            layout (location=1) in vec2 uv;
+            layout (location=2) in vec3 normal;
+            layout (location=3) in vec3 objectId;
+
+            uniform mat4 projection;
+            uniform mat4 view;
+            uniform mat4 model;
+
+            out vec3 Position;
+            out vec3 Normal;
+            out vec3 ObjectID;
+
+            out vec2 TexCoords;
+
+            void main(){
+                TexCoords = uv;
+                // position in world-space
+                Position = (model * vec4(position, 1.0)).xyz;
+
+                // normal in word-space
+                mat3 normalMatrix = transpose(inverse(mat3( model)));
+                Normal = normalMatrix * normal;
+
+                //
+                ObjectID = objectId;
+
+                // transform vertices
+                gl_Position = projection * view * model * vec4(position, 1.0);
+            }""",
+            """#version 330 core
+            layout (location = 0) out vec3 gPosition;
+            layout (location = 1) out vec3 gNormal;
+            layout (location = 2) out vec3 gObjectId;
+
+            layout (location = 3) out vec3 gAlbedo;
+            layout (location = 4) out vec3 gEmission;
+            layout (location = 5) out float gRoughness;
+            layout (location = 6) out float gMetallic;
+
+            in vec2 TexCoords;
+
+            in vec3 Position;
+            in vec3 Normal;
+            in vec3 ObjectID;
+
+            uniform vec3 albedo;
+            uniform vec3 emission;
+            uniform float roughness;
+            uniform float metallic;
+
+            void main(){
+                gPosition = Position;
+                gNormal = normalize(Normal);
+                gObjectId = vec3(1.0);
+                gAlbedo = albedo;
+                gEmission = emission;
+                gRoughness = roughness;
+                gMetallic = metallic;
+            }""")
 
     def render(self, objects: [Mesh], camera: (PerspectiveCamera, OrthographicCamera)):
         super().render()
@@ -129,10 +197,12 @@ class GeometryPass(RenderPass):
                 puregl.program.set_uniform(self.program, "roughness", mesh.material.roughness)
                 puregl.program.set_uniform(self.program, "metallic", mesh.material.metallic)
 
+                puregl.program.set_uniform(self.program, "objectId", glm.vec3(1.0))
+
                 # geometry
                 mesh.geometry._draw(self.program)
 
-        return self.gPosition, self.gNormal, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic
+        return self.gPosition, self.gNormal, self.gDepth, self.gObjectId, self.gAlbedo, self.gEmission, self.gRoughness, self.gMetallic
 
 class PBRLightingPass(RenderPass):
     def __init__(self, width, height):
@@ -180,14 +250,14 @@ class PBRLightingPass(RenderPass):
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
 
-    def render(self, gBuffer, iblBuffer, cameraPos, lights):
+    def render(self, gBuffer, environment, iblBuffer, camera, lights):
         super().render()
         with puregl.fbo.bind(self.fbo), puregl.program.use(self.program) as prog:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             # camera
             puregl.program.set_uniform(prog, "projection", glm.mat4(1))
             puregl.program.set_uniform(prog, "view", glm.mat4(1))
-            puregl.program.set_uniform(prog, "cameraPos", cameraPos)
+            puregl.program.set_uniform(prog, "cameraPos", camera.position)
 
             # lights
             point_lights = [light for light in lights if isinstance(light, PointLight)]
@@ -240,47 +310,71 @@ class PBRLightingPass(RenderPass):
                 active_texture+=1
 
             # Set Geometry Buffer
-            gPosition, gNormal, gAlbedo, gEmission, gRoughness, gMetallic = gBuffer
+            gPosition, gNormal, gDepth, gObjectId, gAlbedo, gEmission, gRoughness, gMetallic = gBuffer
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_2D, gPosition)
             puregl.program.set_uniform(prog, "gPosition", active_texture)
             active_texture+=1
+
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_2D, gNormal)
             puregl.program.set_uniform(prog, "gNormal", active_texture)
             active_texture+=1
+
             glActiveTexture(GL_TEXTURE0+active_texture)
-            glBindTexture(GL_TEXTURE_2D, gEmission)
+            glBindTexture(GL_TEXTURE_2D, gDepth)
+            puregl.program.set_uniform(prog, "gDepth", active_texture)
+            active_texture+=1
+
+            glActiveTexture(GL_TEXTURE0+active_texture)
+            glBindTexture(GL_TEXTURE_2D, gObjectId)
+            puregl.program.set_uniform(prog, "gObjectId", active_texture)
+            active_texture+=1
+
+            glActiveTexture(GL_TEXTURE0+active_texture)
+            glBindTexture(GL_TEXTURE_2D, gAlbedo)
             puregl.program.set_uniform(prog, "gAlbedo", active_texture)
             active_texture+=1
+
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_2D, gEmission)
             puregl.program.set_uniform(prog, "gEmission", active_texture)
             active_texture+=1
+
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_2D, gRoughness)
             puregl.program.set_uniform(prog, "gRoughness", active_texture)
             active_texture+=1
+
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_2D, gMetallic)
             puregl.program.set_uniform(prog, "gMetallic", active_texture)
             active_texture+=1
 
             # set IBL buffers
+            glActiveTexture(GL_TEXTURE0+active_texture)
+            glBindTexture(GL_TEXTURE_CUBE_MAP, environment)
+            puregl.program.set_uniform(prog, "environmentMap", active_texture)
+            active_texture+=1
+
             irradianceMap, prefilterMap, brdfLUT = iblBuffer
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap)
             puregl.program.set_uniform(prog, "irradianceMap", active_texture)
             active_texture+=1
+
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap)
             puregl.program.set_uniform(prog, "prefilterMap", active_texture)
             active_texture+=1
+
             glActiveTexture(GL_TEXTURE0+active_texture)
             glBindTexture(GL_TEXTURE_2D, brdfLUT)
             puregl.program.set_uniform(prog, "brdfLUT", active_texture)
             active_texture+=1
 
+            puregl.program.set_uniform(prog, "cameraProjection", camera.projection)
+            puregl.program.set_uniform(prog, "cameraView", camera.view)
 
             # draw quad
             puregl.program.set_uniform(prog, "model", glm.mat4(1))
@@ -383,12 +477,12 @@ if __name__ == "__main__":
 
     # Create Scene
     scene = Scene()
-    cube = Mesh(geometry=Geometry(*imdraw.geo.sphere()), 
+    mesh = Mesh(geometry=Geometry(*imdraw.geo.sphere()), 
                 transform=glm.translate(glm.mat4(1), (0,0.5,0)),
-                material=Material(albedo=(1.0,0,0),
-                                  roughness=0.2,
-                                  metallic=0.0))
-    scene.add_child(cube)
+                material=Material(albedo=(0.7,0.14,0.14),
+                                  roughness=0.3,
+                                  metallic=1.0))
+    scene.add_child(mesh)
 
     plane = Mesh(geometry=Geometry(*imdraw.geo.plane()),
                 material=Material(albedo=(0.9,0.9,0.9),
@@ -421,7 +515,7 @@ if __name__ == "__main__":
                             far=10)
     scene.add_child(pointlight)
 
-    environment_image = assets.imread("hdri/Tropical_Beach_3k.hdr")
+    environment_image = assets.to_linear(assets.imread("hdri/Tropical_Beach_3k.hdr"))
 
     # Create Viewer
     viewer = Viewer(title="Simple PBR with Shadows Example")
@@ -434,6 +528,10 @@ if __name__ == "__main__":
     brdf_pass = BRDFPass(512, 512)
     lighting_pass = PBRLightingPass(viewer.width, viewer.height)
     skybox_pass = SkyboxPass(viewer.width, viewer.height)
+    tonemapping_pass = TonemappingPass(viewer.width, viewer.height)
+    clamp_pass = ClampPass(viewer.width, viewer.height)
+    gaussianblur_pass = GaussianblurPass(viewer.width, viewer.height)
+    add_pass = AddPass(viewer.width, viewer.height)
 
     @viewer.event
     def on_setup():
@@ -467,30 +565,46 @@ if __name__ == "__main__":
 
         # - render pbr lighting
         iblBuffer = irradiance_cubemap, prefilter_cubemap, brdfLUT
-        hdr_image = lighting_pass.render(gBuffer, iblBuffer, viewer.camera.position, scene.lights())
+        hdr_image = lighting_pass.render(gBuffer, environment_cubemap, iblBuffer, viewer.camera, scene.lights())
 
         # FORWARD
         # - copy fbo depth and color
-        skybox_pass.copy_buffer_from(geometry_pass, GL_DEPTH_BUFFER_BIT)
-        skybox_pass.copy_buffer_from(lighting_pass, GL_COLOR_BUFFER_BIT)
+        # skybox_pass.copy_buffer_from(geometry_pass, GL_DEPTH_BUFFER_BIT)
+        # skybox_pass.copy_buffer_from(lighting_pass, GL_COLOR_BUFFER_BIT)
         # - render skybox
-        skybox_texture = skybox_pass.render(environment_cubemap, viewer.camera)
+        # skybox_texture = skybox_pass.render(environment_cubemap, viewer.camera)
 
         # POST PROCESS
+        
+        highlights_texture = clamp_pass.render(hdr_image, minimum=15.0, maximum=999)
+        # return ldr_texture
+        bloom_texture = gaussianblur_pass.render(highlights_texture, iterations=8)
+        # return blurred_highlights_texture
+        with_bloom_texture = add_pass.render(hdr_image, bloom_texture)
+        ldr_texture = tonemapping_pass.render(with_bloom_texture, exposure=0.0, gamma=2.2)
 
 
         # DEBUG
         glDisable(GL_DEPTH_TEST)
-        imdraw.texture(skybox_texture, (0,0,viewer.width, viewer.height))
+        imdraw.texture(ldr_texture, (0,0,viewer.width, viewer.height))
+
+        # - debug postprocessing
+        imdraw.texture(hdr_image,          (  0,300,90,90))
+        imdraw.texture(highlights_texture, (100,300,90,90))
+        imdraw.texture(bloom_texture,      (200,300,90,90))
+        imdraw.texture(with_bloom_texture, (300,300,90,90))       
         
         # - debug gBuffer
-        gPosition, gNormal, gAlbedo, gEmissive, gRoughness, gMetallic = gBuffer
+        gPosition, gNormal, gDepth, gObjectId,  gAlbedo, gEmissive, gRoughness, gMetallic = gBuffer
         imdraw.texture(gPosition,  (  0,0,90, 90), shuffle=(0,1,2,-1))
         imdraw.texture(gNormal,    (100,0,90, 90), shuffle=(0,1,2,-1))
-        imdraw.texture(gAlbedo,    (200,0,90, 90), shuffle=(0,1,2,-1))
-        imdraw.texture(gEmissive,  (300,0,90, 90))
-        imdraw.texture(gRoughness, (400,0,90, 90), shuffle=(0,0,0,-1))
-        imdraw.texture(gMetallic,  (500,0,90, 90), shuffle=(0,0,0,-1))
+        imdraw.texture(gDepth,     (200,0,90, 90), shuffle=(0,0,0,-1))
+        imdraw.texture(gObjectId,  (300,0,90, 90), shuffle=(0,1,2,-1))
+
+        imdraw.texture(gAlbedo,    (400,0,90, 90), shuffle=(0,1,2,-1))
+        imdraw.texture(gEmissive,  (500,0,90, 90))
+        imdraw.texture(gRoughness, (600,0,90, 90), shuffle=(0,0,0,-1))
+        imdraw.texture(gMetallic,  (700,0,90, 90), shuffle=(0,0,0,-1))
 
         # - debug IBL      
         imdraw.texture(environment_texture, (  0, 100, 90, 90))

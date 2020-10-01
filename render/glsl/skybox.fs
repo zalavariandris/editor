@@ -1,12 +1,11 @@
 #version 330 core
-out vec4 color;
+out vec4 FragColor;
 in vec3 vUvw;
 uniform vec3 cameraPos;
 uniform samplerCube skybox;
 uniform bool groundProjection;
 
-void main(){
-	
+vec3 skyboxAtDirection(vec3 direction, bool groundProjection){
 	vec3 Direction = normalize(vUvw);
 	if(groundProjection)
 	{
@@ -37,8 +36,12 @@ void main(){
 			}
 		}
 	}
-	color = texture(skybox, Direction);
+	return texture(skybox, Direction).rgb;
+}
 
+void main(){
+	vec3 Direction = normalize(vUvw);
+	FragColor = vec4(skyboxAtDirection(Direction, groundProjection),1.0);
 }
 
 /*

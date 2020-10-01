@@ -218,85 +218,153 @@ vec3 calcLambertBRDF(PBRMaterial material, vec3 N, vec3 L, vec3 radiance){
 /************************
  * IMAGE BASED LIGHTING *
  ************************/
+ uniform samplerCube environmentMap;
+uniform bool environmentGroundProjection;
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
+
+uniform mat4 cameraProjection;
+uniform mat4 cameraView;
+in vec2 TexCoords;
+vec3 viewRayDirection(){
+        vec4 near = vec4(
+        TexCoords.x*2-1,
+        TexCoords.y*2-1,
+            0.0,
+            1.0
+        );
+        mat4 m = inverse(cameraProjection*cameraView);
+        near = m * near ;
+        vec4 far = near + m[2] ;
+        near.xyz /= near.w ;
+        far.xyz /= far.w ;
+        return normalize(far.xyz-near.xyz);
+}
+
+vec3 skyboxAtDirection(samplerCube skybox, vec3 direction, bool groundProjection){
+    if(groundProjection)
+    {
+        vec3 Position = cameraPos;
+        const vec3 GroundCenter = vec3(0,0,0);
+        const float GroundRadius = 10.0; 
+        
+        if(direction.y < 0.0){
+            vec3 OrgDir = direction;
+            // Compute intersection with virtual ground plane
+            float t = (GroundCenter[1] - Position[1])/direction[1];
+            vec3 GP = Position + direction * t;
+
+            // Compute virtual projection point rays are projecting from
+            vec3 TP = GroundCenter + vec3(0, GroundRadius,0);
+            // Use direction from that point to the groundplane as the
+            // new virtual direction
+            direction = normalize(GP-TP);
+
+            // Smoothen out the joint a bit....
+            // Thanks to Vlado for suggestion!
+            if (direction[1] > -0.1)
+            {
+                float fac = 1.0 - direction[1] * -10.0;
+                fac *= fac;
+                
+                direction = mix(direction, OrgDir, fac);
+            }
+        }
+    }
+    return texture(skybox, direction).rgb;
+}
+
 /*
  * MainFunction
  */
-in vec2 TexCoords;
+
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
+uniform sampler2D gObjectId;
 uniform sampler2D gAlbedo;
 uniform sampler2D gEmission;
 uniform sampler2D gRoughness;
 uniform sampler2D gMetallic;
 out vec4 FragColor;
 void main(){
-    PBRMaterial material = PBRMaterial(texture(gAlbedo,    TexCoords).rgb, 
-                                       texture(gEmission,  TexCoords).rgb, 
-                                       texture(gRoughness, TexCoords).r,
-                                       texture(gMetallic,  TexCoords).r,
-                                       1.0);
-    vec3 N = normalize(texture(gNormal, TexCoords).xyz);
-    vec3 surfacePosition = texture(gPosition, TexCoords).xyz;
-    vec3 V = normalize(cameraPos - surfacePosition); //view vector
+    if(texture(gObjectId, TexCoords).xyz!=vec3(1.0)){
+        vec3 direction = viewRayDirection();
+        FragColor = vec4(skyboxAtDirection(environmentMap, direction, true), 1.0);
+    }else{
+        PBRMaterial material = PBRMaterial(texture(gAlbedo,    TexCoords).rgb, 
+                                           texture(gEmission,  TexCoords).rgb, 
+                                           texture(gRoughness, TexCoords).r,
+                                           texture(gMetallic,  TexCoords).r,
+                                           1.0);
+        vec3 N = normalize(texture(gNormal, TexCoords).xyz);
+        vec3 surfacePosition = texture(gPosition, TexCoords).xyz;
+        vec3 V = normalize(cameraPos - surfacePosition); //view vector
 
-    vec3 Lo=vec3(0);
-    {
-        for(int i=0; i<num_point_lights; i++){
-            vec3 L = normalize( point_lights[i].position-surfacePosition);
-            vec3 radiance = calcRadiance(point_lights[i], surfacePosition);
-            float shadow = calcShadow(point_lights[i], surfacePosition, N);
-            vec3 reflectance = calcCookTorranceBRDF(material, N, L, V, radiance*(1-shadow));
-            Lo+=reflectance;
+        vec3 Lo=vec3(0);
+        {
+            for(int i=0; i<num_point_lights; i++){
+                vec3 L = normalize( point_lights[i].position-surfacePosition);
+                vec3 radiance = calcRadiance(point_lights[i], surfacePosition);
+                float shadow = calcShadow(point_lights[i], surfacePosition, N);
+                vec3 reflectance = calcCookTorranceBRDF(material, N, L, V, radiance*(1-shadow));
+                Lo+=reflectance;
+            }
+
+            for(int i=0; i<num_spot_lights; i++){
+                vec3 L = normalize(spot_lights[i].position-surfacePosition);
+                vec3 radiance = calcRadiance(spot_lights[i], surfacePosition);
+                float shadow = calcShadow(spot_lights[i], surfacePosition, N);
+                vec3 reflectance = calcCookTorranceBRDF(material, N, L, V, radiance*(1-shadow));
+                Lo+=reflectance;
+            }
+
+            for(int i=0; i<num_dir_lights; i++){
+                vec3 L = -normalize(dir_lights[i].direction);
+                vec3 radiance = calcRadiance(dir_lights[i]);
+                float shadow = calcShadow(dir_lights[i], surfacePosition, N);
+                vec3 reflectance = calcCookTorranceBRDF(material, N, L, V, radiance*(1-shadow));
+                Lo+=reflectance;
+            }
         }
 
-        for(int i=0; i<num_spot_lights; i++){
-            vec3 L = normalize(spot_lights[i].position-surfacePosition);
-            vec3 radiance = calcRadiance(spot_lights[i], surfacePosition);
-            float shadow = calcShadow(spot_lights[i], surfacePosition, N);
-            vec3 reflectance = calcCookTorranceBRDF(material, N, L, V, radiance*(1-shadow));
-            Lo+=reflectance;
-        }
+        /***************/
+        /* IBL ambient */
+        
+        // # Diffuse component
+        vec3 baseReflectivity = mix(vec3(0.04), material.albedo, material.metallic);
+        vec3 R = reflect(-V, N);
+        vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), baseReflectivity, material.roughness);
+        vec3 kS = F;
+        vec3 kD = 1.0 - kS;
+        kD *= 1.0 - material.metallic;
 
-        for(int i=0; i<num_dir_lights; i++){
-            vec3 L = -normalize(dir_lights[i].direction);
-            vec3 radiance = calcRadiance(dir_lights[i]);
-            float shadow = calcShadow(dir_lights[i], surfacePosition, N);
-            vec3 reflectance = calcCookTorranceBRDF(material, N, L, V, radiance*(1-shadow));
-            Lo+=reflectance;
-        }
+        vec3 irradiance = texture(irradianceMap, N).rgb;
+        vec3 diffuse      = irradiance * material.albedo;
+
+        // # Specular component
+        // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+        const float MAX_REFLECTION_LOD = 4.0;
+        vec3 prefilteredColor = textureLod(prefilterMap, R,  material.roughness * MAX_REFLECTION_LOD).rgb;
+        vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), material.roughness)).rg;
+        vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+        // combine diffuse and specular component lighting
+        vec3 ambient = (kD * diffuse + specular) * material.ao;
+
+        // 
+        vec3 color = ambient+Lo;
+
+        // // Post Processing
+        // // exposure tone mapping
+        // const float exposure = 0.0;
+        // color = vec3(1.0) - exp(-color * pow(2, exposure)); // FIXME: use f-stop, shutterspeed, aperturesize
+
+        // // gamma correction
+        // const float gamma=2.2;
+        // color = pow(color, vec3(1.0 / gamma));  
+
+        // output
+        FragColor = vec4(color, 1.0);
     }
-
-    /***************/
-    /* IBL ambient */
-    
-    // # Diffuse component
-    vec3 baseReflectivity = mix(vec3(0.04), material.albedo, material.metallic);
-    vec3 R = reflect(-V, N);
-    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), baseReflectivity, material.roughness);
-    vec3 kS = F;
-    vec3 kD = 1.0 - kS;
-    kD *= 1.0 - material.metallic;
-
-    vec3 irradiance = texture(irradianceMap, N).rgb;
-    vec3 diffuse      = irradiance * material.albedo;
-
-    // # Specular component
-    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
-    const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(prefilterMap, R,  material.roughness * MAX_REFLECTION_LOD).rgb;
-    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), material.roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-
-    // combine diffuse and specular component lighting
-    vec3 ambient = (kD * diffuse + specular) * material.ao;
-
-
-    // add up
-    vec3 color = ambient+Lo;
-
-
-    FragColor = vec4(color, 1.0);
 }
