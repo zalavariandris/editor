@@ -4,6 +4,50 @@
 		"selected_items":
 		[
 			[
+				"geometry",
+				"geometrypass"
+			],
+			[
+				"pbr",
+				"pbrpass"
+			],
+			[
+				"env",
+				"environment"
+			],
+			[
+				"en",
+				"environment"
+			],
+			[
+				"envi",
+				"environment"
+			],
+			[
+				"envir",
+				"environment"
+			],
+			[
+				"grou",
+				"groundProjection"
+			],
+			[
+				"far",
+				"farPlane"
+			],
+			[
+				"pro",
+				"program"
+			],
+			[
+				"v",
+				"view"
+			],
+			[
+				"la",
+				"lambert_program"
+			],
+			[
 				"po",
 				"pointlight"
 			],
@@ -14,14 +58,6 @@
 			[
 				"GL_TEXTURE_",
 				"GL_TEXTURE_2D"
-			],
-			[
-				"envir",
-				"environment_image"
-			],
-			[
-				"env",
-				"environment_image"
 			],
 			[
 				"glBind",
@@ -42,10 +78,6 @@
 			[
 				"GL_RGB",
 				"GL_RGB32F"
-			],
-			[
-				"envi",
-				"environment_texture"
 			],
 			[
 				"crea",
@@ -142,10 +174,6 @@
 			[
 				"tonem",
 				"tonemapping_pass"
-			],
-			[
-				"en",
-				"environment_tex"
 			],
 			[
 				"br",
@@ -270,10 +298,6 @@
 			[
 				"dirlight",
 				"dirlight"
-			],
-			[
-				"pro",
-				"projection"
 			],
 			[
 				"dir",
@@ -490,65 +514,60 @@
 			[
 				"pingpon",
 				"pingpong_fbo"
-			],
-			[
-				"GL_TEXTURE",
-				"GL_TEXTURE_2D"
-			],
-			[
-				"pong",
-				"pingpong_buffer"
-			],
-			[
-				"color",
-				"color_buffers"
-			],
-			[
-				"sphere",
-				"sphere_geo"
-			],
-			[
-				"plane",
-				"plane_geo"
-			],
-			[
-				"quad",
-				"quad_geo"
 			]
 		]
 	},
 	"buffers":
 	[
 		{
-			"file": "render/graphics/passes/pbrlightingpass.py",
+			"file": "render/graphics/examples/pbr_with_ibl/pbr_with_ibl.py",
 			"settings":
 			{
-				"buffer_size": 13152,
+				"buffer_size": 14259,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "/C/Users/andris/anaconda3/lib/site-packages/OpenGL/error.py",
+			"file": "render/graphics/passes/geometrypass.py",
 			"settings":
 			{
-				"buffer_size": 9467,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "render/imdraw/quad.py",
-			"settings":
-			{
-				"buffer_size": 1952,
+				"buffer_size": 8945,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "render/glsl/graphics/pbrlighting.fs",
+			"file": "render/graphics/examples/pbr_with_ibl/geometry.frag",
 			"settings":
 			{
-				"buffer_size": 7212,
+				"buffer_size": 0,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/graphics/examples/pbr_with_ibl/geometry.vert",
+			"settings":
+			{
+				"buffer_size": 0,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/puregl/API_IDEA.py",
+			"settings":
+			{
+				"buffer_size": 1816,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "render/graphics/material.py",
+			"settings":
+			{
+				"buffer_size": 301,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -688,29 +707,35 @@
 	[
 		"/C/Users/andris/Documents/BABPythonModules/editor",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/graphics",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/puregl"
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/pbr_with_ibl",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/pbr_with_ibl/environment",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes"
 	],
 	"file_history":
 	[
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/pbr_with_ibl/deferred/geometrypass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/pbr_with_ibl/geometrypass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/deferred_pbr_renderer.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/depthpass.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/deferred_pbr/deferred_pbr.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/graphics/pbrlighting.fs",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/viewer.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/glsl/__init__.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/simple_lambert_shadows.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/quad.py",
+		"/C/Users/andris/anaconda3/lib/site-packages/OpenGL/error.py",
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/pbrlightingpass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/viewer.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/lamberlightingpass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/iblpass.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/pbrlightingpass.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/examples/viewer.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/tonemappingpass.py",
 		"/C/Users/andris/anaconda3/lib/site-packages/OpenGL/platform/baseplatform.py",
-		"/C/Users/andris/anaconda3/lib/site-packages/OpenGL/error.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/addpass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/clamppass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/cubemap.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/deferred_matcap_renderer.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/depthpass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/environmentpass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/gaussianblurpass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/geometrypass.py",
@@ -718,10 +743,8 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/cubedepthpass.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/scene.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/cameras.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/quad.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/examples/lines_example.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/examples/text_example.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/passes/deferred_pbr_renderer.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/cube.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/material.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/imdraw/stroke/__init__.py",
@@ -819,15 +842,11 @@
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo_with_glfw.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/renderer.py",
 		"/C/Users/andris/Documents/BABPythonModules/editor/render/graphics/graphics.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/__init__.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/program.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/buffers.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo/vao.py",
-		"/C/Users/andris/Documents/BABPythonModules/editor/render/gloo_examples/opengl_example.py"
+		"/C/Users/andris/Documents/BABPythonModules/editor/render/__init__.py"
 	],
 	"find":
 	{
-		"height": 23.0
+		"height": 39.0
 	},
 	"find_in_files":
 	{
@@ -842,6 +861,7 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"PointShadowCalculation",
 			"NUM_",
 			"GL_VENDOR",
 			"glGet",
@@ -968,8 +988,7 @@
 			"elements_id",
 			"shader",
 			"elements_id",
-			"elements",
-			"GL_TEXTURE"
+			"elements"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -1019,19 +1038,19 @@
 			[
 				{
 					"buffer": 0,
-					"file": "render/graphics/passes/pbrlightingpass.py",
+					"file": "render/graphics/examples/pbr_with_ibl/pbr_with_ibl.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 13152,
+						"buffer_size": 14259,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								9684,
-								9684
+								14198,
+								14198
 							]
 						],
 						"settings":
@@ -1041,7 +1060,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2408.0,
+						"translation.y": 4445.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -1049,19 +1068,19 @@
 				},
 				{
 					"buffer": 1,
-					"file": "/C/Users/andris/anaconda3/lib/site-packages/OpenGL/error.py",
-					"semi_transient": false,
+					"file": "render/graphics/passes/geometrypass.py",
+					"semi_transient": true,
 					"settings":
 					{
-						"buffer_size": 9467,
+						"buffer_size": 8945,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								8874,
-								8874
+								0,
+								8945
 							]
 						],
 						"settings":
@@ -1071,75 +1090,123 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2933.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "render/graphics/examples/pbr_with_ibl/geometry.frag",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/OpenGL Shading Language (GLSL)/GLSL.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 3,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "render/imdraw/quad.py",
+					"buffer": 3,
+					"file": "render/graphics/examples/pbr_with_ibl/geometry.vert",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1952,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1885,
-								1885
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/OpenGL Shading Language (GLSL)/GLSL.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "render/puregl/API_IDEA.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1816,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								12,
+								12
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 707.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 4,
 					"type": "text"
-				}
-			]
-		},
-		{
-			"selected": 0,
-			"sheets":
-			[
+				},
 				{
-					"buffer": 3,
-					"file": "render/glsl/graphics/pbrlighting.fs",
+					"buffer": 5,
+					"file": "render/graphics/material.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 7212,
+						"buffer_size": 301,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3632,
-								3623
+								301,
+								301
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/OpenGL Shading Language (GLSL)/GLSL.sublime-syntax",
-							"translate_tabs_to_spaces": false
+							"syntax": "Packages/Python/Python.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 2870.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 5,
 					"type": "text"
 				}
 			]
@@ -1147,7 +1214,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 23.0
+		"height": 24.0
 	},
 	"input":
 	{
@@ -1162,18 +1229,11 @@
 				0,
 				1,
 				1
-			],
-			[
-				1,
-				0,
-				2,
-				1
 			]
 		],
 		"cols":
 		[
 			0.0,
-			0.413484971568,
 			1.0
 		],
 		"rows":
@@ -1203,7 +1263,7 @@
 	"project": "editor.sublime-project",
 	"replace":
 	{
-		"height": 42.0
+		"height": 44.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -1241,7 +1301,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 269.0,
+	"side_bar_width": 356.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

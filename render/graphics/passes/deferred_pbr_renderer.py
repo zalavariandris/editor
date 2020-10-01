@@ -16,7 +16,6 @@ from editor.render import puregl, glsl, imdraw
 from editor.render import assets
 from editor.render.graphics import Mesh
 
-
 class SkyboxPass(RenderPass):
     def __init__(self, width, height):
         super().__init__(width, height, True, GL_BACK)

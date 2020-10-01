@@ -6,5 +6,3 @@ class Material:
         self.roughness = roughness
         self.metallic = metallic
         self.ao = ao
-
-

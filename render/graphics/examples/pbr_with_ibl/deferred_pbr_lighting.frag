@@ -1,8 +1,8 @@
 #version 330 core
 
-/*
- * Lighting
- */
+/************
+ * Lighting *
+ ************/
 #define MAX_POINT_LIGHTS 3
 #define MAX_SPOT_LIGHTS 3
 #define MAX_DIR_LIGHTS 3
@@ -50,7 +50,7 @@ vec3 calcRadiance(PointLight light, vec3 surfacePosition){
     return radiance;
 }
 
-float calcShadow(PointLight light, vec3 surfacePosition, vec3 surfaceNormal){
+float calcShadow(PointLight light, vec3 surfacePosition, vec3 N){
     vec3 L = normalize(light.position - surfacePosition);
     float dist = length(light.position - surfacePosition);
     // mask radiance with shadowmap
@@ -81,10 +81,10 @@ vec3 calcRadiance(SpotLight light, vec3 surfacePosition){
     return radiance;
 }
 
-float calcShadow(SpotLight light, vec3 surfacePosition, vec3 surfaceNormal){
+float calcShadow(SpotLight light, vec3 surfacePosition, vec3 N){
     vec3 L = -normalize(light.direction);
     vec4 fragPosLightSpace = light.matrix * vec4(surfacePosition, 1.0);
-    if(dot(L, surfaceNormal)<=0){
+    if(dot(L, N)<=0){
         return 0.0;
     }
     // perform perspective divide
@@ -97,7 +97,7 @@ float calcShadow(SpotLight light, vec3 surfacePosition, vec3 surfaceNormal){
     float closestDepth = texture(light.shadowMap, projCoords.xy).r;
     float currentDepth = projCoords.z;
 
-    // float bias = max(0.005 * (1.0 - dot(surfaceNormal, lightDir)), 0.0005);
+    // float bias = max(0.005 * (1.0 - dot(N, lightDir)), 0.0005);
     float bias = 0.0001;
     // PCF
 
@@ -110,10 +110,10 @@ vec3 calcRadiance(DirectionalLight light){
     return light.color * light.intensity;
 }
 
-float calcShadow(DirectionalLight light, vec3 surfacePosition, vec3 surfaceNormal){
+float calcShadow(DirectionalLight light, vec3 surfacePosition, vec3 N){
     vec4 fragPosLightSpace = light.matrix * vec4(surfacePosition, 1.0);
     vec3 L = -normalize(light.direction);
-    if(dot(L, surfaceNormal)<=0){
+    if(dot(L, N)<=0){
         return 0.0;
     }
     // perform perspective divide
@@ -134,9 +134,9 @@ float calcShadow(DirectionalLight light, vec3 surfacePosition, vec3 surfaceNorma
     return shadow;
 }
 
-/*
- * Shading
- */
+/***********
+ * SHADING *
+ ***********/
 uniform vec3 cameraPos;
 const float PI = 3.14159265359;
 struct PBRMaterial{
@@ -146,7 +146,6 @@ struct PBRMaterial{
    float metallic;
    float ao;
 };
-uniform PBRMaterial material;
 
 /*self shadowing microfacets*/
 float distributionGGX(float NdotH, float roughness){
@@ -216,16 +215,31 @@ vec3 calcLambertBRDF(PBRMaterial material, vec3 N, vec3 L, vec3 radiance){
     return reflectance*material.albedo;
 }
 
+/************************
+ * IMAGE BASED LIGHTING *
+ ************************/
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
 /*
  * MainFunction
  */
-uniform vec3 color;
-in vec3 Position;
-in vec3 Normal;
+in vec2 TexCoords;
+uniform sampler2D gPosition;
+uniform sampler2D gNormal;
+uniform sampler2D gAlbedo;
+uniform sampler2D gEmission;
+uniform sampler2D gRoughness;
+uniform sampler2D gMetallic;
 out vec4 FragColor;
 void main(){
-    vec3 N = normalize(Normal);
-    vec3 surfacePosition = Position;
+    PBRMaterial material = PBRMaterial(texture(gAlbedo,    TexCoords).rgb, 
+                                       texture(gEmission,  TexCoords).rgb, 
+                                       texture(gRoughness, TexCoords).r,
+                                       texture(gMetallic,  TexCoords).r,
+                                       1.0);
+    vec3 N = normalize(texture(gNormal, TexCoords).xyz);
+    vec3 surfacePosition = texture(gPosition, TexCoords).xyz;
     vec3 V = normalize(cameraPos - surfacePosition); //view vector
 
     vec3 Lo=vec3(0);
@@ -255,12 +269,34 @@ void main(){
         }
     }
 
-    vec3 color = Lo;
+    /***************/
+    /* IBL ambient */
+    
+    // # Diffuse component
+    vec3 baseReflectivity = mix(vec3(0.04), material.albedo, material.metallic);
+    vec3 R = reflect(-V, N);
+    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), baseReflectivity, material.roughness);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - material.metallic;
 
-    // gamma correction
-    // exposure tone mapping
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2)); 
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse      = irradiance * material.albedo;
+
+    // # Specular component
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  material.roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), material.roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    // combine diffuse and specular component lighting
+    vec3 ambient = (kD * diffuse + specular) * material.ao;
+
+
+    // add up
+    vec3 color = ambient+Lo;
+
 
     FragColor = vec4(color, 1.0);
 }
